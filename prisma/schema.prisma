@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("STUDENT") // STUDENT, INSTRUCTOR, ADMIN
+  phone     String?
+  image     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  walletUSD Float    @default(0)
+  walletSYP Float    @default(0)
+
+  coursesAsInstructor Course[]     @relation("InstructorCourses")
+  enrollments         Enrollment[]
+  payments            Payment[]
+  reviews             Review[]
+  certificates        Certificate[]
+  quizAttempts        QuizAttempt[]
+  questions           CourseQuestion[]
+  answers             CourseAnswer[]
+  walletTransactions  WalletTransaction[]
+  examSimulatorAttempts ExamSimulatorAttempt[]
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  price       Float    @default(0) // USD
+  priceSYP    Float    @default(0) // SYP
+  category    String
+  thumbnail   String?
+  rating      Float    @default(0.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  instructorId String
+  instructor   User         @relation("InstructorCourses", fields: [instructorId], references: [id])
+  enrollments  Enrollment[]
+  chapters     Chapter[]
+  payments     Payment[]
+  reviews      Review[]
+  certificates Certificate[]
+  coupons      Coupon[]
+  questions    CourseQuestion[]
+}
+
+model Chapter {
+  id          String   @id @default(cuid())
+  title       String
+  order       Int      @default(0)
+  courseId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course      Course   @relation(fields: [courseId], references: [id])
+  lessons     Lesson[]
+  quizzes     Quiz[]
+}
+
+model Lesson {
+  id             String   @id @default(cuid())
+  title          String
+  videoUrl       String?
+  content        String?
+  order          Int      @default(0)
+  isLive         Boolean  @default(false)
+  liveRoomName   String?
+  liveStartTime  DateTime?
+  chapterId      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  chapter        Chapter      @relation(fields: [chapterId], references: [id])
+  attachments    Attachment[]
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  lessonId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+}
+
+model Quiz {
+  id        String   @id @default(cuid())
+  title     String
+  chapterId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chapter   Chapter        @relation(fields: [chapterId], references: [id])
+  questions Question[]
+  attempts  QuizAttempt[]
+}
+
+model Question {
+  id            String   @id @default(cuid())
+  text          String
+  options       String   // Stored as JSON string e.g. ["A", "B", "C", "D"]
+  correctAnswer Int      // Index of the correct option
+  quizId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  quiz          Quiz     @relation(fields: [quizId], references: [id])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  score     Float
+  passed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+}
+
+model Coupon {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  discount  Float    // Percentage (0-100)
+  courseId  String?  // Optional: If null, applies to any course
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course    Course?  @relation(fields: [courseId], references: [id])
+  payments  Payment[]
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  amount        Float
+  receiptImage  String?
+  paymentMethod String
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  userId        String
+  courseId      String
+  couponId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id])
+  course        Course   @relation(fields: [courseId], references: [id])
+  coupon        Coupon?  @relation(fields: [couponId], references: [id])
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  progress  Int      @default(0) // Percentage 0-100
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      @default(5)
+  comment   String?
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+}
+
+model Certificate {
+  id        String   @id @default(cuid()) // Will be used as verification ID
+  userId    String
+  courseId  String
+  issuedAt  DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model CourseQuestion {
+  id        String   @id @default(cuid())
+  text      String
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User           @relation(fields: [userId], references: [id])
+  course    Course         @relation(fields: [courseId], references: [id])
+  answers   CourseAnswer[]
+}
+
+model CourseAnswer {
+  id         String   @id @default(cuid())
+  text       String
+  userId     String
+  questionId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User           @relation(fields: [userId], references: [id])
+  question   CourseQuestion @relation(fields: [questionId], references: [id])
+}
+
+model WalletTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  amount       Float
+  currency     String   // "USD" or "SYP"
+  type         String   // "DEPOSIT", "WITHDRAW", "PURCHASE"
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  receiptImage String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ExamSimulatorAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  score     Float
+  total     Int
+  passed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
