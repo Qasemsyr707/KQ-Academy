@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Bot, Send, User, Sparkles, Loader2, Code, FileText, Settings, History } from 'lucide-react';
-import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bot, User, Send, Sparkles, Loader2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 type Message = {
   id: string;
@@ -12,15 +15,16 @@ type Message = {
 };
 
 export default function AITutorPage() {
+  const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
+      id: 'welcome',
       role: 'assistant',
-      content: 'مرحباً! أنا المساعد الذكي الخاص بك من أكاديمية K&Q. كيف يمكنني مساعدتك في دراستك البرمجية اليوم؟ 😊'
+      content: 'مرحباً! أنا المعلم الذكي الخاص بك في أكاديمية K&Q. كيف يمكنني مساعدتك في دراستك اليوم؟'
     }
   ]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -29,209 +33,174 @@ export default function AITutorPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, loading]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || loading) return;
 
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
-    setMessages(prev => [...prev, userMsg]);
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setIsLoading(true);
+    setLoading(true);
 
     try {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg.content, history: messages })
+        body: JSON.stringify({ message: userMessage.content, history: messages.map(m => ({ role: m.role, content: m.content })) })
       });
-      const data = await res.json();
-      
+
       if (res.ok) {
+        const data = await res.json();
         setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: data.reply }]);
       } else {
-        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'عذراً، حدث خطأ أثناء معالجة طلبك.' }]);
+        const errorData = await res.json();
+        setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: `عذراً، حدث خطأ: ${errorData.error}` }]);
       }
     } catch (e) {
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً.' }]);
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: 'عذراً، تعذر الاتصال بالخادم. حاول مرة أخرى لاحقاً.' }]);
     }
-    setIsLoading(false);
+    
+    setLoading(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  if (!session) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff' }}>
+        <div style={{ textAlign: 'center', padding: '2rem', background: '#111', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <Bot size={64} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>يجب تسجيل الدخول</h2>
+          <p style={{ color: 'rgba(255,255,255,0.6)' }}>يرجى تسجيل الدخول للتمكن من التحدث مع المعلم الذكي.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 80px)', background: '#050505', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* Sidebar - Chat History & Tools */}
-      <div style={{ width: '300px', borderRight: '1px solid rgba(255,255,255,0.05)', background: '#0a0a0a', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '2rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <Link href="/dashboard" style={{ display: 'inline-block', marginBottom: '2rem', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
-            &rarr; العودة للوحة
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, var(--primary), #eab308)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Bot size={28} color="#000" />
-            </div>
-            <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>المساعد الذكي</h2>
-              <p style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>متصل وجاهز</p>
-            </div>
-          </div>
-          <button style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px dashed rgba(255,255,255,0.2)', padding: '0.8rem', borderRadius: '8px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.3s' }} className="hover:bg-white/10 hover:border-primary">
-            <Sparkles size={18} color="var(--primary)" /> محادثة جديدة
-          </button>
+      {/* Header */}
+      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ width: '50px', height: '50px', background: 'rgba(203, 161, 83, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Bot size={28} color="var(--primary)" />
         </div>
-
-        <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
-          <h3 style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <History size={16} /> السجل الأخير
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {['شرح React Hooks', 'حل مشكلة TypeError', 'ما هو الـ JWT؟'].map((item, i) => (
-              <button key={i} style={{ textAlign: 'right', padding: '0.8rem 1rem', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', borderRadius: '8px', transition: 'all 0.2s', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} className="hover:bg-white/5">
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '1rem' }}>
-          <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', padding: '0.8rem', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>
-            <Settings size={18} /> إعدادات
-          </button>
+        <div>
+          <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            المعلم الذكي <Sparkles size={16} color="var(--primary)" />
+          </h1>
+          <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>مساعدك التعليمي المدعوم بالذكاء الاصطناعي</p>
         </div>
       </div>
 
       {/* Chat Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        {/* Messages */}
-        <div style={{ flex: 1, padding: '2rem 5%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          {messages.map((msg, index) => (
-            <motion.div 
-              key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{ 
-                display: 'flex', 
-                gap: '1.5rem', 
-                flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-                alignItems: 'flex-start'
-              }}
-            >
-              {/* Avatar */}
-              <div style={{ 
-                width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
-                background: msg.role === 'user' ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, var(--primary), #eab308)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                {msg.role === 'user' ? <User size={20} color="#fff" /> : <Bot size={24} color="#000" />}
-              </div>
-              
-              {/* Message Bubble */}
-              <div style={{ 
-                background: msg.role === 'user' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                color: msg.role === 'user' ? '#000' : '#fff',
-                padding: '1.5rem',
-                borderRadius: '16px',
-                borderTopRightRadius: msg.role === 'user' ? '4px' : '16px',
-                borderTopLeftRadius: msg.role === 'assistant' ? '4px' : '16px',
-                maxWidth: '80%',
-                lineHeight: 1.6,
-                fontSize: '1.05rem',
-                border: msg.role === 'assistant' ? '1px solid rgba(255,255,255,0.1)' : 'none'
-              }}>
-                {/* Parse simulated markdown-like response simply */}
-                {msg.content.split('\n').map((line, i) => {
-                  if (line.startsWith('```')) {
-                    return <div key={i} style={{ background: '#000', color: '#a855f7', padding: '1rem', borderRadius: '8px', margin: '1rem 0', fontFamily: 'monospace', direction: 'ltr' }}>// كود برمجي<br/>{line.replace(/```/g, '')}</div>;
-                  }
-                  return <p key={i} style={{ marginBottom: line ? '0.5rem' : '0' }}>{line}</p>;
-                })}
-              </div>
-            </motion.div>
-          ))}
-          {isLoading && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #eab308)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Bot size={24} color="#000" />
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '16px', borderTopLeftRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
-                <Loader2 className="animate-spin" size={20} /> جاري التفكير...
-              </div>
-            </motion.div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+        <AnimatePresence>
+          {messages.map((msg) => {
+            const isUser = msg.role === 'user';
+            return (
+              <motion.div 
+                key={msg.id}
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                style={{ 
+                  display: 'flex', 
+                  gap: '1rem', 
+                  flexDirection: isUser ? 'row-reverse' : 'row',
+                  alignItems: 'flex-start'
+                }}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isUser ? 'rgba(255,255,255,0.1)' : 'rgba(203, 161, 83, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {isUser ? <User size={20} color="#fff" /> : <Bot size={20} color="var(--primary)" />}
+                </div>
+                
+                <div style={{ 
+                  background: isUser ? 'var(--primary)' : '#111', 
+                  color: isUser ? '#000' : '#fff',
+                  padding: '1.2rem', 
+                  borderRadius: '16px',
+                  borderTopRightRadius: isUser ? 0 : '16px',
+                  borderTopLeftRadius: !isUser ? 0 : '16px',
+                  maxWidth: '80%',
+                  border: isUser ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.6,
+                  fontSize: '1rem'
+                }}>
+                  {isUser ? (
+                    msg.content
+                  ) : (
+                    <div className="markdown-body">
+                      <ReactMarkdown
+                        components={{
+                          code({node, inline, className, children, ...props}: any) {
+                            const match = /language-(\w+)/.exec(className || '')
+                            return !inline && match ? (
+                              <SyntaxHighlighter
+                                style={vscDarkPlus as any}
+                                language={match[1]}
+                                PreTag="div"
+                                {...props}
+                              >
+                                {String(children).replace(/\n$/, '')}
+                              </SyntaxHighlighter>
+                            ) : (
+                              <code className={className} style={{ background: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.4rem', borderRadius: '4px', fontSize: '0.9em' }} {...props}>
+                                {children}
+                              </code>
+                            )
+                          }
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
 
-        {/* Input Area */}
-        <div style={{ padding: '2rem 5%', background: 'linear-gradient(0deg, #050505 50%, transparent 100%)' }}>
-          <div style={{ position: 'relative', maxWidth: '1000px', margin: '0 auto' }}>
-            <textarea 
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="اسأل المساعد الذكي أي سؤال برمجي..."
-              style={{
-                width: '100%',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                paddingLeft: '4rem',
-                color: '#fff',
-                fontSize: '1.1rem',
-                resize: 'none',
-                height: '80px',
-                fontFamily: 'inherit',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                transition: 'all 0.3s'
-              }}
-              className="focus:border-primary focus:outline-none"
-            />
-            <button 
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              style={{
-                position: 'absolute',
-                left: '1rem',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: input.trim() ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
-                color: input.trim() ? '#000' : 'rgba(255,255,255,0.4)',
-                border: 'none',
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
-                transition: 'all 0.3s'
-              }}
-            >
-              <Send size={20} />
-            </button>
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '1rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>
-            المساعد الذكي قد يخطئ أحياناً، يرجى التحقق من الأكواد البرمجية قبل استخدامها في الإنتاج.
-          </div>
-        </div>
+        {loading && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(203, 161, 83, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bot size={20} color="var(--primary)" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#111', padding: '1rem 1.5rem', borderRadius: '16px', borderTopLeftRadius: 0 }}>
+              <Loader2 size={16} className="animate-spin" color="var(--primary)" />
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>جاري التفكير...</span>
+            </div>
+          </motion.div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
+      {/* Input Area */}
+      <div style={{ padding: '2rem', background: 'linear-gradient(to top, #050505 50%, transparent)', position: 'sticky', bottom: 0 }}>
+        <form onSubmit={handleSubmit} style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', gap: '1rem', background: '#111', padding: '0.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <input 
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="اسأل المعلم الذكي أي سؤال (مثال: اشرح لي React)..."
+            style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', padding: '1rem 1.5rem', fontSize: '1rem', outline: 'none' }}
+          />
+          <button 
+            type="submit"
+            disabled={!input.trim() || loading}
+            style={{ width: '50px', height: '50px', borderRadius: '50%', background: input.trim() ? 'var(--primary)' : 'rgba(255,255,255,0.1)', color: input.trim() ? '#000' : 'rgba(255,255,255,0.3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
+          >
+            <Send size={20} style={{ transform: 'translateX(-2px)' }} />
+          </button>
+        </form>
+      </div>
+      
       <style jsx global>{`
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .hover\\:bg-white\\/10:hover { background-color: rgba(255,255,255,0.1) !important; }
-        .hover\\:bg-white\\/5:hover { background-color: rgba(255,255,255,0.05) !important; }
-        .hover\\:border-primary:hover { border-color: var(--primary) !important; }
-        .focus\\:border-primary:focus { border-color: var(--primary) !important; }
-        .focus\\:outline-none:focus { outline: none; }
+        .markdown-body { color: #fff; }
+        .markdown-body p { margin-bottom: 1rem; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body pre { margin: 1rem 0; border-radius: 8px !important; }
       `}</style>
     </div>
   );

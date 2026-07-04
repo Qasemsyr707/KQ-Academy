@@ -2,6 +2,9 @@ import { prisma } from '@/lib/db';
 import { Star, Clock, User, CheckCircle, PlayCircle, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import ReviewButton from './ReviewButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +28,21 @@ export default async function CourseDetailsPage({ params }: { params: { courseId
     if (params.courseId !== 'demo123') {
       return notFound();
     }
+  }
+
+  const session = await getServerSession(authOptions);
+  let isEnrolled = false;
+
+  if (session?.user && course) {
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: (session.user as any).id,
+          courseId: course.id
+        }
+      }
+    });
+    isEnrolled = !!enrollment;
   }
 
   // Fallback demo data if course is null (to allow previewing without DB seed)
@@ -89,9 +107,12 @@ export default async function CourseDetailsPage({ params }: { params: { courseId
         
         {/* Reviews Section */}
         <div style={{ flex: '1 1 600px' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Star color="var(--primary)" fill="var(--primary)" /> آراء الطلاب ({displayCourse.reviews.length})
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+              <Star color="var(--primary)" fill="var(--primary)" /> آراء الطلاب ({displayCourse.reviews.length})
+            </h2>
+            {isEnrolled && <ReviewButton courseId={displayCourse.id} />}
+          </div>
 
           {displayCourse.reviews.length === 0 ? (
             <p style={{ color: 'rgba(255,255,255,0.5)' }}>لا توجد تقييمات حتى الآن. كن أول من يشارك رأيه بعد إتمام الكورس!</p>

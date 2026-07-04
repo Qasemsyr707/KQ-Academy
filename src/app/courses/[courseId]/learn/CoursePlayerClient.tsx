@@ -215,9 +215,14 @@ export default function CoursePlayerClient({ course, chapters }: { course: any, 
             </button>
             <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{course.title}</h1>
           </div>
-          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
-            العودة للوحة <ArrowRight size={16} />
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button onClick={() => setShowReview(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(203, 161, 83, 0.1)', color: 'var(--warning)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(203, 161, 83, 0.3)', cursor: 'pointer', fontWeight: 'bold' }}>
+              <Star size={16} fill="var(--warning)" /> تقييم الكورس
+            </button>
+            <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
+              العودة للوحة <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
 
         {/* Dynamic Area (Video OR Quiz) */}
@@ -471,44 +476,53 @@ export default function CoursePlayerClient({ course, chapters }: { course: any, 
                     </button>
                   )}
 
-                  <button onClick={() => setShowReview(!showReview)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.8rem 2rem', borderRadius: '8px', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}>
-                    <Star size={20} fill={showReview ? "var(--warning)" : "transparent"} color="var(--warning)" /> تقييم الكورس
-                  </button>
                 </div>
-
-                {/* Review Form */}
-                <AnimatePresence>
-                  {showReview && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden', marginTop: '2rem', textAlign: 'right' }}>
-                      {reviewSubmitted ? (
-                        <div style={{ background: 'rgba(34, 197, 94, 0.1)', padding: '1rem', borderRadius: '8px', color: '#22c55e', textAlign: 'center' }}>شكراً لك! تم إرسال تقييمك بنجاح.</div>
-                      ) : (
-                        <div style={{ background: 'rgba(0,0,0,0.5)', padding: '1.5rem', borderRadius: '12px' }}>
-                          <h4 style={{ marginBottom: '1rem', fontWeight: 'bold' }}>ما هو تقييمك للكورس؟</h4>
-                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexDirection: 'row-reverse', justifyContent: 'flex-end' }}>
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button key={star} onClick={() => setRating(star)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                                <Star size={32} fill={star <= rating ? "var(--warning)" : "transparent"} color={star <= rating ? "var(--warning)" : "rgba(255,255,255,0.2)"} />
-                              </button>
-                            ))}
-                          </div>
-                          <textarea 
-                            placeholder="اكتب رأيك بالكورس والمدرب هنا... (اختياري)"
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            style={{ width: '100%', height: '100px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '1rem', color: '#fff', marginBottom: '1rem', resize: 'none', fontFamily: 'inherit' }}
-                          />
-                          <button onClick={handleSubmitReview} disabled={isSubmittingReview} style={{ background: 'var(--primary)', color: '#000', padding: '0.8rem 2rem', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>
-                            {isSubmittingReview ? 'جاري الإرسال...' : 'إرسال التقييم'}
-                          </button>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </motion.div>
             )}
 
+            {/* Floating Review Modal */}
+            <AnimatePresence>
+              {showReview && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }} 
+                    animate={{ scale: 1, opacity: 1 }} 
+                    exit={{ scale: 0.9, opacity: 0 }} 
+                    style={{ background: '#111', padding: '2rem', borderRadius: '16px', width: '90%', maxWidth: '500px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}
+                  >
+                    <button onClick={() => setShowReview(false)} style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                      <X size={24} />
+                    </button>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', textAlign: 'center' }}>تقييم الكورس</h3>
+                    
+                    {reviewSubmitted ? (
+                      <div style={{ background: 'rgba(34, 197, 94, 0.1)', padding: '1rem', borderRadius: '8px', color: '#22c55e', textAlign: 'center' }}>
+                        شكراً لك! تم إرسال تقييمك بنجاح.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexDirection: 'row-reverse' }}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button key={star} onClick={() => setRating(star)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                              <Star size={40} fill={star <= rating ? "var(--warning)" : "transparent"} color={star <= rating ? "var(--warning)" : "rgba(255,255,255,0.2)"} />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea 
+                          placeholder="شاركنا رأيك بالكورس والمدرب... (اختياري)"
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                          style={{ width: '100%', height: '120px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '1rem', color: '#fff', resize: 'none', fontFamily: 'inherit' }}
+                        />
+                        <button onClick={handleSubmitReview} disabled={isSubmittingReview} style={{ background: 'var(--primary)', color: '#000', padding: '1rem', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>
+                          {isSubmittingReview ? 'جاري الإرسال...' : 'إرسال التقييم'}
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

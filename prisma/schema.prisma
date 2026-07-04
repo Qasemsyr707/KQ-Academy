@@ -19,6 +19,7 @@ model User {
   updatedAt DateTime @updatedAt
   walletUSD Float    @default(0)
   walletSYP Float    @default(0)
+  points    Int      @default(0)
 
   coursesAsInstructor Course[]     @relation("InstructorCourses")
   enrollments         Enrollment[]
@@ -26,10 +27,14 @@ model User {
   reviews             Review[]
   certificates        Certificate[]
   quizAttempts        QuizAttempt[]
-  questions           CourseQuestion[]
-  answers             CourseAnswer[]
-  walletTransactions  WalletTransaction[]
+  questions             CourseQuestion[]
+  answers               CourseAnswer[]
+  walletTransactions    WalletTransaction[]
   examSimulatorAttempts ExamSimulatorAttempt[]
+  flashcardDecks        FlashcardDeck[]
+  badges                Badge[]
+  communityPosts        CommunityPost[]
+  communityComments     CommunityComment[]
 }
 
 model Course {
@@ -53,6 +58,7 @@ model Course {
   certificates Certificate[]
   coupons      Coupon[]
   questions    CourseQuestion[]
+  careerPaths  CareerPathCourse[]
 }
 
 model Chapter {
@@ -256,4 +262,85 @@ model ExamSimulatorAttempt {
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model FlashcardDeck {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id])
+  flashcards Flashcard[]
+}
+
+model Flashcard {
+  id        String   @id @default(cuid())
+  deckId    String
+  front     String
+  back      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deck      FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+}
+
+model Badge {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  icon      String   // E.g., emoji or lucide icon name
+  description String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CareerPath {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  icon        String?  // lucide icon name
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courses     CareerPathCourse[]
+}
+
+model CareerPathCourse {
+  id           String   @id @default(cuid())
+  careerPathId String
+  courseId     String
+  order        Int      @default(0) // Determines sequence in roadmap
+
+  careerPath   CareerPath @relation(fields: [careerPathId], references: [id], onDelete: Cascade)
+  course       Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([careerPathId, courseId])
+}
+
+model CommunityPost {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String   @db.Text
+  upvotes   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments  CommunityComment[]
+}
+
+model CommunityComment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

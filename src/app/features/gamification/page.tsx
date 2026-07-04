@@ -1,85 +1,218 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Trophy, Star, Medal, Award, Crown, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
 
-export default function GamificationFeature() {
-  const leaderboard = [
-    { rank: 1, name: 'أحمد محمود', points: 12500, badge: '🥇' },
-    { rank: 2, name: 'سارة خالد', points: 11200, badge: '🥈' },
-    { rank: 3, name: 'أنت', points: 9800, badge: '🥉', isCurrentUser: true },
-    { rank: 4, name: 'يوسف العبدالله', points: 8500, badge: '🎓' },
-    { rank: 5, name: 'مريم محمد', points: 8100, badge: '⭐' },
-  ];
+export default function GamificationPage() {
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [myStats, setMyStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [awarding, setAwarding] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [lbRes, meRes] = await Promise.all([
+        fetch('/api/gamification/leaderboard'),
+        fetch('/api/gamification/me')
+      ]);
+      
+      if (lbRes.ok) {
+        const lbData = await lbRes.json();
+        setLeaderboard(lbData.leaderboard || []);
+      }
+      
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        setMyStats(meData);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
+  const handleEarnPoints = async () => {
+    setAwarding(true);
+    try {
+      const res = await fetch('/api/gamification/award', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'DAILY_LOGIN' })
+      });
+      if (res.ok) {
+        await fetchData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setAwarding(false);
+  };
+
+  const getRankColor = (index: number) => {
+    if (index === 0) return 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)'; // Gold
+    if (index === 1) return 'linear-gradient(135deg, #E0E0E0 0%, #BDBDBD 100%)'; // Silver
+    if (index === 2) return 'linear-gradient(135deg, #CD7F32 0%, #A0522D 100%)'; // Bronze
+    return 'rgba(255,255,255,0.05)';
+  };
+
+  const getRankIcon = (index: number) => {
+    if (index === 0) return <Crown size={24} color="#000" />;
+    if (index === 1) return <Medal size={24} color="#000" />;
+    if (index === 2) return <Award size={24} color="#000" />;
+    return <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.5)' }}>{index + 1}</span>;
+  };
 
   return (
-    <div className="container">
-      <nav className="nav">
-        <Link href="/">العودة للرئيسية</Link>
-        <Link href="/features/live-class">الميزة التالية ➡️</Link>
-      </nav>
-
-      <div className="glass-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <h2 className="feature-title">🏆 نظام التلعيب والمكافآت</h2>
-        <p style={{ marginBottom: '2rem', opacity: 0.8 }}>
-          تحويل العملية التعليمية إلى تجربة ممتعة من خلال النقاط ولوحة الصدارة على مستوى الدولة.
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-          <div style={{ background: 'var(--secondary)', padding: '2rem', borderRadius: '12px', textAlign: 'center' }}>
-            <h3 style={{ color: 'var(--accent)', marginBottom: '1rem' }}>مستواك الحالي</h3>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>💎</div>
-            <h4>الفئة الماسية</h4>
-            <p style={{ color: 'var(--success)', marginTop: '0.5rem' }}>9,800 نقطة</p>
-          </div>
-
-          <div style={{ background: 'var(--secondary)', padding: '2rem', borderRadius: '12px' }}>
-            <h3 style={{ marginBottom: '1rem' }}>المهام اليومية</h3>
-            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>📖 اقرأ درسين</span>
-                <span style={{ background: 'var(--success)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem' }}>مكتمل (+50)</span>
-              </li>
-              <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>🎯 أجب عن 10 أسئلة</span>
-                <span style={{ background: 'var(--glass)', border: '1px solid var(--border)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem' }}>0/10 (+100)</span>
-              </li>
-              <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>🤝 ساعد زميلاً في المنتدى</span>
-                <span style={{ background: 'var(--glass)', border: '1px solid var(--border)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem' }}>غير مكتمل (+30)</span>
-              </li>
-            </ul>
-          </div>
+    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '4rem 2rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }} style={{ width: '80px', height: '80px', background: 'rgba(203, 161, 83, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+            <Trophy size={40} color="var(--primary)" />
+          </motion.div>
+          <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1rem', background: 'linear-gradient(to right, #fff, var(--primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            لوحة الشرف والتحديات
+          </h1>
+          <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.6)', maxWidth: '600px', margin: '0 auto' }}>
+            تنافس مع زملائك، اجمع النقاط، وافتح الأوسمة من خلال إتمام الكورسات والمشاركة الفعالة.
+          </p>
         </div>
 
-        <div style={{ background: 'var(--glass)', borderRadius: '12px', overflow: 'hidden' }}>
-          <h3 style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>لوحة الصدارة (هذا الأسبوع)</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
-            <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <th style={{ padding: '1rem' }}>المركز</th>
-                <th style={{ padding: '1rem' }}>الطالب</th>
-                <th style={{ padding: '1rem' }}>النقاط</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((student) => (
-                <tr key={student.rank} style={{ background: student.isCurrentUser ? 'rgba(59, 130, 246, 0.2)' : 'transparent', borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{ fontSize: '1.5rem', marginRight: '0.5rem' }}>{student.badge}</span>
-                    {student.rank}
-                  </td>
-                  <td style={{ padding: '1rem', fontWeight: student.isCurrentUser ? 'bold' : 'normal' }}>
-                    {student.name}
-                  </td>
-                  <td style={{ padding: '1rem', color: 'var(--success)' }}>
-                    {student.points.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '4rem', color: 'rgba(255,255,255,0.5)' }}>جاري التحميل...</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+            
+            {/* My Stats Panel */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <div style={{ background: '#111', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
+                {/* Glow effect */}
+                <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.2, borderRadius: '50%' }} />
+                
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <TrendingUp color="var(--primary)" /> إحصائياتي
+                </h3>
+                
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '16px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>النقاط الحالية</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                      <Star size={24} fill="var(--primary)" />
+                      {myStats?.points || 0}
+                    </div>
+                  </div>
+                  
+                  <div style={{ width: '1px', height: '50px', background: 'rgba(255,255,255,0.1)' }} />
+                  
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>المرتبة</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '2rem', fontWeight: 'bold', color: '#fff' }}>
+                      <Trophy size={24} />
+                      {myStats?.rank || '-'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '2rem' }}>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem' }}>أوسمتي</h4>
+                  {myStats?.badges?.length > 0 ? (
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      {myStats.badges.map((badge: any) => (
+                        <div key={badge.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', width: '100px' }}>
+                          <span style={{ fontSize: '2rem' }}>{badge.icon}</span>
+                          <span style={{ fontSize: '0.8rem', textAlign: 'center' }}>{badge.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                      لم تحصل على أي وسام بعد.<br/>أكمل الكورسات لتبدأ بجمع الأوسمة!
+                    </p>
+                  )}
+                </div>
+
+                <button 
+                  onClick={handleEarnPoints}
+                  disabled={awarding}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'var(--primary)', color: '#000', padding: '1rem', borderRadius: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'transform 0.2s' }}
+                  className="hover:scale-[1.02]"
+                >
+                  <Zap size={20} /> {awarding ? 'جاري الإضافة...' : 'اضغط للحصول على 5 نقاط يومية'}
+                </button>
+              </div>
+            </div>
+
+            {/* Leaderboard Panel */}
+            <div style={{ background: '#111', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Crown color="var(--primary)" /> قائمة الأوائل
+              </h3>
+
+              {leaderboard.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '2rem' }}>لا يوجد متصدرين بعد.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {leaderboard.map((user, index) => {
+                    const isTop3 = index < 3;
+                    return (
+                      <motion.div 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        key={user.id} 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between', 
+                          background: getRankColor(index), 
+                          padding: '1rem 1.5rem', 
+                          borderRadius: '16px',
+                          border: isTop3 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                          color: isTop3 ? '#000' : '#fff'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {getRankIcon(index)}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: isTop3 ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                              {user.image ? (
+                                <img src={user.image} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{user.name.charAt(0)}</span>
+                              )}
+                            </div>
+                            <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{user.name} {user.id === myStats?.id && "(أنت)"}</span>
+                          </div>
+                        </div>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                          <Star size={20} fill={isTop3 ? "#000" : "var(--primary)"} color={isTop3 ? "#000" : "var(--primary)"} />
+                          {user.points}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
       </div>
+      
+      <style jsx global>{`
+        .hover\\:scale-\\[1\\.02\\]:hover { transform: scale(1.02); }
+      `}</style>
     </div>
   );
 }

@@ -107,7 +107,7 @@ export default function LoginPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <label style={{ color: '#fff', fontSize: '0.9rem' }}>كلمة المرور</label>
-                <a href="#" style={{ color: 'var(--primary)', fontSize: '0.8rem', textDecoration: 'none' }} className="hover:underline">نسيت كلمة المرور؟</a>
+                <Link href="/forgot-password" style={{ color: 'var(--primary)', fontSize: '0.8rem', textDecoration: 'none' }} className="hover:underline">نسيت كلمة المرور؟</Link>
               </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={20} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)' }} />

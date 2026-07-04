@@ -1,225 +1,195 @@
 'use client';
 
-import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
-import { Headphones, Users, Timer, Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Headphones, Mic, MicOff, Users, ChevronRight, Hash, MessageSquare, Plus, Settings } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 
-const TRACKS = [
-  { id: 'lofi', title: 'Deep Focus Lo-Fi', subtitle: 'موجات ألفا للتركيز العميق', src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
-  { id: 'rain', title: 'صوت المطر والمقهى', subtitle: 'ضوضاء بيضاء للاسترخاء', src: 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg' },
+const mockRooms = [
+  {
+    id: 1,
+    name: 'مراجعة فيزياء - البكالوريا',
+    topic: 'الفيزياء',
+    listeners: 45,
+    speakers: 3,
+    active: true,
+    avatars: [
+      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+      'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop',
+    ]
+  },
+  {
+    id: 2,
+    name: 'تحدي البرمجة بـ React',
+    topic: 'تكنولوجيا',
+    listeners: 120,
+    speakers: 5,
+    active: true,
+    avatars: [
+      'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop',
+      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
+    ]
+  },
+  {
+    id: 3,
+    name: 'نقاش مفتوح: تنظيم الوقت للدراسة',
+    topic: 'تطوير الذات',
+    listeners: 85,
+    speakers: 4,
+    active: false,
+    avatars: [
+      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop',
+    ]
+  }
 ];
 
-export default function StudyRoomsFeature() {
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes pomodoro
-  const [isActive, setIsActive] = useState(false);
-  const [activeUsers] = useState(Math.floor(Math.random() * 500) + 1200);
-
-  // Audio Player State
-  const [activeTrack, setActiveTrack] = useState<string | null>(null);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const toggleTrack = (trackId: string) => {
-    if (activeTrack === trackId) {
-      if (isPlayingAudio) {
-        audioRef.current?.pause();
-        setIsPlayingAudio(false);
-      } else {
-        audioRef.current?.play().catch(e => console.error("Audio playback failed", e));
-        setIsPlayingAudio(true);
-      }
-    } else {
-      setActiveTrack(trackId);
-      setIsPlayingAudio(true);
-      
-      if (audioRef.current) {
-        const newTrack = TRACKS.find(t => t.id === trackId);
-        if (newTrack) {
-          // Synchronously set src and play to satisfy browser autoplay policies
-          audioRef.current.src = newTrack.src;
-          audioRef.current.play().catch(e => {
-            console.error("Audio playback failed", e);
-            setIsPlayingAudio(false);
-          });
-        }
-      }
-    }
-  };
-
-  // Removed the useEffect that previously handled play/pause asynchronously,
-  // because asynchronous playback calls lose the user gesture token in strict browsers.
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(time => time - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsActive(false);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, timeLeft]);
-
-  const toggleTimer = () => setIsActive(!isActive);
-  const resetTimer = () => {
-    setIsActive(false);
-    setTimeLeft(25 * 60);
-  };
-
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
+export default function StudyRoomsPage() {
+  const [activeRoom, setActiveRoom] = useState<number | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
 
   return (
-    <div className="container">
-      <nav className="nav" style={{ marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
-        <Link href="/" className="btn" style={{ padding: '0.5rem 1rem' }}>العودة للرئيسية</Link>
-        <Link href="/features/career-mapping" className="btn btn-solid" style={{ padding: '0.5rem 1rem' }}>الميزة التالية ➡️</Link>
-      </nav>
-
-      <motion.div 
-        className="glass-card" 
-        style={{ 
-          maxWidth: '1000px', 
-          margin: '0 auto',
-          background: 'linear-gradient(to bottom, rgba(30, 20, 50, 0.8), rgba(10, 10, 15, 0.9))',
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* Animated Background Elements */}
-        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', filter: 'blur(40px)', zIndex: 0 }} />
-        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(203, 161, 83, 0.1) 0%, transparent 70%)', filter: 'blur(40px)', zIndex: 0 }} />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
-            <div>
-              <h2 className="feature-title" style={{ color: '#fff', fontSize: '2.5rem' }}>
-                <Headphones size={40} color="var(--primary)" /> غرف الدراسة الافتراضية
-              </h2>
-              <p style={{ opacity: 0.7, fontSize: '1.1rem', maxWidth: '600px' }}>
-                انضم إلى زملائك في بيئة دراسية هادئة ومحفزة. ركز، استمع إلى موسيقى Lo-Fi، وحقق أهدافك اليومية.
-              </p>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', background: 'rgba(255,255,255,0.05)', padding: '0.8rem 1.5rem', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ width: '10px', height: '10px', background: 'var(--success)', borderRadius: '50%', boxShadow: '0 0 10px var(--success)' }} />
-              <Users size={20} color="var(--primary)" />
-              <span style={{ fontWeight: 600 }}>{activeUsers.toLocaleString()} طالب يدرسون الآن</span>
-            </div>
+    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      
+      {/* Navbar */}
+      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+            لوحة التحكم <ChevronRight size={16} />
+          </Link>
+          <div style={{ width: '40px', height: '40px', background: 'rgba(168, 85, 247, 0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Headphones size={24} color="#a855f7" />
           </div>
+          <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>غرف الدراسة الصوتية</h1>
+        </div>
+        <button style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+          <Plus size={18} /> إنشاء غرفة
+        </button>
+      </div>
 
-          <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-            {/* Pomodoro Timer */}
-            <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: '20px', padding: '3rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <Timer size={32} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-              <h3 style={{ marginBottom: '2rem', opacity: 0.8 }}>مؤقت التركيز (بومودورو)</h3>
-              
-              <div style={{ fontSize: '6rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--primary)', textShadow: '0 0 20px rgba(203, 161, 83, 0.3)', marginBottom: '2rem', lineHeight: 1 }}>
-                {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-              </div>
-              
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                <button onClick={toggleTimer} className="btn btn-solid" style={{ borderRadius: '50%', width: '60px', height: '60px', padding: 0 }}>
-                  {isActive ? <Pause size={24} /> : <Play size={24} style={{ marginLeft: '4px' }} />}
-                </button>
-                <button onClick={resetTimer} className="btn" style={{ borderRadius: '50%', width: '60px', height: '60px', padding: 0, background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff' }}>
-                  <RotateCcw size={24} />
-                </button>
-              </div>
+      <div style={{ display: 'flex', height: 'calc(100vh - 81px)' }}>
+        
+        {/* Main Content (Rooms List) */}
+        <div style={{ flex: 1, padding: '3rem 2rem', overflowY: 'auto' }}>
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            
+            <div style={{ marginBottom: '2rem' }}>
+              <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>اكتشف الغرف النشطة</h2>
+              <p style={{ color: 'rgba(255,255,255,0.6)' }}>انضم إلى زملائك، استمع للنقاشات، وشارك أفكارك.</p>
             </div>
 
-            {/* Music & Ambience Player */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '20px', padding: '2rem', flex: 1, border: '1px solid rgba(255,255,255,0.05)' }}>
-                <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Headphones size={20} /> المشغل الصوتي
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {TRACKS.map(track => {
-                    const isCurrentTrack = activeTrack === track.id;
-                    const isCurrentlyPlaying = isCurrentTrack && isPlayingAudio;
-                    
-                    return (
-                      <div 
-                        key={track.id}
-                        onClick={() => toggleTrack(track.id)}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'space-between', 
-                          padding: '1rem', 
-                          background: isCurrentTrack ? 'rgba(203, 161, 83, 0.1)' : 'rgba(255,255,255,0.02)', 
-                          borderRadius: '12px', 
-                          borderLeft: isCurrentTrack ? '4px solid var(--primary)' : '4px solid transparent',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        className="hover:bg-white/5"
-                      >
-                        <div>
-                          <h4 style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {track.title}
-                            {isCurrentlyPlaying && <Volume2 size={14} color="var(--primary)" />}
-                          </h4>
-                          <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>{track.subtitle}</p>
-                        </div>
-                        {isCurrentlyPlaying ? (
-                          <div className="audio-bars">
-                            <span className="bar playing"></span><span className="bar playing"></span><span className="bar playing"></span>
-                          </div>
-                        ) : (
-                          <Play size={20} color={isCurrentTrack ? "var(--primary)" : "rgba(255,255,255,0.4)"} />
-                        )}
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+              {mockRooms.map((room) => (
+                <div 
+                  key={room.id}
+                  onClick={() => setActiveRoom(room.id)}
+                  style={{ 
+                    background: '#111', borderRadius: '24px', padding: '1.5rem', 
+                    border: activeRoom === room.id ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.05)',
+                    cursor: 'pointer', transition: 'all 0.2s', position: 'relative', overflow: 'hidden'
+                  }}
+                >
+                  {room.active && (
+                    <div style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', padding: '0.4rem 1rem', borderBottomLeftRadius: '16px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ width: '6px', height: '6px', background: '#a855f7', borderRadius: '50%', animation: 'pulse 2s infinite' }} />
+                      نشط الآن
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '0.5rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: '0.5rem', marginTop: room.active ? '1rem' : '0' }}>
+                    <Hash size={14} /> {room.topic}
+                  </div>
+                  
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>{room.name}</h3>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {room.avatars.map((avatar, idx) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                          key={idx} src={avatar} alt="User" 
+                          style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #111', marginLeft: '-10px', zIndex: room.avatars.length - idx }} 
+                        />
+                      ))}
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '2px solid #111', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '-10px', fontSize: '0.8rem', zIndex: 0 }}>
+                        +{room.speakers + room.listeners - room.avatars.length}
                       </div>
-                    );
-                  })}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Users size={16} /> {room.listeners} المستمعين
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Mic size={16} /> {room.speakers} المتحدثين
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                {/* Hidden Audio Element */}
-                <audio 
-                  ref={audioRef} 
-                  src={activeTrack ? TRACKS.find(t => t.id === activeTrack)?.src : undefined} 
-                  loop 
-                  onEnded={() => setIsPlayingAudio(false)}
-                />
-              </div>
+              ))}
             </div>
+
           </div>
         </div>
-      </motion.div>
 
-      <style dangerouslySetInnerHTML={{__html: `
-        .audio-bars {
-          display: flex;
-          align-items: flex-end;
-          gap: 3px;
-          height: 20px;
-        }
-        .bar {
-          width: 4px;
-          background: var(--primary);
-          border-radius: 2px;
-        }
-        .bar.playing {
-          animation: bounce 1s infinite alternate ease-in-out;
-        }
-        .bar.playing:nth-child(1) { animation-delay: 0s; height: 10px; }
-        .bar.playing:nth-child(2) { animation-delay: 0.2s; height: 20px; }
-        .bar.playing:nth-child(3) { animation-delay: 0.4s; height: 15px; }
-        @keyframes bounce {
-          from { height: 5px; }
-          to { height: 20px; }
-        }
-        .hover\\:bg-white\\/5:hover { background-color: rgba(255,255,255,0.05) !important; }
-      `}} />
+        {/* Sidebar (Active Room Details) */}
+        {activeRoom && (
+          <motion.div 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 350, opacity: 1 }}
+            style={{ background: '#111', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}
+          >
+            <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h3 style={{ fontWeight: 'bold' }}>الغرفة الحالية</h3>
+                <button onClick={() => setActiveRoom(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}>مغادرة</button>
+              </div>
+
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{ width: '100px', height: '100px', borderRadius: '35%', background: 'rgba(168, 85, 247, 0.1)', margin: '0 auto 1.5rem auto', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={mockRooms.find(r => r.id === activeRoom)?.avatars[0]} alt="Speaker" style={{ width: '100%', height: '100%', borderRadius: '35%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: '#a855f7', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #111' }}>
+                    <Mic size={14} color="#fff" />
+                  </div>
+                </div>
+                <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.3rem' }}>م. أحمد السوري</h4>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>يتحدث الآن...</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: 'auto' }}>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', position: 'relative' }}>
+                      {i < 3 ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={mockRooms[0].avatars[i]} alt="User" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', opacity: i === 0 ? 1 : 0.5 }} />
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button 
+                  onClick={() => setIsMuted(!isMuted)}
+                  style={{ flex: 1, background: isMuted ? 'rgba(255,255,255,0.05)' : 'rgba(239, 68, 68, 0.1)', color: isMuted ? '#fff' : '#ef4444', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+                </button>
+                <button style={{ width: '60px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <MessageSquare size={20} />
+                </button>
+                <button style={{ width: '60px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <Settings size={20} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+      </div>
     </div>
   );
 }

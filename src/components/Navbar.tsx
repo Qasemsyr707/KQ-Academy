@@ -53,25 +53,13 @@ export default function Navbar() {
       <Link href="/" style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        gap: '0.5rem', 
-        fontWeight: 'bold', 
-        fontSize: '1.4rem',
-        textDecoration: 'none',
-        color: '#fff',
         flexShrink: 0
       }}>
-        <div style={{ 
-          width: '36px', height: '36px', 
-          background: 'var(--primary)', 
-          borderRadius: '10px', 
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#000', fontWeight: '900', fontSize: '1rem'
-        }}>KQ</div>
-        <span style={{ 
-          background: 'linear-gradient(135deg, var(--primary), #e0b86a)', 
-          WebkitBackgroundClip: 'text', 
-          WebkitTextFillColor: 'transparent' 
-        }}>Academy</span>
+        <img 
+          src="/logo.png" 
+          alt="KQ Academy Logo" 
+          style={{ height: '48px', width: 'auto', objectFit: 'contain' }} 
+        />
       </Link>
 
       {/* Nav Links */}
@@ -127,7 +115,7 @@ export default function Navbar() {
                 <Link onClick={() => setShowDropdown(false)} href="/instructor" style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', color: '#10b981', fontWeight: 'bold', textDecoration: 'none', fontSize: '0.9rem' }}>👨‍🏫 لوحة المدربين</Link>
               )}
               <Link onClick={() => setShowDropdown(false)} href="/verify" style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', color: '#3b82f6', fontWeight: 'bold', textDecoration: 'none', fontSize: '0.9rem' }}>📜 التحقق من شهادة</Link>
-              <Link onClick={() => setShowDropdown(false)} href="/live-class" style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', color: '#ef4444', fontWeight: 'bold', textDecoration: 'none', fontSize: '0.9rem' }}>🎥 مركز البث المباشر</Link>
+              <Link onClick={() => setShowDropdown(false)} href="/features/live-class" style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', color: '#ef4444', fontWeight: 'bold', textDecoration: 'none', fontSize: '0.9rem' }}>🎥 مركز البث المباشر</Link>
               <Link onClick={() => setShowDropdown(false)} href="/features/flashcards" style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', color: '#4f46e5', textDecoration: 'none', fontSize: '0.9rem' }}>🃏 البطاقات الذكية</Link>
               <Link onClick={() => setShowDropdown(false)} href="/features/exam" style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', color: '#ef4444', textDecoration: 'none', fontSize: '0.9rem' }}>⏱️ محاكي الامتحان</Link>
               <Link onClick={() => setShowDropdown(false)} href="/features/jobs" style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', color: '#7c3aed', textDecoration: 'none', fontSize: '0.9rem' }}>💼 سوق العمل</Link>

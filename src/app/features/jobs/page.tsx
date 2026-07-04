@@ -1,178 +1,202 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Briefcase, MapPin, DollarSign, Clock, Building, Send, Search, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Briefcase, MapPin, DollarSign, Clock, Search, Filter, ChevronRight, Building2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
-const jobsData = [
+const mockJobs = [
   {
     id: 1,
-    company: "Symphony Solutions",
-    role: "مطور واجهات (React.js)",
-    type: "دوام كامل - عن بعد",
-    salary: "$800 - $1200",
-    description: "نبحث عن مطور واجهات متحمس للانضمام لفريقنا للعمل على مشاريع عالمية. يشترط خبرة جيدة في React و Next.js.",
-    requirements: ["React.js", "Next.js", "TypeScript", "Tailwind CSS"],
-    tags: ["عن بعد", "مستوى متوسط"]
+    title: 'مطور واجهات أمامية (React)',
+    company: 'سيريتل (Syriatel)',
+    type: 'دوام كامل',
+    location: 'دمشق، سوريا (أو عن بُعد)',
+    salary: '5,000,000 - 8,000,000 ل.س',
+    posted: 'قبل يومين',
+    tags: ['React', 'Next.js', 'TypeScript'],
+    logo: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=100&h=100&fit=crop'
   },
   {
     id: 2,
-    company: "TechHub Syria",
-    role: "تدريب منتهي بالتوظيف (Backend)",
-    type: "تدريب - حضوري (دمشق)",
-    salary: "مكافأة شهرية",
-    description: "برنامج تدريبي مكثف لمدة 3 أشهر في تطوير النظم الخلفية باستخدام Node.js و PostgreSQL، مع فرصة توظيف للمتميزين.",
-    requirements: ["Node.js", "SQL", "أساسيات البرمجة", "شغف التعلم"],
-    tags: ["تدريب", "مبتدئ", "دمشق"]
+    title: 'متدرب تسويق رقمي',
+    company: 'MTN Syria',
+    type: 'تدريب (Internship)',
+    location: 'دمشق، سوريا',
+    salary: 'مكافأة شهرية',
+    posted: 'قبل 5 ساعات',
+    tags: ['SEO', 'Social Media', 'Content Creation'],
+    logo: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop'
   },
   {
     id: 3,
-    company: "Qube Studios",
-    role: "مصمم واجهات وتجربة مستخدم (UI/UX)",
-    type: "دوام جزئي",
-    salary: "$400 - $600",
-    description: "مطلوب مصمم مبدع للعمل معنا بدوام جزئي لتصميم واجهات تطبيقات هواتف ذكية ومواقع ويب.",
-    requirements: ["Figma", "Adobe XD", "معرفة بأساسيات UX"],
-    tags: ["دوام جزئي", "تصميم"]
+    title: 'مدرس فيزياء (مرحلة ثانوية)',
+    company: 'مدرسة الأوائل الخاصة',
+    type: 'دوام جزئي',
+    location: 'حلب، سوريا',
+    salary: 'يحدد بعد المقابلة',
+    posted: 'قبل أسبوع',
+    tags: ['فيزياء', 'تدريس', 'تواصل'],
+    logo: 'https://images.unsplash.com/photo-1546410531-bd4cb01b524b?w=100&h=100&fit=crop'
   }
 ];
 
-export default function JobsMarketPage() {
-  const [searchTerm, setSearchTerm] = useState('');
+export default function JobsPage() {
+  const [searchQuery, setSearchQuery] = useState('');
   const [appliedJobs, setAppliedJobs] = useState<number[]>([]);
-  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
 
-  const filteredJobs = jobsData.filter(job => 
-    job.role.includes(searchTerm) || 
-    job.company.includes(searchTerm) || 
-    job.tags.some(tag => tag.includes(searchTerm))
+  const filteredJobs = mockJobs.filter(job => 
+    job.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    job.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleApply = (id: number) => {
-    if (!appliedJobs.includes(id)) {
-      setAppliedJobs([...appliedJobs, id]);
-      setSelectedJobId(id);
-      setTimeout(() => setSelectedJobId(null), 3000);
-    }
+    setAppliedJobs(prev => [...prev, id]);
   };
 
   return (
-    <div style={{ minHeight: '100vh', padding: '6rem 2rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* Header Section */}
-      <div style={{ width: '100%', maxWidth: '1000px', marginBottom: '3rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', color: '#fff', marginBottom: '1rem' }}>
-          <Briefcase color="var(--primary)" size={40} /> سوق العمل والتدريب
-        </h1>
-        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
-          فرص حصرية لطلاب وخريجي منصة KQ Academy. تواصل مع أفضل الشركات وابدأ مسيرتك المهنية بثقة.
-        </p>
-      </div>
-
-      {/* Search Bar */}
-      <div style={{ width: '100%', maxWidth: '1000px', marginBottom: '3rem' }}>
-        <div style={{ 
-          display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', 
-          border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '0.5rem 1rem' 
-        }}>
-          <Search color="rgba(255,255,255,0.4)" />
-          <input 
-            type="text" 
-            placeholder="ابحث عن وظيفة، شركة، أو مهارة (مثال: React, دمشق, عن بعد)..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ 
-              background: 'transparent', border: 'none', color: '#fff', width: '100%', 
-              padding: '1rem', fontSize: '1.1rem', outline: 'none'
-            }}
-          />
+      {/* Navbar */}
+      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+            لوحة التحكم <ChevronRight size={16} />
+          </Link>
+          <div style={{ width: '40px', height: '40px', background: 'rgba(124, 58, 237, 0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Briefcase size={24} color="#7c3aed" />
+          </div>
+          <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>سوق العمل والتدريب</h1>
         </div>
       </div>
 
-      {/* Jobs List */}
-      <div style={{ width: '100%', maxWidth: '1000px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {filteredJobs.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '4rem 0' }}>
-            <Briefcase size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.3 }} />
-            <p>لا توجد نتائج مطابقة للبحث.</p>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '3rem 2rem' }}>
+        
+        {/* Search & Filter Header */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.02))', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(124, 58, 237, 0.2)', marginBottom: '3rem', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>ابدأ مسيرتك المهنية الآن</h2>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem auto' }}>
+            نوصلك بأفضل الشركات والمؤسسات لتبدأ رحلتك سواء كمتدرب أو كموظف بدوام كامل.
+          </p>
+          
+          <div style={{ display: 'flex', gap: '1rem', maxWidth: '700px', margin: '0 auto' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search size={20} style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+              <input 
+                type="text" 
+                placeholder="ابحث عن مسمى وظيفي، مهارة، أو شركة..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#fff', outline: 'none', fontSize: '1rem' }}
+              />
+            </div>
+            <button style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '0 1.5rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <Filter size={20} /> تصفية
+            </button>
           </div>
-        ) : (
-          filteredJobs.map((job) => (
-            <motion.div 
-              key={job.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card"
-              style={{ padding: '2rem', borderRadius: '20px', borderLeft: '4px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '1rem' }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '0.5rem' }}>{job.role}</h2>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                    <Building size={16} /> {job.company}
-                  </div>
-                </div>
+        </div>
+
+        {/* Jobs List */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>أحدث الفرص المتاحة</h3>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>{filteredJobs.length} وظيفة</span>
+          </div>
+
+          {filteredJobs.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '4rem 0', color: 'rgba(255,255,255,0.4)' }}>
+              <Briefcase size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.2 }} />
+              <p>لا يوجد وظائف تطابق بحثك حالياً.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {filteredJobs.map((job, index) => {
+                const isApplied = appliedJobs.includes(job.id);
                 
-                {/* Apply Button Logic */}
-                {appliedJobs.includes(job.id) ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontWeight: 'bold', padding: '0.6rem 1.5rem', background: 'rgba(16,185,129,0.1)', borderRadius: '12px' }}>
-                    <CheckCircle size={20} /> تم التقديم
-                  </div>
-                ) : (
-                  <button 
-                    onClick={() => handleApply(job.id)}
-                    className="btn btn-solid" 
-                    style={{ padding: '0.6rem 2rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    key={job.id}
+                    style={{ 
+                      background: '#111', 
+                      borderRadius: '20px', 
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1.5rem'
+                    }}
                   >
-                    <Send size={18} /> قدم الآن
-                  </button>
-                )}
-              </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', gap: '1.5rem' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={job.logo} alt={job.company} style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover' }} />
+                        <div>
+                          <h4 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.3rem' }}>{job.title}</h4>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem' }}>
+                            <Building2 size={16} /> {job.company}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={() => !isApplied && handleApply(job.id)}
+                        disabled={isApplied}
+                        style={{
+                          background: isApplied ? 'rgba(34, 197, 94, 0.1)' : 'var(--primary)',
+                          color: isApplied ? '#22c55e' : '#000',
+                          border: isApplied ? '1px solid rgba(34, 197, 94, 0.3)' : 'none',
+                          padding: '0.8rem 2rem',
+                          borderRadius: '12px',
+                          fontWeight: 'bold',
+                          cursor: isApplied ? 'default' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {isApplied ? (
+                          <>تم التقديم <CheckCircle2 size={18} /></>
+                        ) : (
+                          'تقديم سريع'
+                        )}
+                      </button>
+                    </div>
 
-              <div style={{ display: 'flex', gap: '1.5rem', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', flexWrap: 'wrap' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={16} /> {job.type}</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><DollarSign size={16} /> {job.salary}</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={16} /> منذ يومين</span>
-              </div>
+                    <div style={{ display: 'flex', gap: '2rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <MapPin size={16} /> {job.location}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Briefcase size={16} /> {job.type}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <DollarSign size={16} /> {job.salary}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginRight: 'auto' }}>
+                        <Clock size={16} /> {job.posted}
+                      </div>
+                    </div>
 
-              <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}>{job.description}</p>
-
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                {job.requirements.map(req => (
-                  <span key={req} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', color: '#fff' }}>
-                    {req}
-                  </span>
-                ))}
-                {job.tags.map(tag => (
-                  <span key={tag} style={{ background: 'rgba(203,161,83,0.15)', color: 'var(--primary)', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem' }}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          ))
-        )}
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {job.tags.map((tag, idx) => (
+                        <span key={idx} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.3rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Success Application Overlay */}
-      <AnimatePresence>
-        {selectedJobId && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            style={{
-              position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
-              background: 'var(--success)', color: '#fff', padding: '1rem 2rem', borderRadius: '12px',
-              display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 'bold', boxShadow: '0 10px 30px rgba(16,185,129,0.3)',
-              zIndex: 100
-            }}
-          >
-            <CheckCircle size={24} /> تم إرسال سيرتك الذاتية بنجاح!
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
