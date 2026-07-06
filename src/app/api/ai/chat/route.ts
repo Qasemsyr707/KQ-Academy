@@ -1,59 +1,56 @@
 import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-// Simulated AI responses based on keywords
-const mockResponses: { keywords: string[], reply: string }[] = [
-  {
-    keywords: ['react', 'رياكت'],
-    reply: `React هي مكتبة جافاسكربت لبناء واجهات المستخدم، تم تطويرها بواسطة Facebook. الميزة الأساسية فيها هي استخدام المكونات (Components) التي يمكن إعادة استخدامها. \n\nمثال بسيط لكتابة مكون React:\n\`\`\`javascript\nfunction HelloWorld() {\n  return <h1>مرحباً بك في أكاديمية K&Q!</h1>;\n}\n\`\`\``
-  },
-  {
-    keywords: ['خطأ', 'مشكلة', 'error', 'bug'],
-    reply: `يبدو أنك تواجه خطأً برمجياً. لا تقلق، هذا طبيعي جداً! \nحاول قراءة رسالة الخطأ في الـ Console بعناية، غالباً ما تخبرك بالسطر الذي يحتوي على المشكلة. هل يمكنك نسخ رسالة الخطأ لي لأساعدك بشكل أفضل؟`
-  },
-  {
-    keywords: ['nextjs', 'نكست'],
-    reply: `Next.js هو إطار عمل مبني فوق React. يمنحك ميزات إضافية قوية جداً مثل الرندرة في الخادم (SSR) وتوليد الصفحات الثابتة (SSG)، بالإضافة لنظام توجيه مبني على الملفات (App Router) الذي نستخدمه هنا في المنصة.`
-  },
-  {
-    keywords: ['شكرا', 'يعطيك العافية', 'thanks'],
-    reply: `على الرحب والسعة! أنا هنا دائماً لمساعدتك في رحلتك التعليمية. هل لديك أي استفسارات أخرى؟`
-  }
-];
+// We initialize the Gemini API. If the key is not set, we'll gracefully handle it below.
+const apiKey = process.env.GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'يرجى تسجيل الدخول أولاً لاستخدام المساعد الذكي' }, { status: 401 });
+    if (!session) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
+    }
+
+    if (!apiKey) {
+      return NextResponse.json({ 
+        reply: 'مرحباً بك! لكي أعمل بشكل صحيح، يجب على مدير النظام إضافة مفتاح `GEMINI_API_KEY` في إعدادات البيئة (Vercel). أنا حالياً أعمل في وضع المحاكاة.' 
+      }, { status: 200 });
     }
 
     const { message, history } = await req.json();
 
     if (!message) {
-      return NextResponse.json({ error: 'الرسالة فارغة' }, { status: 400 });
+      return NextResponse.json({ error: 'الرسالة مطلوبة' }, { status: 400 });
     }
 
-    // Simulate network delay for "AI processing"
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: "أنت معلم ذكي وصبور في أكاديمية KQ Academy. مهمتك هي مساعدة الطلاب في فهم المواد الدراسية، وشرح الأكواد البرمجية، والمفاهيم العلمية بطريقة مبسطة ومشجعة باللغة العربية. استخدم التنسيق المناسب والأمثلة كلما أمكن."
+    });
 
-    const msgLower = message.toLowerCase();
-    
-    // Find matching mock response
-    let reply = `سؤال ممتاز! هذا الموضوع يعتبر من الأساسيات المهمة في مسارك التعليمي. أنصحك بمراجعة درس "الأساسيات المتقدمة" في الكورس الخاص بك لفهم أعمق.\n\nوإذا كنت تبحث عن كود برمجي كبداية:\n\`\`\`javascript\n// مثال توضيحي\nconst learn = "Practice makes perfect!";\nconsole.log(learn);\n\`\`\``;
+    // Format history for Gemini API (user -> user, assistant -> model)
+    const formattedHistory = history.map((msg: any) => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
 
-    for (const mock of mockResponses) {
-      if (mock.keywords.some(kw => msgLower.includes(kw))) {
-        reply = mock.reply;
-        break;
-      }
-    }
+    const chat = model.startChat({
+      history: formattedHistory,
+      generationConfig: {
+        maxOutputTokens: 2000,
+      },
+    });
 
-    return NextResponse.json({ reply }, { status: 200 });
+    const result = await chat.sendMessage(message);
+    const response = await result.response;
+    const text = response.text();
 
-  } catch (error) {
-    console.error('AI Chat API Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ أثناء معالجة رسالتك' }, { status: 500 });
+    return NextResponse.json({ reply: text });
+  } catch (error: any) {
+    console.error('Gemini API Error:', error);
+    return NextResponse.json({ error: 'حدث خطأ أثناء معالجة طلبك' }, { status: 500 });
   }
 }
