@@ -1,0 +1,143 @@
+{
+	"info": {
+		"_postman_id": "b9a5c81d-ef12-4c6e-8d9e-12f5a6b7c8d9",
+		"name": "KQ Academy - Mobile App API",
+		"description": "API Documentation for KQ Academy Flutter Application.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Courses",
+			"item": [
+				{
+					"name": "Get Course Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/mobile/courses/COURSE_ID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"mobile",
+								"courses",
+								"COURSE_ID"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Live Classes",
+			"item": [
+				{
+					"name": "Get Live Classes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/mobile/live-classes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"mobile",
+								"live-classes"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Community",
+			"item": [
+				{
+					"name": "Get Community Posts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/mobile/community",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"mobile",
+								"community"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Checkout",
+			"item": [
+				{
+					"name": "Initialize Checkout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"courseId\": \"cuid_here\",\n    \"paymentMethod\": \"STRIPE\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/mobile/checkout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"mobile",
+								"checkout"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://kqacademy.com"
+		},
+		{
+			"key": "token",
+			"value": "YOUR_USER_TOKEN"
+		}
+	]
+}

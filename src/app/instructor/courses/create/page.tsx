@@ -51,14 +51,14 @@ export default function CreateCoursePage() {
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>السعر بالليرة السورية</label>
               <div style={{ position: 'relative' }}>
                 <DollarSign size={20} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)' }} />
-                <input required type="number" min="0" value={priceSYP} onChange={e => setPriceSYP(e.target.value)} placeholder="مثال: 50000" style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+                <input type="number" min="0" value={priceSYP} onChange={e => setPriceSYP(e.target.value)} placeholder="مثال: 50000" style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
               </div>
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>السعر بالدولار</label>
               <div style={{ position: 'relative' }}>
                 <DollarSign size={20} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)' }} />
-                <input required type="number" min="0" value={priceUSD} onChange={e => setPriceUSD(e.target.value)} placeholder="مثال: 50" style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+                <input type="number" min="0" value={priceUSD} onChange={e => setPriceUSD(e.target.value)} placeholder="مثال: 50" style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
               </div>
             </div>
           </div>

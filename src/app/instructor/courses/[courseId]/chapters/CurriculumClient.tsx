@@ -304,7 +304,7 @@ export default function CurriculumClient({ course }: { course: any }) {
                       <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>ملف الفيديو للدرس (MP4)</label>
                       <input 
                         type="file" 
-                        accept="video/*"
+                        accept="video/mp4,video/x-m4v,video/x-matroska,video/avi,video/quicktime,video/*"
                         onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {
                             setNewLessonVideoFile(e.target.files[0]);
