@@ -227,10 +227,10 @@ export default async function VerifyCertificatePage({
                 </svg>
                 <div style={{ width: '140px', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
                 <div style={{ fontSize: '0.85rem', color: '#fff', letterSpacing: '0.05em' }}>
-                  {certificate.course.instructor.name.toUpperCase()}
+                  KHALED REFAI
                 </div>
                 <div style={{ fontSize: '0.65rem', color: 'rgba(203,161,83,0.6)', textAlign: 'right', letterSpacing: '0.1em' }}>
-                  COURSE INSTRUCTOR
+                  EXECUTIVE DIRECTOR
                 </div>
               </div>
 
