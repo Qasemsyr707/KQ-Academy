@@ -51,7 +51,7 @@ export default async function VerifyCertificatePage({
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
     width: 120,
     margin: 1,
-    color: { dark: '#cba153', light: '#0a0f1e' }
+    color: { dark: '#cba153', light: '#050505' }
   });
 
   const issuedDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB', {
@@ -67,87 +67,51 @@ export default async function VerifyCertificatePage({
 
       {/* Back button - hidden on print */}
       <div className="no-print" style={{ width: '100%', maxWidth: '1050px', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/verify" style={{ color: 'rgba(203,161,83,0.8)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
+        <Link href="/verify" style={{ color: 'rgba(203,161,83,0.8)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', fontFamily: "'Montserrat', sans-serif" }}>
           <ArrowRight size={16} /> Back to Verification
         </Link>
         <button
           onClick={() => window.print()}
-          style={{ padding: '0.6rem 1.4rem', background: 'rgba(203,161,83,0.15)', border: '1px solid rgba(203,161,83,0.4)', color: '#cba153', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' }}
+          style={{ padding: '0.6rem 1.4rem', background: 'rgba(203,161,83,0.15)', border: '1px solid rgba(203,161,83,0.4)', color: '#cba153', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontFamily: "'Montserrat', sans-serif" }}
         >
           Download / Print PDF
         </button>
       </div>
 
-      {/* ====== CERTIFICATE ====== */}
+      {/* ====== ADVANCED MODERN CERTIFICATE ====== */}
       <div id="certificate-container" style={{
         width: '100%',
         maxWidth: '1050px',
         aspectRatio: '1.414 / 1',
-        background: 'linear-gradient(160deg, #0d1320 0%, #060912 50%, #0d1320 100%)',
+        background: '#000000', // Pure black
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: '0 30px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(203,161,83,0.2)',
-        fontFamily: "'Georgia', 'Times New Roman', serif",
+        boxShadow: '0 40px 100px rgba(203,161,83,0.15)', // Gold ambient shadow
+        fontFamily: "'Montserrat', sans-serif",
         direction: 'ltr',
       }}>
 
-        {/* Subtle grid background */}
+        {/* Extremely subtle abstract geometric glow instead of borders */}
         <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: 'linear-gradient(rgba(203,161,83,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(203,161,83,0.03) 1px, transparent 1px)',
-          backgroundSize: '40px 40px'
+          position: 'absolute', top: '-10%', left: '-10%',
+          width: '50%', height: '50%',
+          background: 'radial-gradient(ellipse, rgba(203,161,83,0.08) 0%, transparent 60%)',
+          pointerEvents: 'none',
+          filter: 'blur(40px)'
         }} />
-
-        {/* Center radial glow */}
+        
         <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '60%', height: '60%',
-          background: 'radial-gradient(ellipse, rgba(203,161,83,0.06) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
-
-        {/* OUTER GOLD BORDER */}
-        <div style={{
-          position: 'absolute', inset: '14px',
-          border: '2.5px solid rgba(203,161,83,0.7)',
-          pointerEvents: 'none'
-        }} />
-        {/* INNER THIN GOLD BORDER */}
-        <div style={{
-          position: 'absolute', inset: '20px',
-          border: '1px solid rgba(203,161,83,0.3)',
-          pointerEvents: 'none'
-        }} />
-
-        {/* Corner ornaments */}
-        {[
-          { top: '10px', left: '10px' },
-          { top: '10px', right: '10px' },
-          { bottom: '10px', left: '10px' },
-          { bottom: '10px', right: '10px' },
-        ].map((pos, i) => (
-          <div key={i} style={{
-            position: 'absolute', ...pos,
-            width: '28px', height: '28px',
-            borderTop: i < 2 ? '3px solid #cba153' : 'none',
-            borderBottom: i >= 2 ? '3px solid #cba153' : 'none',
-            borderLeft: (i === 0 || i === 2) ? '3px solid #cba153' : 'none',
-            borderRight: (i === 1 || i === 3) ? '3px solid #cba153' : 'none',
-          }} />
-        ))}
-
-        {/* TOP GOLD BAR */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          height: '5px',
-          background: 'linear-gradient(90deg, transparent, #cba153, #f0d080, #cba153, transparent)'
+          position: 'absolute', bottom: '-10%', right: '-10%',
+          width: '50%', height: '50%',
+          background: 'radial-gradient(ellipse, rgba(203,161,83,0.08) 0%, transparent 60%)',
+          pointerEvents: 'none',
+          filter: 'blur(40px)'
         }} />
 
         {/* CONTENT */}
         <div style={{
           position: 'relative', zIndex: 2,
-          padding: '2.5rem 3.5rem',
+          padding: '4rem 5rem',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -157,69 +121,67 @@ export default async function VerifyCertificatePage({
           {/* === HEADER === */}
           <div style={{ textAlign: 'center' }}>
             {/* Logo area */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-              {/* Shield Icon */}
-              <svg width="32" height="36" viewBox="0 0 32 36" fill="none">
-                <path d="M16 2L2 8V18C2 26 9 32.5 16 35C23 32.5 30 26 30 18V8L16 2Z" fill="rgba(203,161,83,0.15)" stroke="#cba153" strokeWidth="1.5"/>
-                <text x="16" y="23" textAnchor="middle" fill="#cba153" fontSize="11" fontWeight="bold" fontFamily="Georgia">KQ</text>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <svg width="28" height="32" viewBox="0 0 32 36" fill="none">
+                <path d="M16 2L2 8V18C2 26 9 32.5 16 35C23 32.5 30 26 30 18V8L16 2Z" fill="rgba(203,161,83,0.05)" stroke="#cba153" strokeWidth="1"/>
+                <text x="16" y="23" textAnchor="middle" fill="#cba153" fontSize="10" fontWeight="bold" fontFamily="Cinzel, serif">KQ</text>
               </svg>
               <div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 'bold', letterSpacing: '0.25em', color: '#cba153', lineHeight: 1 }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', letterSpacing: '0.3em', color: '#cba153', lineHeight: 1, fontFamily: "'Montserrat', sans-serif" }}>
                   KQ ACADEMY
-                </div>
-                <div style={{ fontSize: '0.62rem', letterSpacing: '0.2em', color: 'rgba(203,161,83,0.6)', textTransform: 'uppercase', marginTop: '2px' }}>
-                  Advanced Digital Learning Platform
                 </div>
               </div>
             </div>
 
-            {/* Gold divider with diamond */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', margin: '0.8rem 0' }}>
-              <div style={{ height: '1px', width: '120px', background: 'linear-gradient(to right, transparent, rgba(203,161,83,0.6))' }} />
-              <div style={{ width: '6px', height: '6px', background: '#cba153', transform: 'rotate(45deg)' }} />
-              <div style={{ height: '1px', width: '120px', background: 'linear-gradient(to left, transparent, rgba(203,161,83,0.6))' }} />
-            </div>
-
-            {/* Certificate Title */}
-            <div style={{ fontSize: '2.4rem', fontStyle: 'italic', color: '#cba153', letterSpacing: '0.05em', fontWeight: 'normal', textShadow: '0 0 30px rgba(203,161,83,0.3)', lineHeight: 1.2 }}>
+            {/* Certificate Title in highly elegant font */}
+            <div style={{ 
+              fontSize: '3.5rem', 
+              color: '#cba153', 
+              letterSpacing: '0.05em', 
+              fontWeight: '400', 
+              fontFamily: "'Cinzel', serif",
+              lineHeight: 1.1,
+              marginBottom: '0.5rem'
+            }}>
               Certificate of Completion
             </div>
+            
+            {/* Ultra minimal divider */}
+            <div style={{ width: '40px', height: '2px', background: '#cba153', margin: '0 auto' }} />
           </div>
 
           {/* === BODY === */}
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.1em', marginBottom: '0.6rem' }}>
-              THIS IS TO CERTIFY THAT
+          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+              This is to certify that
             </p>
+            
             <h2 style={{
-              fontSize: '2.6rem',
-              fontWeight: 'bold',
+              fontSize: '3.2rem',
+              fontWeight: '300',
               color: '#ffffff',
-              textShadow: '0 0 40px rgba(203,161,83,0.25)',
-              letterSpacing: '0.05em',
-              margin: '0 0 0.7rem 0',
-              lineHeight: 1
+              letterSpacing: '0.08em',
+              margin: '0 0 1.5rem 0',
+              lineHeight: 1,
+              fontFamily: "'Cinzel', serif",
             }}>
               {certificate.user.name?.toUpperCase()}
             </h2>
-            <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em', marginBottom: '0.6rem' }}>
-              has successfully completed all requirements of the course
+            
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', marginBottom: '1rem', textTransform: 'uppercase' }}>
+              Has successfully achieved the standards required for
             </p>
+            
             <h3 style={{
-              fontSize: '1.6rem',
-              color: '#5eead4',
-              fontWeight: 'bold',
-              fontStyle: 'italic',
-              margin: '0 0 0.8rem 0',
-              textShadow: '0 0 20px rgba(94,234,212,0.2)'
+              fontSize: '1.8rem',
+              color: '#cba153', // Changed from cyan to gold to match brand
+              fontWeight: '400',
+              margin: '0',
+              fontFamily: "'Cinzel', serif",
+              letterSpacing: '0.05em'
             }}>
-              "{certificate.course.title}"
+              {certificate.course.title.toUpperCase()}
             </h3>
-
-            {/* Stars separator */}
-            <div style={{ color: 'rgba(203,161,83,0.5)', letterSpacing: '1rem', fontSize: '0.8rem' }}>
-              ✦ ✦ ✦
-            </div>
           </div>
 
           {/* === FOOTER: 3 columns === */}
@@ -227,86 +189,63 @@ export default async function VerifyCertificatePage({
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr',
             alignItems: 'flex-end',
-            borderTop: '1px solid rgba(203,161,83,0.2)',
-            paddingTop: '1.2rem',
-            gap: '1rem'
+            marginTop: 'auto',
+            paddingTop: '2rem'
           }}>
 
-            {/* LEFT: QR Code */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.3rem' }}>
-              <img src={qrDataUrl} alt="Verification QR" style={{ width: '90px', height: '90px', borderRadius: '8px' }} />
-              <div style={{ fontSize: '0.62rem', color: 'rgba(203,161,83,0.6)', letterSpacing: '0.05em' }}>SCAN TO VERIFY</div>
-              <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: 'rgba(203,161,83,0.8)', letterSpacing: '0.05em' }}>{shortId}</div>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)' }}>Issued: {issuedDate}</div>
+            {/* LEFT: QR Code (Minimal) */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+              <img src={qrDataUrl} alt="Verification QR" style={{ width: '80px', height: '80px', opacity: 0.9 }} />
+              <div style={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'rgba(203,161,83,0.7)', letterSpacing: '0.1em' }}>
+                ID: {shortId}
+              </div>
             </div>
 
-            {/* CENTER: Gold Seal */}
+            {/* CENTER: Modern Minimal Seal */}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ position: 'relative', width: '100px', height: '100px' }}>
-                {/* Outer ring */}
+              <div style={{ position: 'relative', width: '90px', height: '90px' }}>
                 <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
-                  <circle cx="50" cy="50" r="46" fill="none" stroke="#cba153" strokeWidth="1.5" strokeDasharray="3,2" />
-                  <circle cx="50" cy="50" r="38" fill="rgba(203,161,83,0.08)" stroke="#cba153" strokeWidth="1" />
-                  {/* Circular text */}
-                  <path id="textCircle" d="M 50,50 m -33,0 a 33,33 0 1,1 66,0 a 33,33 0 1,1 -66,0" fill="none" />
-                  <text fontSize="6.5" fill="rgba(203,161,83,0.8)" letterSpacing="3">
-                    <textPath href="#textCircle">CERTIFIED &amp; ACCREDITED • KQ ACADEMY •</textPath>
-                  </text>
-                  {/* KQ in center */}
-                  <text x="50" y="46" textAnchor="middle" fill="#cba153" fontSize="18" fontWeight="bold" fontFamily="Georgia">KQ</text>
-                  <text x="50" y="57" textAnchor="middle" fill="rgba(203,161,83,0.7)" fontSize="5.5" letterSpacing="1">ACADEMY</text>
-                  {/* Stars around */}
-                  {[0, 60, 120, 180, 240, 300].map((angle, i) => {
-                    const rad = (angle * Math.PI) / 180;
-                    const x = 50 + 29 * Math.cos(rad);
-                    const y = 50 + 29 * Math.sin(rad);
-                    return <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fill="rgba(203,161,83,0.5)" fontSize="4">★</text>;
-                  })}
+                  <circle cx="50" cy="50" r="48" fill="none" stroke="#cba153" strokeWidth="0.5" />
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(203,161,83,0.3)" strokeWidth="1" strokeDasharray="4,4" />
+                  <text x="50" y="45" textAnchor="middle" fill="#cba153" fontSize="22" fontFamily="Cinzel, serif">KQ</text>
+                  <text x="50" y="58" textAnchor="middle" fill="rgba(203,161,83,0.7)" fontSize="6" letterSpacing="2" fontFamily="Montserrat, sans-serif">VERIFIED</text>
+                  <path d="M30 65 L70 65" stroke="rgba(203,161,83,0.3)" strokeWidth="0.5" />
+                  <text x="50" y="72" textAnchor="middle" fill="rgba(203,161,83,0.5)" fontSize="5" letterSpacing="1" fontFamily="Montserrat, sans-serif">{new Date(certificate.issuedAt).getFullYear()}</text>
                 </svg>
               </div>
             </div>
 
             {/* RIGHT: Signature */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem' }}>
-              {/* Decorative signature SVG */}
-              <svg width="120" height="40" viewBox="0 0 120 40" fill="none" style={{ marginBottom: '0' }}>
-                <path d="M10,30 C20,10 35,5 50,20 C60,30 70,8 85,15 C95,20 105,25 115,15" stroke="rgba(203,161,83,0.8)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-                <path d="M70,15 C75,25 80,28 90,22" stroke="rgba(203,161,83,0.5)" strokeWidth="1" strokeLinecap="round" fill="none"/>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+              <svg width="140" height="40" viewBox="0 0 140 40" fill="none" style={{ marginBottom: '0.5rem' }}>
+                <path d="M10,25 C30,10 40,35 60,20 C70,10 80,30 100,15 C110,5 120,25 130,20" stroke="rgba(203,161,83,0.9)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
               </svg>
-              <div style={{ width: '100%', height: '1px', background: 'rgba(203,161,83,0.4)' }} />
-              <div style={{ fontSize: '0.8rem', color: '#fff', fontStyle: 'italic', textAlign: 'right' }}>
-                {certificate.course.instructor.name}
+              <div style={{ width: '140px', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
+              <div style={{ fontSize: '0.85rem', color: '#fff', letterSpacing: '0.05em' }}>
+                {certificate.course.instructor.name.toUpperCase()}
               </div>
-              <div style={{ fontSize: '0.6rem', color: 'rgba(203,161,83,0.7)', textAlign: 'right', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '0.6rem', color: 'rgba(203,161,83,0.6)', textAlign: 'right', letterSpacing: '0.1em' }}>
                 COURSE INSTRUCTOR
-              </div>
-              <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textAlign: 'right' }}>
-                kqacademy.com
               </div>
             </div>
           </div>
+          
+          {/* Issue Date - Absolute bottom center */}
+          <div style={{ position: 'absolute', bottom: '2.5rem', left: '0', right: '0', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+              Issued on {issuedDate} • kqacademy.com
+            </span>
+          </div>
+
         </div>
 
-        {/* BOTTOM GOLD BAR */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: '4px',
-          background: 'linear-gradient(90deg, transparent, #cba153, #f0d080, #cba153, transparent)'
-        }} />
-
-        {/* Holographic strip on left edge */}
-        <div style={{
-          position: 'absolute', top: '14px', bottom: '14px', left: '14px',
-          width: '5px',
-          background: 'linear-gradient(180deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #c77dff, #ff6b6b)',
-          opacity: 0.4,
-          borderRadius: '2px'
-        }} />
       </div>
 
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600;700&display=swap');
+        
         @media print {
-          body { background: #fff !important; }
+          body { background: #000 !important; }
           .no-print { display: none !important; }
           #certificate-container {
             width: 297mm !important;
