@@ -245,14 +245,17 @@ export default async function VerifyCertificatePage({
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600;700&display=swap');
         
         @media print {
-          body { background: #000 !important; }
+          @page { size: A4 landscape; margin: 0; }
+          body { background: #000 !important; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
           .no-print { display: none !important; }
           #certificate-container {
             width: 297mm !important;
-            max-width: 100% !important;
+            height: 210mm !important;
+            max-width: none !important;
             box-shadow: none !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            border-radius: 0 !important;
           }
         }
       `}</style>
