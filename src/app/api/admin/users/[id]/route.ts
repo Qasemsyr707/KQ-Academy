@@ -8,7 +8,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     if (!authorized) return errorResponse;
 
     const params = await props.params;
-    const { role, walletSYP, walletUSD } = await req.json();
+    const { role, walletSYP, walletUSD, isBanned, banReason, bannedUntil, maxLiveStreams } = await req.json();
 
     // Prevent admin from accidentally changing their own role (optional safety)
     if (session?.user?.id === params.id && role !== 'ADMIN') {
@@ -20,7 +20,11 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       data: { 
         role,
         walletSYP: parseFloat(walletSYP) || 0,
-        walletUSD: parseFloat(walletUSD) || 0
+        walletUSD: parseFloat(walletUSD) || 0,
+        isBanned: Boolean(isBanned),
+        banReason: banReason || null,
+        bannedUntil: bannedUntil ? new Date(bannedUntil) : null,
+        maxLiveStreams: parseInt(maxLiveStreams) || 5
       }
     });
 

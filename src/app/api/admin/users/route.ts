@@ -16,6 +16,9 @@ export async function GET() {
         role: true,
         walletSYP: true,
         walletUSD: true,
+        isBanned: true,
+        banReason: true,
+        maxLiveStreams: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' }

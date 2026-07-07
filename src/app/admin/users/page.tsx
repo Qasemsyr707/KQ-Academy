@@ -18,6 +18,10 @@ export default async function AdminUsersPage() {
       role: true,
       walletSYP: true,
       walletUSD: true,
+      isBanned: true,
+      banReason: true,
+      bannedUntil: true,
+      maxLiveStreams: true,
       createdAt: true,
     },
     orderBy: { createdAt: 'desc' }

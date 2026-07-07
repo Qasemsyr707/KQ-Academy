@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import WalletClient from './WalletClient';
 import Link from 'next/link';
+import { ChevronRight, Wallet } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,31 +32,72 @@ export default async function WalletPage() {
   });
 
   return (
-    <div style={{ padding: '2rem 5%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>محفظتي (K&Q Wallet)</h1>
-        <Link href="/dashboard" style={{ color: '#fff', textDecoration: 'none', fontWeight: 'bold', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}>
-          العودة للوحة القيادة
-        </Link>
-      </div>
+    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff' }}>
+      
+      {/* Top Accent Line */}
+      <div style={{ height: '4px', background: 'linear-gradient(to right, var(--primary), #b8852a, #3b82f6)', width: '100%' }} />
 
-      {/* Balance Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-        <div style={{ background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', padding: '2rem', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
-          <h3 style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.5rem' }}>الرصيد بالدولار (USD)</h3>
-          <p style={{ fontSize: '3rem', fontWeight: 'bold' }}>
-            ${user.walletUSD.toLocaleString()}
-          </p>
+      <div style={{ padding: '3rem 5%', maxWidth: '1400px', margin: '0 auto' }}>
+        
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+          <div>
+            <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.5rem', textDecoration: 'none' }}>
+              <ChevronRight size={16} /> العودة للوحة القيادة
+            </Link>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem', margin: 0 }}>
+              <Wallet color="var(--primary)" size={40} /> محفظتي (K&Q Wallet)
+            </h1>
+          </div>
         </div>
-        <div style={{ background: 'linear-gradient(135deg, #b45309, #cba153)', padding: '2rem', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
-          <h3 style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.5rem' }}>الرصيد بالليرة السورية (SYP)</h3>
-          <p style={{ fontSize: '3rem', fontWeight: 'bold', color: '#000' }}>
-            {user.walletSYP.toLocaleString()} <span style={{ fontSize: '1.5rem' }}>ل.س</span>
-          </p>
-        </div>
-      </div>
 
-      <WalletClient initialTransactions={transactions} />
+        {/* Balance Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
+          
+          {/* USD Balance */}
+          <div style={{ 
+            background: 'url(/abstract-bg-blue.jpg) center/cover, linear-gradient(135deg, rgba(30,58,138,0.9), rgba(5,5,5,0.9))',
+            backgroundBlendMode: 'overlay',
+            padding: '2.5rem', 
+            borderRadius: '24px', 
+            boxShadow: '0 20px 40px -10px rgba(59,130,246,0.3)',
+            border: '1px solid rgba(59,130,246,0.2)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(59,130,246,0.4) 0%, transparent 70%)', filter: 'blur(20px)' }} />
+            <h3 style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              الرصيد بالدولار (USD)
+            </h3>
+            <p style={{ fontSize: '3.5rem', fontWeight: 900, margin: 0, textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>
+              ${user.walletUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
+
+          {/* SYP Balance */}
+          <div style={{ 
+            background: 'url(/abstract-bg-gold.jpg) center/cover, linear-gradient(135deg, rgba(203,161,83,0.9), rgba(5,5,5,0.9))',
+            backgroundBlendMode: 'overlay',
+            padding: '2.5rem', 
+            borderRadius: '24px', 
+            boxShadow: '0 20px 40px -10px rgba(203,161,83,0.3)',
+            border: '1px solid rgba(203,161,83,0.2)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(203,161,83,0.4) 0%, transparent 70%)', filter: 'blur(20px)' }} />
+            <h3 style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.9)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              الرصيد بالليرة السورية (SYP)
+            </h3>
+            <p style={{ fontSize: '3.5rem', fontWeight: 900, margin: 0, color: '#fff', textShadow: '0 0 20px rgba(203,161,83,0.5)' }}>
+              {user.walletSYP.toLocaleString()} <span style={{ fontSize: '1.5rem', fontWeight: 600, opacity: 0.8 }}>ل.س</span>
+            </p>
+          </div>
+
+        </div>
+
+        <WalletClient initialTransactions={transactions} />
+      </div>
     </div>
   );
 }

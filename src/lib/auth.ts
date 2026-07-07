@@ -28,6 +28,10 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) return null;
 
+        if (user.isBanned) {
+          throw new Error(user.banReason || 'تم حظر هذا الحساب من قبل الإدارة.');
+        }
+
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
         if (!isPasswordValid) return null;
 

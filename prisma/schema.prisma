@@ -20,6 +20,21 @@ model User {
   walletUSD Float    @default(0)
   walletSYP Float    @default(0)
   points    Int      @default(0)
+  isBanned  Boolean  @default(false)
+  banReason String?
+  bannedUntil DateTime?
+  maxLiveStreams Int @default(5)
+
+  // Affiliate
+  affiliateCode  String?  @unique @default(cuid())
+  referredById   String?
+  referredBy     User?    @relation("Referrals", fields: [referredById], references: [id])
+  referrals      User[]   @relation("Referrals")
+  affiliateEarnings AffiliateEarning[] @relation("AffiliateOwner")
+  affiliateGeneratedEarnings AffiliateEarning[] @relation("AffiliateBuyer")
+
+  // Subscriptions
+  subscriptions  UserSubscription[]
 
   coursesAsInstructor Course[]     @relation("InstructorCourses")
   enrollments         Enrollment[]
@@ -36,6 +51,9 @@ model User {
   communityPosts        CommunityPost[]
   communityComments     CommunityComment[]
   shorts                Short[]
+  liveClasses           LiveClass[]
+  matchmakingRequests   MatchmakingRequest[] @relation("UserMatchmaking")
+  matchedWithRequests   MatchmakingRequest[] @relation("UserMatchedWith")
 }
 
 model Course {
@@ -47,6 +65,7 @@ model Course {
   category    String
   thumbnail   String?
   rating      Float    @default(0.0)
+  status      String   @default("PUBLISHED") // PENDING, PUBLISHED, REJECTED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -60,6 +79,7 @@ model Course {
   coupons      Coupon[]
   questions    CourseQuestion[]
   careerPaths  CareerPathCourse[]
+  bundles      BundleCourse[]
 }
 
 model Chapter {
@@ -157,6 +177,9 @@ model Payment {
   receiptImage  String?
   paymentMethod String
   status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  provider      String   @default("MANUAL") // MANUAL, STRIPE, PAYPAL, TABBY
+  transactionId String?
+  providerResponse String? @db.Text
   userId        String
   courseId      String
   couponId      String?
@@ -239,6 +262,9 @@ model WalletTransaction {
   currency     String   // "USD" or "SYP"
   type         String   // "DEPOSIT", "WITHDRAW", "PURCHASE"
   status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  provider     String   @default("MANUAL")
+  transactionId String?
+  providerResponse String? @db.Text
   receiptImage String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -358,3 +384,137 @@ model Short {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+
+model LiveClass {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  instructorId  String
+  scheduledAt   DateTime
+  status        String   @default("upcoming") // upcoming, live, ended
+  streamUrl     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  instructor    User     @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+}
+
+model StudyRoom {
+  id            String   @id @default(cuid())
+  title         String
+  themeColor    String   @default("#4f46e5")
+  maxUsers      Int      @default(50)
+  currentUsers  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model MatchmakingRequest {
+  id            String   @id @default(cuid())
+  userId        String
+  subject       String
+  status        String   @default("searching") // searching, matched
+  matchedWithId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation("UserMatchmaking", fields: [userId], references: [id], onDelete: Cascade)
+  matchedWith   User?    @relation("UserMatchedWith", fields: [matchedWithId], references: [id], onDelete: SetNull)
+}
+
+// ============================================================
+// AFFILIATE SYSTEM
+// ============================================================
+
+model AffiliateEarning {
+  id          String   @id @default(cuid())
+  ownerId     String   // The affiliate who earned the commission
+  buyerId     String   // The person who made the purchase
+  courseId    String?
+  bundleId    String?
+  amount      Float    // Commission amount in USD
+  status      String   @default("PENDING") // PENDING, PAID
+  createdAt   DateTime @default(now())
+
+  owner       User     @relation("AffiliateOwner", fields: [ownerId], references: [id])
+  buyer       User     @relation("AffiliateBuyer", fields: [buyerId], references: [id])
+}
+
+// ============================================================
+// COURSE BUNDLES
+// ============================================================
+
+model CourseBundle {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  thumbnail   String?
+  price       Float    // Discounted bundle price in USD
+  priceSYP    Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courses     BundleCourse[]
+  payments    BundlePayment[]
+}
+
+model BundleCourse {
+  id       String       @id @default(cuid())
+  bundleId String
+  courseId String
+  order    Int          @default(0)
+
+  bundle   CourseBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  course   Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([bundleId, courseId])
+}
+
+model BundlePayment {
+  id            String       @id @default(cuid())
+  userId        String
+  bundleId      String
+  amount        Float
+  provider      String       @default("MANUAL")
+  transactionId String?
+  status        String       @default("PENDING")
+  createdAt     DateTime     @default(now())
+
+  bundle        CourseBundle @relation(fields: [bundleId], references: [id])
+}
+
+// ============================================================
+// SUBSCRIPTIONS
+// ============================================================
+
+model SubscriptionPlan {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "الخطة الذهبية"
+  description String?  @db.Text
+  priceMonthly Float   // USD per month
+  priceYearly  Float   // USD per year (discounted)
+  features    String   @db.Text // JSON array of feature strings
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id         String           @id @default(cuid())
+  userId     String
+  planId     String
+  period     String           @default("MONTHLY") // MONTHLY, YEARLY
+  status     String           @default("ACTIVE")  // ACTIVE, CANCELLED, EXPIRED
+  startDate  DateTime         @default(now())
+  endDate    DateTime
+  provider   String           @default("MANUAL")
+  transactionId String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  user       User             @relation(fields: [userId], references: [id])
+  plan       SubscriptionPlan @relation(fields: [planId], references: [id])
+}

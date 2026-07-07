@@ -3,10 +3,10 @@ import { prisma } from '@/lib/db';
 
 export async function GET(
   request: Request,
-  { params }: { params: { certId: string } }
+  { params }: { params: Promise<{ certId: string }> }
 ) {
   try {
-    const { certId } = params;
+    const { certId } = await params;
 
     if (!certId) {
       return NextResponse.json({ error: 'يرجى تزويد كود الشهادة' }, { status: 400 });

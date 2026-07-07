@@ -1,33 +1,22 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET() {
   try {
-    // Get top 20 students by points
-    const topUsers = await prisma.user.findMany({
-      where: { role: 'STUDENT' },
+    const users = await prisma.user.findMany({
       orderBy: { points: 'desc' },
       take: 20,
       select: {
         id: true,
         name: true,
         points: true,
-        image: true,
-        badges: {
-          select: {
-            id: true,
-            name: true,
-            icon: true,
-          }
-        }
+        image: true
       }
     });
-
-    return NextResponse.json({ leaderboard: topUsers });
-  } catch (error: any) {
-    console.error('Error fetching leaderboard:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    
+    return NextResponse.json({ leaderboard: users });
+  } catch (error) {
+    console.error('Leaderboard fetch error:', error);
+    return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 });
   }
 }
