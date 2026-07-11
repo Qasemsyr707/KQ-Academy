@@ -248,7 +248,7 @@ export default async function VerifyCertificatePage({
 
       </div>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600;700&display=swap');
         
         @media print {
@@ -265,7 +265,7 @@ export default async function VerifyCertificatePage({
             border-radius: 0 !important;
           }
         }
-      `}</style>
+      ` }} />
     </div>
   );
 }
