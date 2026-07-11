@@ -153,8 +153,27 @@ export default function CurriculumClient({ course }: { course: any }) {
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Set file name automatically if not set
+    if (!attachmentName) {
+      setAttachmentName(file.name);
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachmentUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddAttachment = async (lessonId: string) => {
-    if (!attachmentName || !attachmentUrl) return;
+    if (!attachmentName || !attachmentUrl) {
+      alert('الرجاء كتابة اسم المرفق واختيار الملف أو وضع رابطه');
+      return;
+    }
     try {
       const res = await fetch('/api/attachments', {
         method: 'POST',
@@ -252,24 +271,43 @@ export default function CurriculumClient({ course }: { course: any }) {
 
                       {/* Add Attachment Form inside Lesson */}
                       {addingAttachmentTo === lesson.id && (
-                        <div style={{ marginTop: '1rem', background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '8px' }}>
+                        <div style={{ marginTop: '1rem', background: 'rgba(0,0,0,0.3)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(203,161,83,0.2)' }}>
+                           <h4 style={{ fontSize: '0.9rem', color: '#cba153', marginBottom: '1rem' }}>رفع ملف مرفق (PDF, صور, أو ملفات مضغوطة)</h4>
                            <input 
                             type="text" 
                             placeholder="اسم الملف (مثال: ملخص الدرس PDF)"
                             value={attachmentName}
                             onChange={(e) => setAttachmentName(e.target.value)}
-                            style={{ width: '100%', padding: '0.6rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', marginBottom: '0.5rem' }}
+                            style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', marginBottom: '1rem' }}
                           />
-                          <input 
-                            type="url" 
-                            placeholder="رابط الملف (URL)"
-                            value={attachmentUrl}
-                            onChange={(e) => setAttachmentUrl(e.target.value)}
-                            style={{ width: '100%', padding: '0.6rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', marginBottom: '0.5rem' }}
-                          />
+                          
+                          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'rgba(203,161,83,0.1)', border: '1px dashed #cba153', borderRadius: '8px', padding: '1rem', textAlign: 'center', cursor: 'pointer' }}>
+                              <span style={{ fontSize: '0.85rem', color: '#cba153' }}>{attachmentUrl && attachmentUrl.startsWith('data:') ? 'تم اختيار الملف بنجاح ✅' : '📥 اضغط هنا لرفع ملف من جهازك'}</span>
+                              <input 
+                                type="file" 
+                                accept=".pdf,.png,.jpg,.jpeg,.zip,.rar,.doc,.docx"
+                                onChange={handleFileUpload}
+                                style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: 0, cursor: 'pointer', width: '100%' }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>أو</div>
+                            <input 
+                              type="url" 
+                              placeholder="رابط خارجي للملف (إن وُجد)"
+                              value={attachmentUrl && !attachmentUrl.startsWith('data:') ? attachmentUrl : ''}
+                              onChange={(e) => {
+                                if(!attachmentUrl.startsWith('data:')) {
+                                  setAttachmentUrl(e.target.value);
+                                }
+                              }}
+                              style={{ flex: 1, padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
+                            />
+                          </div>
+
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button onClick={() => handleAddAttachment(lesson.id)} style={{ padding: '0.4rem 1rem', background: 'var(--primary)', color: '#000', borderRadius: '4px', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}>حفظ المرفق</button>
-                            <button onClick={() => setAddingAttachmentTo(null)} style={{ padding: '0.4rem 1rem', background: 'transparent', color: '#fff', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.8rem' }}>إلغاء</button>
+                            <button onClick={() => handleAddAttachment(lesson.id)} style={{ padding: '0.6rem 1.2rem', background: 'var(--primary)', color: '#000', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>حفظ المرفق</button>
+                            <button onClick={() => { setAddingAttachmentTo(null); setAttachmentUrl(''); setAttachmentName(''); }} style={{ padding: '0.6rem 1.2rem', background: 'transparent', color: '#fff', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.9rem' }}>إلغاء</button>
                           </div>
                         </div>
                       )}
