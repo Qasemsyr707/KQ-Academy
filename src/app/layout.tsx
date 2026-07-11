@@ -8,7 +8,35 @@ import Navbar from '@/components/Navbar';
 
 export const metadata: Metadata = {
   title: 'KQ Academy | أكاديمية KQ للتعليم الإلكتروني',
-  description: 'منصة تعليم إلكتروني متكاملة للمناهج السورية والمهارات المهنية.',
+  description: 'منصة تعليم إلكتروني متكاملة للمناهج السورية والمهارات المهنية. كورسات بكالوريا، تاسع، وتطوير مهني بشهادات معتمدة.',
+  keywords: ['تعليم', 'أكاديمية', 'سوريا', 'بكالوريا', 'تاسع', 'كورسات', 'مهارات', 'برمجة', 'لغات', 'KQ Academy', 'KQ', 'شهادات معتمدة'],
+  authors: [{ name: 'KQ Academy' }],
+  openGraph: {
+    title: 'KQ Academy | بوابتك نحو التميز',
+    description: 'أفضل منصة تعليمية سورية للمناهج والدورات المهنية',
+    url: 'https://kqacademy.com',
+    siteName: 'KQ Academy',
+    images: [
+      {
+        url: 'https://kqacademy.com/api/og', // Placeholder for OG Image
+        width: 1200,
+        height: 630,
+        alt: 'KQ Academy Preview',
+      },
+    ],
+    locale: 'ar_SY',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'KQ Academy | للتعليم الإلكتروني',
+    description: 'أفضل الكورسات في سوريا بشهادات معتمدة',
+    images: ['https://kqacademy.com/api/og'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -21,6 +49,20 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <Navbar />
+          {/* Google Analytics - loads only if NEXT_PUBLIC_GA_ID is set */}
+          {process.env.NEXT_PUBLIC_GA_ID && (
+            <>
+              <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="afterInteractive" />
+              <Script id="google-analytics" strategy="afterInteractive">
+                {`
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){window.dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+                `}
+              </Script>
+            </>
+          )}
           <main style={{ marginTop: '80px', minHeight: 'calc(100vh - 80px)' }}>
             {children}
           </main>
