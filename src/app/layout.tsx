@@ -39,6 +39,25 @@ export const metadata: Metadata = {
   },
 };
 
+const orgSchema = {
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": "KQ Academy",
+  "url": "https://kqacademy.com",
+  "logo": "https://kqacademy.com/logo.png",
+  "description": "منصة تعليم إلكتروني متكاملة للمناهج السورية والمهارات المهنية.",
+  "sameAs": [
+    "https://facebook.com/kqacademy",
+    "https://instagram.com/kqacademy",
+    "https://linkedin.com/company/kqacademy"
+  ],
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "SY",
+    "addressRegion": "Damascus"
+  }
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -46,6 +65,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+        />
+      </head>
       <body>
         <AuthProvider>
           <Navbar />

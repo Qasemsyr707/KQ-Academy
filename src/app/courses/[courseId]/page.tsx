@@ -3,6 +3,37 @@ import { notFound } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import CourseDetailsClient from './CourseDetailsClient';
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: { courseId: string } }): Promise<Metadata> {
+  try {
+    const course = await prisma.course.findUnique({
+      where: { id: params.courseId },
+      include: { instructor: true }
+    });
+
+    if (!course) {
+      return { title: 'كورس غير موجود | KQ Academy' };
+    }
+
+    const title = `${course.title} - أفضل كورس في سوريا والوطن العربي | KQ Academy`;
+    const description = `تعلم ${course.title} مع ${course.instructor.name}. كورس احترافي معتمد في سوريا، الأردن، العراق، والسعودية. احصل على شهادة معتمدة وابدأ رحلتك المهنية الآن.`;
+    
+    return {
+      title,
+      description,
+      keywords: [course.title, course.category, 'كورس', 'دورة', 'سوريا', 'الأردن', 'العراق', 'السعودية', 'الخليج', 'تعلم', 'أونلاين', course.instructor.name, 'KQ Academy'],
+      openGraph: {
+        title,
+        description,
+        url: `https://kqacademy.com/courses/${course.id}`,
+        images: course.thumbnail ? [{ url: course.thumbnail }] : [],
+      },
+    };
+  } catch (error) {
+    return { title: 'الكورس | KQ Academy' };
+  }
+}
 
 export default async function CourseDetailsPage({ params }: { params: { courseId: string } }) {
   try {
@@ -75,7 +106,43 @@ export default async function CourseDetailsPage({ params }: { params: { courseId
       ]
     };
 
-    return <CourseDetailsClient course={displayCourse} isEnrolled={isEnrolled} />;
+    };
+
+    const courseSchema = {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      "name": displayCourse.title,
+      "description": displayCourse.description || `أفضل كورس لتعلم ${displayCourse.title} في سوريا والوطن العربي.`,
+      "provider": {
+        "@type": "Organization",
+        "name": "KQ Academy",
+        "sameAs": "https://kqacademy.com"
+      },
+      "author": {
+        "@type": "Person",
+        "name": displayCourse.instructor.name
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": displayCourse.rating > 0 ? displayCourse.rating : 5,
+        "ratingCount": displayCourse.reviews?.length > 0 ? displayCourse.reviews.length : 1
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": displayCourse.price,
+        "priceCurrency": "USD"
+      }
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }}
+        />
+        <CourseDetailsClient course={displayCourse} isEnrolled={isEnrolled} />
+      </>
+    );
   } catch (error) {
     console.error("Error loading course details:", error);
     // Render a friendly error page instead of crashing with 500
