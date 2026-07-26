@@ -211,11 +211,37 @@ export default function CurriculumClient({ course }: { course: any }) {
     }
   };
 
+  const handlePublish = async () => {
+    if (!confirm('هل أنت متأكد من نشر هذا الكورس للطلاب؟')) return;
+    
+    try {
+      const res = await fetch(`/api/courses/${course.id}/publish`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        alert('تم نشر الكورس بنجاح!');
+        router.push('/instructor/courses');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'فشل نشر الكورس');
+      }
+    } catch (e) {
+      alert('حدث خطأ أثناء النشر');
+    }
+  };
+
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto', color: '#fff' }}>
-      <Link href="/instructor/courses" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', marginBottom: '2rem' }}>
-        <ArrowRight size={20} /> العودة للكورسات
-      </Link>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <Link href="/instructor/courses" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
+          <ArrowRight size={20} /> العودة للكورسات
+        </Link>
+        {course.status !== 'PUBLISHED' && (
+          <button onClick={handlePublish} style={{ padding: '0.8rem 1.5rem', background: 'var(--success, #22c55e)', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+            نشر الكورس للطلاب 🚀
+          </button>
+        )}
+      </div>
 
       <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>منهج الكورس: {course.title}</h1>
       <p style={{ opacity: 0.7, marginBottom: '2rem' }}>قم بتقسيم كورس الخاص بك إلى فصول، وأضف الدروس والمرفقات والاختبارات.</p>

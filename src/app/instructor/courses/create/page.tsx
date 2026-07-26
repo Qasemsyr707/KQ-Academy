@@ -1,26 +1,91 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Upload, DollarSign, List, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CreateCoursePage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceSYP, setPriceSYP] = useState('');
   const [priceUSD, setPriceUSD] = useState('');
   const [category, setCategory] = useState('');
-  
+  const [customCategory, setCustomCategory] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('حجم الصورة يجب أن يكون أقل من 5 ميغابايت');
+        return;
+      }
+      setThumbnailFile(file);
+      setThumbnailPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Fallback/Mock logic for creation since API is not implemented yet
-    alert('تم إضافة الكورس بنجاح!');
-    router.push('/instructor/courses');
+
+    try {
+      let uploadedThumbnailUrl = '';
+
+      if (thumbnailFile) {
+        const formData = new FormData();
+        formData.append('image', thumbnailFile);
+        
+        const uploadRes = await fetch('/api/upload/image', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadRes.ok) throw new Error('فشل رفع الصورة المصغرة تأكد من مجلد الرفع');
+        const uploadData = await uploadRes.json();
+        uploadedThumbnailUrl = uploadData.url;
+      }
+
+      const finalCategory = category === 'أخرى' ? customCategory : category;
+      if (!finalCategory) {
+        throw new Error('يرجى اختيار التصنيف أو كتابته');
+      }
+
+      const courseRes = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          price: priceUSD,
+          priceSYP: priceSYP,
+          category: finalCategory,
+          thumbnail: uploadedThumbnailUrl
+        })
+      });
+
+      if (!courseRes.ok) {
+        const err = await courseRes.json();
+        throw new Error(err.error || 'فشل إنشاء الكورس');
+      }
+
+      const data = await courseRes.json();
+      alert('تم إنشاء الكورس بنجاح!');
+      router.push(`/instructor/courses/${data.course.id}/chapters`);
+      
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,16 +139,57 @@ export default function CreateCoursePage() {
                 <option value="اللغات">اللغات</option>
                 <option value="العلوم">العلوم</option>
                 <option value="البكالوريا">البكالوريا</option>
+                <option value="التسويق">التسويق</option>
+                <option value="الأعمال">الأعمال</option>
+                <option value="الطب والصحة">الطب والصحة</option>
+                <option value="الهندسة">الهندسة</option>
+                <option value="الفنون والموسيقى">الفنون والموسيقى</option>
+                <option value="تطوير الذات">تطوير الذات</option>
+                <option value="أخرى">أخرى (كتابة يدوية)</option>
               </select>
             </div>
+            {category === 'أخرى' && (
+              <div style={{ marginTop: '0.8rem' }}>
+                <input required type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="اكتب التصنيف هنا..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(203,161,83,0.5)', color: '#fff' }} />
+              </div>
+            )}
           </div>
 
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>الصورة المصغرة للكورس</label>
-            <div style={{ background: 'rgba(0,0,0,0.3)', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '12px', padding: '2rem', textAlign: 'center', cursor: 'pointer' }}>
-              <ImageIcon size={40} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
-              <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>اضغط هنا لرفع صورة</p>
-              <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>PNG, JPG, GIF (Max. 5MB)</p>
+            <input 
+              type="file" 
+              accept="image/png, image/jpeg, image/gif" 
+              ref={fileInputRef} 
+              onChange={handleImageChange} 
+              style={{ display: 'none' }} 
+            />
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              style={{ 
+                background: 'rgba(0,0,0,0.3)', 
+                border: '2px dashed rgba(255,255,255,0.1)', 
+                borderRadius: '12px', 
+                padding: thumbnailPreview ? '0' : '2rem', 
+                textAlign: 'center', 
+                cursor: 'pointer',
+                overflow: 'hidden',
+                position: 'relative',
+                minHeight: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}>
+              {thumbnailPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={thumbnailPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+              ) : (
+                <>
+                  <ImageIcon size={40} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
+                  <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>اضغط هنا لرفع صورة</p>
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>PNG, JPG, GIF (Max. 5MB)</p>
+                </>
+              )}
             </div>
           </div>
 
@@ -95,3 +201,4 @@ export default function CreateCoursePage() {
     </div>
   );
 }
+

@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
-    const { title, description, price, priceSYP, category } = await req.json();
+    const { title, description, price, priceSYP, category, thumbnail } = await req.json();
 
     if (!title) {
       return NextResponse.json({ error: 'عنوان الكورس مطلوب' }, { status: 400 });
@@ -19,12 +19,12 @@ export async function POST(req: Request) {
       data: {
         title,
         description,
-        price,
-        priceSYP,
+        price: Number(price) || 0,
+        priceSYP: Number(priceSYP) || 0,
         category,
         instructorId: userId,
-        // Mocking a default thumbnail gradient based on title length just for aesthetics
-        thumbnail: `linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #0f172a 100%)`
+        status: 'PENDING', // Draft/Pending until published
+        thumbnail: thumbnail || `linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #0f172a 100%)`
       }
     });
 
