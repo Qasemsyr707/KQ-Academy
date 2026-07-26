@@ -40,17 +40,13 @@ export default function CreateCoursePage() {
       let uploadedThumbnailUrl = '';
 
       if (thumbnailFile) {
-        const formData = new FormData();
-        formData.append('image', thumbnailFile);
-        
-        const uploadRes = await fetch('/api/upload/image', {
-          method: 'POST',
-          body: formData
+        // Convert the image file to base64 string to bypass Vercel storage issues
+        uploadedThumbnailUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(thumbnailFile);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = error => reject(error);
         });
-        
-        if (!uploadRes.ok) throw new Error('فشل رفع الصورة المصغرة تأكد من مجلد الرفع');
-        const uploadData = await uploadRes.json();
-        uploadedThumbnailUrl = uploadData.url;
       }
 
       const finalCategory = category === 'أخرى' ? customCategory : category;

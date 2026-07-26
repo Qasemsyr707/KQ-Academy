@@ -106,8 +106,6 @@ export default async function CourseDetailsPage({ params }: { params: { courseId
       ]
     };
 
-    };
-
     const courseSchema = {
       "@context": "https://schema.org",
       "@type": "Course",
