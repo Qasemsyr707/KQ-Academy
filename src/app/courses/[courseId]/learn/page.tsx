@@ -3,8 +3,9 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import CoursePlayerClient from './CoursePlayerClient';
 
-export default async function CourseLearnPage({ params }: { params: { courseId: string } }) {
+export default async function CourseLearnPage({ params }: { params: Promise<{ courseId: string }> }) {
   const session = await getServerSession();
+  const resolvedParams = await params;
 
   if (!session) {
     redirect('/login');
@@ -15,7 +16,7 @@ export default async function CourseLearnPage({ params }: { params: { courseId: 
     where: {
       userId_courseId: {
         userId: (session.user as any).id,
-        courseId: params.courseId
+        courseId: resolvedParams.courseId
       }
     }
   });
@@ -27,7 +28,7 @@ export default async function CourseLearnPage({ params }: { params: { courseId: 
 
   // Fetch course with chapters, lessons, attachments, and quizzes
   const course = await prisma.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: resolvedParams.courseId },
     include: {
       chapters: {
         orderBy: { order: 'asc' },

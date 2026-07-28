@@ -6,11 +6,12 @@ import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ChaptersManagementPage({ params }: { params: { courseId: string } }) {
+export default async function ChaptersManagementPage({ params }: { params: Promise<{ courseId: string }> }) {
   const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR']);
+  const resolvedParams = await params;
 
   const course = await prisma.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: resolvedParams.courseId },
     include: {
       chapters: {
         include: { lessons: true },

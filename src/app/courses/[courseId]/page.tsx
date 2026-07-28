@@ -5,10 +5,11 @@ import { authOptions } from '@/lib/auth';
 import CourseDetailsClient from './CourseDetailsClient';
 import { Metadata } from 'next';
 
-export async function generateMetadata({ params }: { params: { courseId: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ courseId: string }> }): Promise<Metadata> {
   try {
+    const resolvedParams = await params;
     const course = await prisma.course.findUnique({
-      where: { id: params.courseId },
+      where: { id: resolvedParams.courseId },
       include: { instructor: true }
     });
 
@@ -35,10 +36,11 @@ export async function generateMetadata({ params }: { params: { courseId: string 
   }
 }
 
-export default async function CourseDetailsPage({ params }: { params: { courseId: string } }) {
+export default async function CourseDetailsPage({ params }: { params: Promise<{ courseId: string }> }) {
   try {
+    const resolvedParams = await params;
     const course = await prisma.course.findUnique({
-      where: { id: params.courseId },
+      where: { id: resolvedParams.courseId },
       include: {
         instructor: true,
         reviews: {
