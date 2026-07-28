@@ -55,7 +55,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
     });
 
     if (!course) {
-      if (params.courseId !== 'demo123') {
+      if (resolvedParams.courseId !== 'demo123') {
         return notFound();
       }
     }
