@@ -18,6 +18,9 @@ function CheckoutContent() {
   const [discount, setDiscount] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [receiptFileName, setReceiptFileName] = useState<string | null>(null);
   const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({});
   const [copiedText, setCopiedText] = useState('');
 
@@ -26,7 +29,6 @@ function CheckoutContent() {
     setCopiedText(text);
     setTimeout(() => setCopiedText(''), 2000);
   };
-
   useEffect(() => {
     if (!courseId) return;
     async function fetchInfo() {
