@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'غير مصرح لك' }, { status: 401 });
     }
 
-    const { courseId, provider, couponCode } = await req.json();
+    const { courseId, provider, couponCode, receiptImage } = await req.json();
 
     const course = await prisma.course.findUnique({
       where: { id: courseId }
@@ -54,7 +54,8 @@ export async function POST(req: Request) {
         status: 'PENDING',
         userId: session.user.id,
         courseId: course.id,
-        couponId: couponId
+        couponId: couponId,
+        receiptImage: provider === 'MANUAL' ? receiptImage : null
       }
     });
 

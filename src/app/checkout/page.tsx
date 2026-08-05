@@ -18,6 +18,8 @@ function CheckoutContent() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [receiptFileName, setReceiptFileName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!courseId) return;
@@ -60,6 +62,11 @@ function CheckoutContent() {
   };
 
   const handleCheckout = async () => {
+    if (paymentMethod === 'MANUAL' && !receiptImage) {
+      setError('يرجى إرفاق صورة الإيصال لإتمام طلب التحويل اليدوي');
+      return;
+    }
+
     setProcessing(true);
     setError('');
     
@@ -84,7 +91,12 @@ function CheckoutContent() {
         const res = await fetch('/api/checkout/gateway', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ courseId, provider: paymentMethod, couponCode: coupon || undefined })
+          body: JSON.stringify({ 
+            courseId, 
+            provider: paymentMethod, 
+            couponCode: coupon || undefined,
+            receiptImage: paymentMethod === 'MANUAL' ? receiptImage : undefined
+          })
         });
         const data = await res.json();
         
@@ -149,7 +161,7 @@ function CheckoutContent() {
           
           <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '2rem' }}>اختر طريقة الدفع</h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'WALLET', 'MANUAL'].map(method => (
               <div 
                 key={method} 
@@ -164,7 +176,8 @@ function CheckoutContent() {
                   flexDirection: 'column',
                   alignItems: 'center',
                   gap: '1rem',
-                  transition: 'all 0.3s'
+                  transition: 'all 0.3s',
+                  position: 'relative'
                 }}
               >
                 {method === 'STRIPE' && <CreditCard size={32} color={paymentMethod === method ? 'var(--primary)' : '#fff'} />}
@@ -195,6 +208,55 @@ function CheckoutContent() {
               </div>
             ))}
           </div>
+
+          <AnimatePresence>
+            {paymentMethod === 'MANUAL' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden', marginBottom: '3rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--warning)' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--warning)' }}>تعليمات التحويل اليدوي</h3>
+                  <div style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                    <p>يرجى تحويل المبلغ الإجمالي إلى أحد الحسابات التالية، ثم إرفاق صورة الإيصال ليتم مراجعته واعتماد طلبك من قبل الإدارة:</p>
+                    <ul style={{ margin: '1rem 0 1rem 1.5rem' }}>
+                      <li><strong>بنك بيمو:</strong> 123456789 (باسم: أكاديمية كيو كيو)</li>
+                      <li><strong>سيريتل كاش:</strong> 0930000000</li>
+                      <li><strong>MTN كاش:</strong> 0940000000</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>إرفاق صورة الإيصال (إجباري)</label>
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '2rem', border: `2px dashed ${receiptImage ? 'var(--success)' : 'rgba(255,255,255,0.2)'}`, borderRadius: '12px', cursor: 'pointer', background: 'rgba(0,0,0,0.3)', transition: 'border-color 0.3s' }}>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 2 * 1024 * 1024) {
+                              setError('حجم الصورة يجب أن لا يتجاوز 2 ميغابايت');
+                              return;
+                            }
+                            setError('');
+                            setReceiptFileName(file.name);
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setReceiptImage(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <Upload size={32} color={receiptImage ? 'var(--success)' : 'rgba(255,255,255,0.5)'} />
+                      <span style={{ color: receiptImage ? 'var(--success)' : 'rgba(255,255,255,0.7)', fontWeight: receiptImage ? 'bold' : 'normal' }}>
+                        {receiptFileName ? receiptFileName : 'انقر هنا لاختيار صورة الإيصال (jpg, png)'}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1rem' }}>لديك كوبون خصم؟</h3>
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '3rem' }}>
