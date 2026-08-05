@@ -13,6 +13,11 @@ export default function ChaptersClient({ course }: { course: any }) {
   const [isFree, setIsFree] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Intro Video State
+  const [isAddingIntroVideo, setIsAddingIntroVideo] = useState(false);
+  const [isIntroUploading, setIsIntroUploading] = useState(false);
+  const [introUploadProgress, setIntroUploadProgress] = useState(0);
+
   // Lesson State
   const [isAddingLesson, setIsAddingLesson] = useState<string | null>(null); // holds chapterId
   const [lessonTitle, setLessonTitle] = useState('');
@@ -151,10 +156,30 @@ export default function ChaptersClient({ course }: { course: any }) {
             <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>إدارة محتوى الكورس</h1>
             <p style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{course.title}</p>
           </div>
-          <button onClick={() => setIsAdding(true)} className="btn btn-solid" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <PlusCircle size={20} /> فصل جديد
-          </button>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={() => setIsAddingIntroVideo(true)} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--primary)', color: 'var(--primary)' }}>
+              <Video size={20} /> إضافة فيديو مقدمة
+            </button>
+            <button onClick={() => setIsAdding(true)} className="btn btn-solid" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <PlusCircle size={20} /> فصل جديد
+            </button>
+          </div>
         </div>
+
+        {course.previewVideoUrl && (
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--primary)', borderRadius: '16px', padding: '1rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ background: 'rgba(203,161,83,0.1)', padding: '0.8rem', borderRadius: '50%' }}>
+                <Video size={24} color="var(--primary)" />
+              </div>
+              <div>
+                <h3 style={{ fontWeight: 'bold', margin: 0 }}>فيديو المقدمة (معاينة الكورس)</h3>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: 0 }}>تم رفع فيديو المقدمة بنجاح، وهو جاهز للعرض للطلاب.</p>
+              </div>
+            </div>
+            <button onClick={() => setIsAddingIntroVideo(true)} className="btn" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>تغيير الفيديو</button>
+          </div>
+        )}
 
         {course.chapters.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
@@ -314,6 +339,111 @@ export default function ChaptersClient({ course }: { course: any }) {
                     {isAddingLessonLoading ? 'جاري الإضافة...' : 'حفظ الدرس'}
                   </button>
                   <button type="button" onClick={() => setIsAddingLesson(null)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Intro Video Modal */}
+        {isAddingIntroVideo && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+            <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>رفع فيديو مقدمة الكورس</h2>
+                <button onClick={() => setIsAddingIntroVideo(false)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
+              </div>
+              
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!videoFile) return;
+                setIsIntroUploading(true);
+                setIntroUploadProgress(0);
+                try {
+                  const bunnyRes = await fetch('/api/bunny/create-video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: 'Intro: ' + course.title })
+                  });
+                  if (!bunnyRes.ok) throw new Error('فشل تهيئة الفيديو');
+                  const bunnyData = await bunnyRes.json();
+                  const { videoId, libraryId, signature, expireTime } = bunnyData;
+                  
+                  await new Promise((resolve, reject) => {
+                    const upload = new tus.Upload(videoFile, {
+                      endpoint: "https://video.bunnycdn.com/tusupload",
+                      retryDelays: [0, 3000, 5000, 10000, 20000],
+                      headers: {
+                        AuthorizationSignature: signature,
+                        AuthorizationExpire: expireTime.toString(),
+                        VideoId: videoId,
+                        LibraryId: libraryId,
+                      },
+                      metadata: { filetype: videoFile.type, title: 'Intro: ' + course.title },
+                      onError: (error) => reject(error),
+                      onProgress: (bytesUploaded, bytesTotal) => {
+                        const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
+                        setIntroUploadProgress(Number(percentage));
+                      },
+                      onSuccess: () => resolve(true),
+                    });
+                    upload.start();
+                  });
+
+                  const finalVideoUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
+                  
+                  // Update Course in DB
+                  const res = await fetch(`/api/courses/${course.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ previewVideoUrl: finalVideoUrl })
+                  });
+
+                  if (res.ok) {
+                    setIsAddingIntroVideo(false);
+                    setVideoFile(null);
+                    router.refresh();
+                  } else {
+                    alert('فشل حفظ الفيديو');
+                  }
+                } catch(err) {
+                  alert('خطأ أثناء رفع الفيديو');
+                }
+                setIsIntroUploading(false);
+              }} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف فيديو المقدمة</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    required
+                    onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
+                    className="input-field"
+                    style={{ padding: '0.8rem' }}
+                  />
+                  {isIntroUploading && introUploadProgress > 0 && (
+                    <div style={{ marginTop: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                        <span>جاري الرفع...</span>
+                        <span>{introUploadProgress}%</span>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${introUploadProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.2s' }} />
+                      </div>
+                    </div>
+                  )}
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
+                    هذا الفيديو سيظهر لجميع الزوار في صفحة تفاصيل الكورس (مجاناً) لتشجيعهم على الاشتراك.
+                  </p>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button type="submit" disabled={isIntroUploading} className="btn btn-solid" style={{ flex: 1 }}>
+                    {isIntroUploading ? 'جاري الرفع...' : 'رفع وحفظ'}
+                  </button>
+                  <button type="button" onClick={() => setIsAddingIntroVideo(false)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
                     إلغاء
                   </button>
                 </div>

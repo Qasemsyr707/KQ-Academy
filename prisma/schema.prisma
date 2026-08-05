@@ -64,6 +64,7 @@ model Course {
   priceSYP    Float    @default(0) // SYP
   category    String
   thumbnail   String?
+  previewVideoUrl String?
   rating      Float    @default(0.0)
   status      String   @default("PUBLISHED") // PENDING, PUBLISHED, REJECTED
   createdAt   DateTime @default(now())

@@ -64,14 +64,34 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ flex: '1 1 350px' }}>
             <div className="glass-card" style={{ padding: '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', position: 'sticky', top: '100px', background: 'rgba(15,15,15,0.8)', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
               {/* Box Video Preview */}
-              <div style={{ width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '16px', position: 'relative', overflow: 'hidden', marginBottom: '2rem', cursor: 'pointer' }} className="group">
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', transition: 'background 0.3s' }}>
-                  <PlayCircle size={64} color="var(--primary)" style={{ filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.5))' }} />
+              {course.previewVideoUrl ? (
+                <div style={{ width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '16px', position: 'relative', overflow: 'hidden', marginBottom: '2rem' }}>
+                  {course.previewVideoUrl.includes('iframe.mediadelivery.net') ? (
+                    <iframe
+                      src={course.previewVideoUrl}
+                      loading="lazy"
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                      allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                      allowFullScreen={true}
+                    ></iframe>
+                  ) : (
+                    <video 
+                      src={course.previewVideoUrl} 
+                      controls 
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                    />
+                  )}
                 </div>
-                <div style={{ position: 'absolute', bottom: '1rem', width: '100%', textAlign: 'center', fontWeight: 'bold' }}>
-                  معاينة الكورس
+              ) : (
+                <div style={{ width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '16px', position: 'relative', overflow: 'hidden', marginBottom: '2rem', cursor: 'pointer' }} className="group">
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', transition: 'background 0.3s' }}>
+                    <PlayCircle size={64} color="var(--primary)" style={{ filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.5))' }} />
+                  </div>
+                  <div style={{ position: 'absolute', bottom: '1rem', width: '100%', textAlign: 'center', fontWeight: 'bold' }}>
+                    معاينة الكورس
+                  </div>
                 </div>
-              </div>
+              )}
               
               <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '0.5rem', color: '#fff', textAlign: 'center' }}>
                  {course.priceSYP > 0 ? `${course.priceSYP.toLocaleString()} ل.س` : (course.price > 0 ? `$${course.price}` : 'مجاني')}
