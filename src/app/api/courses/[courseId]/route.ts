@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
 
-export async function PUT(req: Request, { params }: { params: { courseId: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ courseId: string }> }) {
   try {
     const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
     const body = await req.json();
-    const { courseId } = params;
+    const resolvedParams = await params;
+    const { courseId } = resolvedParams;
 
     // Verify ownership
     const course = await prisma.course.findUnique({

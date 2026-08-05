@@ -6,7 +6,10 @@ import LiveInstructorClient from './LiveInstructorClient';
 
 const prisma = new PrismaClient();
 
-export default async function InstructorLiveLessonPage({ params }: { params: { courseId: string, lessonId: string } }) {
+export default async function InstructorLiveLessonPage({ params }: { params: Promise<{ courseId: string, lessonId: string }> }) {
+  const resolvedParams = await params;
+  const { courseId, lessonId } = resolvedParams;
+
   const session = await getServerSession(authOptions);
   const user = session?.user as any;
   if (!session || !user || (user.role !== 'INSTRUCTOR' && user.role !== 'ADMIN' && user.role !== 'OWNER')) {
@@ -14,7 +17,7 @@ export default async function InstructorLiveLessonPage({ params }: { params: { c
   }
 
   const course = await prisma.course.findUnique({
-    where: { id: params.courseId },
+    where: { id: courseId },
     include: {
       instructor: true
     }
@@ -25,11 +28,11 @@ export default async function InstructorLiveLessonPage({ params }: { params: { c
   }
 
   const lesson = await prisma.lesson.findUnique({
-    where: { id: params.lessonId }
+    where: { id: lessonId }
   });
 
   if (!lesson || !lesson.isLive) {
-    redirect(`/instructor/courses/${params.courseId}/chapters`);
+    redirect(`/instructor/courses/${courseId}/chapters`);
   }
 
   return <LiveInstructorClient lesson={lesson} course={course} />;

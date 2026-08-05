@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
 
-export async function PUT(req: Request, { params }: { params: { chapterId: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ chapterId: string }> }) {
   try {
     const { authorized, errorResponse } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
     const body = await req.json();
-    const { chapterId } = params;
+    const resolvedParams = await params;
+    const { chapterId } = resolvedParams;
 
     const chapter = await prisma.chapter.findUnique({ where: { id: chapterId } });
     if (!chapter) {
@@ -31,12 +32,13 @@ export async function PUT(req: Request, { params }: { params: { chapterId: strin
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { chapterId: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ chapterId: string }> }) {
   try {
     const { authorized, errorResponse } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
-    const { chapterId } = params;
+    const resolvedParams = await params;
+    const { chapterId } = resolvedParams;
 
     const chapter = await prisma.chapter.findUnique({ where: { id: chapterId } });
     if (!chapter) {
