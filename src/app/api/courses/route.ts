@@ -23,7 +23,7 @@ export async function POST(req: Request) {
         priceSYP: Number(priceSYP) || 0,
         category,
         instructorId: userId,
-        status: 'PENDING', // Draft/Pending until published
+        status: 'PUBLISHED', // Default to published so it shows up immediately
         thumbnail: thumbnail || `linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #0f172a 100%)`
       }
     });

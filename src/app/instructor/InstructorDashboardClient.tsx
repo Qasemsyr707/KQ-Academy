@@ -169,7 +169,7 @@ export default function InstructorDashboardClient({
                         <td style={{ padding: '1.2rem 1rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Star size={16} fill="var(--warning)" color="var(--warning)" /> {course.rating.toFixed(1)}</td>
                         <td style={{ padding: '1.2rem 1rem', color: 'var(--success)' }}>${course.revenue.toLocaleString()}</td>
                         <td style={{ padding: '1.2rem 1rem' }}>
-                          <Link href={`/instructor/courses/${course.id}`} className="btn" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>إدارة</Link>
+                          <Link href={`/instructor/courses/${course.id}/chapters`} className="btn" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>إدارة</Link>
                         </td>
                       </tr>
                     ))}

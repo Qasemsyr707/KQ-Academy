@@ -2,9 +2,12 @@ import Link from 'next/link';
 import { BookOpen, Briefcase, ArrowLeft, Users, Award, Zap } from 'lucide-react';
 import { prisma } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 async function getCourses() {
   try {
     const courses = await prisma.course.findMany({
+      where: { status: 'PUBLISHED' },
       include: { instructor: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 8,
