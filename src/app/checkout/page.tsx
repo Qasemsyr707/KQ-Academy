@@ -238,11 +238,13 @@ function CheckoutContent() {
                           {copiedText === 'f698bd6104ecfc91435335321b7978fc' ? 'تم النسخ!' : 'نسخ'}
                         </span>
                       </div>
-                      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
-                         {/* Using a placeholder for QR code since the image path isn't known, but providing a download link */}
-                         <a href="/sham-cash-qr.jpg" download style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(62, 237, 196, 0.1)', color: '#3EEDC4', padding: '0.5rem 1rem', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem' }}>
-                           <Upload size={16} /> تحميل صورة الباركود (QR)
-                         </a>
+                      <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff', padding: '1rem', borderRadius: '12px' }}>
+                        <img 
+                          src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=f698bd6104ecfc91435335321b7978fc" 
+                          alt="Sham Cash QR Code" 
+                          style={{ width: '150px', height: '150px', marginBottom: '0.5rem' }} 
+                        />
+                        <span style={{ color: '#000', fontWeight: 'bold', fontSize: '0.9rem' }}>امسح الباركود للدفع</span>
                       </div>
                     </div>
 
