@@ -412,7 +412,11 @@ function CheckoutContent() {
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>ملخص الطلب</h2>
             
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-              <div style={{ width: '80px', height: '60px', background: course?.thumbnail ? `url(${course.thumbnail}) center/cover` : '#222', borderRadius: '8px' }} />
+              {course?.thumbnail ? (
+                <img src={course.thumbnail} alt={course.title} style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '8px' }} />
+              ) : (
+                <div style={{ width: '80px', height: '60px', background: '#222', borderRadius: '8px' }} />
+              )}
               <div>
                 <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.2rem' }}>{course?.title}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: 0 }}>{(course?.instructor as any)?.name}</p>
