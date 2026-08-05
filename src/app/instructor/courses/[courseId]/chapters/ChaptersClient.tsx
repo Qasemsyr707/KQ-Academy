@@ -13,6 +13,12 @@ export default function ChaptersClient({ course }: { course: any }) {
   const [isFree, setIsFree] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Edit Chapter State
+  const [isEditingChapter, setIsEditingChapter] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editIsFree, setEditIsFree] = useState(false);
+  const [isEditingLoading, setIsEditingLoading] = useState(false);
+
   // Intro Video State
   const [isAddingIntroVideo, setIsAddingIntroVideo] = useState(false);
   const [isIntroUploading, setIsIntroUploading] = useState(false);
@@ -144,6 +150,53 @@ export default function ChaptersClient({ course }: { course: any }) {
     setIsAddingLessonLoading(false);
   };
 
+  const handleEditChapter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTitle.trim() || !isEditingChapter) return;
+
+    setIsEditingLoading(true);
+    try {
+      const res = await fetch(`/api/chapters/${isEditingChapter}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editTitle,
+          isFree: editIsFree
+        })
+      });
+
+      if (res.ok) {
+        setIsEditingChapter(null);
+        router.refresh();
+      } else {
+        alert('حدث خطأ أثناء تعديل الفصل');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('خطأ في الاتصال بالخادم');
+    }
+    setIsEditingLoading(false);
+  };
+
+  const handleDeleteChapter = async (chapterId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الفصل بجميع دروسه؟ (هذا الإجراء لا يمكن التراجع عنه)')) return;
+
+    try {
+      const res = await fetch(`/api/chapters/${chapterId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        router.refresh();
+      } else {
+        alert('حدث خطأ أثناء حذف الفصل');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('خطأ في الاتصال بالخادم');
+    }
+  };
+
   return (
     <div style={{ padding: '2rem 5%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -206,8 +259,24 @@ export default function ChaptersClient({ course }: { course: any }) {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn" style={{ padding: '0.4rem', color: '#3b82f6' }}><Settings size={18} /></button>
-                    <button className="btn" style={{ padding: '0.4rem', color: '#ef4444' }}><Trash2 size={18} /></button>
+                    <button 
+                      onClick={() => {
+                        setEditTitle(chapter.title);
+                        setEditIsFree(chapter.isFree);
+                        setIsEditingChapter(chapter.id);
+                      }} 
+                      className="btn" 
+                      style={{ padding: '0.4rem', color: '#3b82f6' }}
+                    >
+                      <Settings size={18} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteChapter(chapter.id)} 
+                      className="btn" 
+                      style={{ padding: '0.4rem', color: '#ef4444' }}
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
                 
@@ -277,6 +346,55 @@ export default function ChaptersClient({ course }: { course: any }) {
                     {loading ? 'جاري الإضافة...' : 'حفظ الفصل'}
                   </button>
                   <button type="button" onClick={() => setIsAdding(false)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Chapter Modal */}
+        {isEditingChapter && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+            <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>تعديل الفصل</h2>
+                <button onClick={() => setIsEditingChapter(null)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
+              </div>
+              
+              <form onSubmit={handleEditChapter} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>اسم الفصل</label>
+                  <input
+                    type="text"
+                    required
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="input-field"
+                    placeholder="مثال: مقدمة في التسويق"
+                  />
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <input
+                    type="checkbox"
+                    id="editIsFree"
+                    checked={editIsFree}
+                    onChange={(e) => setEditIsFree(e.target.checked)}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <label htmlFor="editIsFree" style={{ fontWeight: 'bold', cursor: 'pointer' }}>فصل مجاني (متاح للجميع)</label>
+                    <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>إذا قمت بتفعيل هذا الخيار، سيتمكن أي زائر من مشاهدة الفيديوهات داخل هذا الفصل.</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button type="submit" disabled={isEditingLoading} className="btn btn-solid" style={{ flex: 1 }}>
+                    {isEditingLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                  </button>
+                  <button type="button" onClick={() => setIsEditingChapter(null)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
                     إلغاء
                   </button>
                 </div>
