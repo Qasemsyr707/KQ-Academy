@@ -8,6 +8,7 @@ import ReviewButton from './ReviewButton';
 
 export default function CourseDetailsClient({ course, isEnrolled }: { course: any, isEnrolled: boolean }) {
   const [activeChapter, setActiveChapter] = useState<string | null>(course.chapters[0]?.id || null);
+  const [previewLessonVideo, setPreviewLessonVideo] = useState<string | null>(null);
 
   const faqs = [
     { q: 'متى يمكنني البدء في الكورس؟', a: 'يمكنك البدء فور إتمام عملية الشراء. جميع الدروس المسجلة ستكون متاحة لك مباشرة.' },
@@ -160,9 +161,30 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
                           <div style={{ padding: '0 1.5rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             {chapter.lessons?.map((lesson: any) => (
-                              <div key={lesson.id} style={{ padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <PlayCircle size={18} color="rgba(255,255,255,0.5)" />
-                                <span style={{ flex: 1, color: 'rgba(255,255,255,0.8)' }}>{lesson.title}</span>
+                              <div 
+                                key={lesson.id} 
+                                onClick={() => {
+                                  if (chapter.isFree && lesson.videoUrl) {
+                                    setPreviewLessonVideo(lesson.videoUrl);
+                                  }
+                                }}
+                                style={{ 
+                                  padding: '1rem', 
+                                  background: 'rgba(0,0,0,0.3)', 
+                                  borderRadius: '8px', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '1rem',
+                                  cursor: chapter.isFree ? 'pointer' : 'default',
+                                  transition: 'background 0.3s'
+                                }}
+                                className={chapter.isFree ? "hover:bg-gray-800" : ""}
+                              >
+                                <PlayCircle size={18} color={chapter.isFree ? "var(--primary)" : "rgba(255,255,255,0.5)"} />
+                                <span style={{ flex: 1, color: chapter.isFree ? '#fff' : 'rgba(255,255,255,0.8)' }}>
+                                  {lesson.title}
+                                </span>
+                                {chapter.isFree && <span style={{ fontSize: '0.7rem', background: 'rgba(34,197,94,0.1)', color: '#22c55e', padding: '0.2rem 0.5rem', borderRadius: '12px' }}>معاينة مجانية</span>}
                                 {lesson.isLive && <span style={{ background: 'var(--danger)', fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>بث مباشر</span>}
                               </div>
                             ))}
@@ -258,6 +280,37 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
         {/* Dummy sidebar placeholder to maintain gap in flex */}
         <div style={{ flex: '1 1 350px' }}></div>
       </div>
+
+      {/* Free Lesson Preview Modal */}
+      {previewLessonVideo && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: '900px', padding: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+              <button onClick={() => setPreviewLessonVideo(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>
+                إغلاق (X)
+              </button>
+            </div>
+            <div style={{ width: '100%', paddingTop: '56.25%', position: 'relative', background: '#000', borderRadius: '16px', overflow: 'hidden' }}>
+              {previewLessonVideo.includes('iframe.mediadelivery.net') ? (
+                <iframe
+                  src={previewLessonVideo}
+                  loading="lazy"
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                  allowFullScreen={true}
+                ></iframe>
+              ) : (
+                <video 
+                  src={previewLessonVideo} 
+                  controls 
+                  autoPlay
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
