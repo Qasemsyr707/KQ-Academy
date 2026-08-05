@@ -11,6 +11,7 @@ function CheckoutContent() {
   const courseId = searchParams?.get('courseId') || '';
 
   const [course, setCourse] = useState<any>(null);
+  const [walletData, setWalletData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState('STRIPE');
   const [coupon, setCoupon] = useState('');
@@ -29,6 +30,7 @@ function CheckoutContent() {
         const data = await res.json();
         if (res.ok) {
           setCourse(data.course);
+          setWalletData(data.wallet);
         } else {
           setError(data.error);
         }
@@ -253,6 +255,53 @@ function CheckoutContent() {
                       </span>
                     </label>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {paymentMethod === 'WALLET' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden', marginBottom: '3rem' }}>
+                <div style={{ background: 'rgba(34, 197, 94, 0.05)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--success)' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--success)' }}>الدفع عبر المحفظة الداخلية</h3>
+                  <div style={{ color: 'rgba(255,255,255,0.9)', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '12px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>رصيدك الحالي:</span>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>${walletData?.walletUSD?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  {(walletData?.walletUSD || 0) < (course?.price - (course?.price * (discount / 100))) ? (
+                    <div style={{ color: 'var(--danger)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <AlertTriangle size={18} /> رصيدك غير كافٍ لإتمام عملية الشراء. يرجى شحن محفظتك أولاً.
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--success)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <CheckCircle size={18} /> رصيدك يكفي لإتمام هذه العملية. سيتم الخصم مباشرة عند التأكيد.
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {(paymentMethod === 'TABBY' || paymentMethod === 'TAMARA') && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden', marginBottom: '3rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1rem', color: paymentMethod === 'TABBY' ? '#3EEDC4' : '#F18070' }}>
+                    الدفع بالتقسيط عبر {paymentMethod === 'TABBY' ? 'تابي (Tabby)' : 'تمارا (Tamara)'}
+                  </h3>
+                  <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, margin: 0 }}>
+                    سيتم توجيهك إلى صفحة {paymentMethod === 'TABBY' ? 'تابي' : 'تمارا'} الآمنة لإتمام عملية الشراء بنظام التقسيط المريح بدون أي فوائد إضافية. يتطلب ذلك إدخال رقم هاتفك وبعض التفاصيل الأساسية.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {(paymentMethod === 'STRIPE' || paymentMethod === 'PAYPAL') && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden', marginBottom: '3rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1rem', color: paymentMethod === 'STRIPE' ? 'var(--primary)' : '#3b82f6' }}>
+                    الدفع عبر {paymentMethod === 'STRIPE' ? 'البطاقة الائتمانية' : 'باي بال (PayPal)'}
+                  </h3>
+                  <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, margin: 0 }}>
+                    سيتم توجيهك إلى بوابة الدفع الآمنة لإدخال تفاصيل الدفع الخاصة بك. جميع بياناتك مشفرة بالكامل ولا نقوم بتخزين أي معلومات متعلقة ببطاقتك.
+                  </p>
                 </div>
               </motion.div>
             )}
