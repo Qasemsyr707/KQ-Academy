@@ -240,11 +240,13 @@ function CheckoutContent() {
                       </div>
                       <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff', padding: '1rem', borderRadius: '12px' }}>
                         <img 
-                          src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=f698bd6104ecfc91435335321b7978fc" 
-                          alt="Sham Cash QR Code" 
-                          style={{ width: '150px', height: '150px', marginBottom: '0.5rem' }} 
+                          src="/images/sham-cash-barcode.jpg" 
+                          alt="Sham Cash Barcode" 
+                          style={{ width: '200px', height: 'auto', marginBottom: '1rem' }} 
                         />
-                        <span style={{ color: '#000', fontWeight: 'bold', fontSize: '0.9rem' }}>امسح الباركود للدفع</span>
+                        <a href="/images/sham-cash-barcode.jpg" download="sham-cash-barcode.jpg" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(62, 237, 196, 0.15)', color: '#000', padding: '0.6rem 1.2rem', borderRadius: '8px', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 'bold', border: '1px solid #3EEDC4' }}>
+                           <Upload size={18} /> تحميل الباركود (Download)
+                        </a>
                       </div>
                     </div>
 
