@@ -12,6 +12,12 @@ export default function ChaptersClient({ course }: { course: any }) {
   const [isFree, setIsFree] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Lesson State
+  const [isAddingLesson, setIsAddingLesson] = useState<string | null>(null); // holds chapterId
+  const [lessonTitle, setLessonTitle] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [isAddingLessonLoading, setIsAddingLessonLoading] = useState(false);
+
   const handleAddChapter = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -41,6 +47,39 @@ export default function ChaptersClient({ course }: { course: any }) {
       alert('خطأ في الاتصال بالخادم');
     }
     setLoading(false);
+  };
+
+  const handleAddLesson = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lessonTitle.trim() || !videoUrl.trim() || !isAddingLesson) return;
+
+    setIsAddingLessonLoading(true);
+    try {
+      const res = await fetch('/api/lessons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: lessonTitle,
+          videoUrl,
+          chapterId: isAddingLesson,
+          isLive: false
+        })
+      });
+
+      if (res.ok) {
+        setLessonTitle('');
+        setVideoUrl('');
+        setIsAddingLesson(null);
+        router.refresh(); // Reload to show new lesson
+      } else {
+        const data = await res.json();
+        alert(data.error || 'حدث خطأ أثناء إضافة الدرس');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('خطأ في الاتصال بالخادم');
+    }
+    setIsAddingLessonLoading(false);
   };
 
   return (
@@ -106,7 +145,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                       </div>
                     ))
                   )}
-                  <button onClick={() => alert('ميزة إضافة الدروس ستتوفر قريباً')} style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', background: 'transparent', border: '1px dashed var(--primary)', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                  <button onClick={() => setIsAddingLesson(chapter.id)} style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', background: 'transparent', border: '1px dashed var(--primary)', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', alignSelf: 'flex-start' }}>
                     <PlusCircle size={16} /> إضافة درس جديد
                   </button>
                 </div>
@@ -156,6 +195,56 @@ export default function ChaptersClient({ course }: { course: any }) {
                     {loading ? 'جاري الإضافة...' : 'حفظ الفصل'}
                   </button>
                   <button type="button" onClick={() => setIsAdding(false)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Lesson Modal */}
+        {isAddingLesson && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+            <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>إضافة درس جديد</h2>
+                <button onClick={() => setIsAddingLesson(null)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
+              </div>
+              
+              <form onSubmit={handleAddLesson} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>عنوان الدرس</label>
+                  <input
+                    type="text"
+                    required
+                    value={lessonTitle}
+                    onChange={(e) => setLessonTitle(e.target.value)}
+                    className="input-field"
+                    placeholder="مثال: مقدمة في بناء العلامة التجارية"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>رابط الفيديو</label>
+                  <input
+                    type="url"
+                    required
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    className="input-field"
+                    placeholder="رابط الفيديو (YouTube, Bunny, MP4...)"
+                  />
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
+                    يمكنك لصق رابط الفيديو المرفوع على أي منصة استضافة فيديو.
+                  </p>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button type="submit" disabled={isAddingLessonLoading} className="btn btn-solid" style={{ flex: 1 }}>
+                    {isAddingLessonLoading ? 'جاري الإضافة...' : 'حفظ الدرس'}
+                  </button>
+                  <button type="button" onClick={() => setIsAddingLesson(null)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
                     إلغاء
                   </button>
                 </div>
