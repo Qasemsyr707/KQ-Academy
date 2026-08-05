@@ -282,51 +282,32 @@ export default function ChaptersClient({ course }: { course: any }) {
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', background: 'rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '8px' }}>
-                  <button type="button" onClick={() => setUploadMode('file')} style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: 'none', cursor: 'pointer', background: uploadMode === 'file' ? 'var(--primary)' : 'transparent', color: uploadMode === 'file' ? '#000' : '#fff', fontWeight: uploadMode === 'file' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                    <Upload size={16} /> رفع فيديو (Bunny)
-                  </button>
-                  <button type="button" onClick={() => setUploadMode('url')} style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: 'none', cursor: 'pointer', background: uploadMode === 'url' ? 'var(--primary)' : 'transparent', color: uploadMode === 'url' ? '#000' : '#fff', fontWeight: uploadMode === 'url' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                    <BookOpen size={16} /> رابط خارجي
-                  </button>
-                </div>
-
-                {uploadMode === 'file' ? (
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف الفيديو</label>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      required={uploadMode === 'file'}
-                      onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
-                      className="input-field"
-                      style={{ padding: '0.8rem' }}
-                    />
-                    {isAddingLessonLoading && uploadProgress > 0 && (
-                      <div style={{ marginTop: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                          <span>جاري الرفع...</span>
-                          <span>{uploadProgress}%</span>
-                        </div>
-                        <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.2s' }} />
-                        </div>
+                {/* Video Upload Field */}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف الفيديو</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    required
+                    onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
+                    className="input-field"
+                    style={{ padding: '0.8rem' }}
+                  />
+                  {isAddingLessonLoading && uploadProgress > 0 && (
+                    <div style={{ marginTop: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                        <span>جاري الرفع...</span>
+                        <span>{uploadProgress}%</span>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>رابط الفيديو</label>
-                    <input
-                      type="url"
-                      required={uploadMode === 'url'}
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      className="input-field"
-                      placeholder="رابط الفيديو (YouTube, Vimeo...)"
-                    />
-                  </div>
-                )}
+                      <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.2s' }} />
+                      </div>
+                    </div>
+                  )}
+                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
+                    سيتم رفع الفيديو وتشفيره تلقائياً لضمان حمايته.
+                  </p>
+                </div>
                 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                   <button type="submit" disabled={isAddingLessonLoading} className="btn btn-solid" style={{ flex: 1 }}>
