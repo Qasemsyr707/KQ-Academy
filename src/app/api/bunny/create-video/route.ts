@@ -44,12 +44,22 @@ export async function POST(req: Request) {
     }
 
     const data = await response.json();
+    const videoId = data.guid;
+
+    // Generate secure signature for frontend TUS upload
+    const expirationTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour valid
+    // For Node.js crypto
+    const crypto = require('crypto');
+    const signatureString = `${libraryId}${apiKey}${expirationTime}${videoId}`;
+    const signature = crypto.createHash('sha256').update(signatureString).digest('hex');
 
     // Return the video ID (guid) so the client can upload via Tus
     return NextResponse.json({ 
       success: true, 
-      videoId: data.guid,
-      libraryId: libraryId // Needed for Tus client
+      videoId: videoId,
+      libraryId: libraryId,
+      signature: signature,
+      expireTime: expirationTime
     }, { status: 200 });
 
   } catch (error) {

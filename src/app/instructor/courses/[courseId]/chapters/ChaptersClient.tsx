@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Video, PlusCircle, ArrowRight, Settings, Trash2, X, LockOpen, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import * as tus from 'tus-js-client';
 
 export default function ChaptersClient({ course }: { course: any }) {
   const router = useRouter();
@@ -16,7 +17,10 @@ export default function ChaptersClient({ course }: { course: any }) {
   const [isAddingLesson, setIsAddingLesson] = useState<string | null>(null); // holds chapterId
   const [lessonTitle, setLessonTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('file');
   const [isAddingLessonLoading, setIsAddingLessonLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleAddChapter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,16 +55,67 @@ export default function ChaptersClient({ course }: { course: any }) {
 
   const handleAddLesson = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lessonTitle.trim() || !videoUrl.trim() || !isAddingLesson) return;
+    if (!lessonTitle.trim() || !isAddingLesson) return;
+    if (uploadMode === 'url' && !videoUrl.trim()) return;
+    if (uploadMode === 'file' && !videoFile) return;
 
     setIsAddingLessonLoading(true);
+    setUploadProgress(0);
     try {
+      let finalVideoUrl = videoUrl;
+
+      // Handle Bunny Stream Video Upload
+      if (uploadMode === 'file' && videoFile) {
+        // 1. Create Video on Bunny to get ID & Signature
+        const bunnyRes = await fetch('/api/bunny/create-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: lessonTitle })
+        });
+        
+        if (!bunnyRes.ok) {
+          throw new Error('فشل في تهيئة مساحة الفيديو على الخادم');
+        }
+        
+        const bunnyData = await bunnyRes.json();
+        const { videoId, libraryId, signature, expireTime } = bunnyData;
+        
+        // 2. Upload via TUS
+        await new Promise((resolve, reject) => {
+          const upload = new tus.Upload(videoFile, {
+            endpoint: "https://video.bunnycdn.com/tusupload",
+            retryDelays: [0, 3000, 5000, 10000, 20000],
+            headers: {
+              AuthorizationSignature: signature,
+              AuthorizationExpire: expireTime.toString(),
+              VideoId: videoId,
+              LibraryId: libraryId,
+            },
+            metadata: {
+              filetype: videoFile.type,
+              title: lessonTitle,
+            },
+            onError: (error) => reject(error),
+            onProgress: (bytesUploaded, bytesTotal) => {
+              const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
+              setUploadProgress(Number(percentage));
+            },
+            onSuccess: () => resolve(true),
+          });
+          upload.start();
+        });
+
+        // 3. Set Final URL (Bunny Embed iframe URL)
+        finalVideoUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
+      }
+
+      // Save Lesson to Database
       const res = await fetch('/api/lessons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: lessonTitle,
-          videoUrl,
+          videoUrl: finalVideoUrl,
           chapterId: isAddingLesson,
           isLive: false
         })
@@ -69,15 +124,17 @@ export default function ChaptersClient({ course }: { course: any }) {
       if (res.ok) {
         setLessonTitle('');
         setVideoUrl('');
+        setVideoFile(null);
+        setUploadProgress(0);
         setIsAddingLesson(null);
         router.refresh(); // Reload to show new lesson
       } else {
         const data = await res.json();
         alert(data.error || 'حدث خطأ أثناء إضافة الدرس');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('خطأ في الاتصال بالخادم');
+      alert(error.message || 'خطأ في الاتصال بالخادم أثناء الرفع');
     }
     setIsAddingLessonLoading(false);
   };
@@ -225,20 +282,51 @@ export default function ChaptersClient({ course }: { course: any }) {
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>رابط الفيديو</label>
-                  <input
-                    type="url"
-                    required
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    className="input-field"
-                    placeholder="رابط الفيديو (YouTube, Bunny, MP4...)"
-                  />
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
-                    يمكنك لصق رابط الفيديو المرفوع على أي منصة استضافة فيديو.
-                  </p>
+                <div style={{ display: 'flex', gap: '1rem', background: 'rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '8px' }}>
+                  <button type="button" onClick={() => setUploadMode('file')} style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: 'none', cursor: 'pointer', background: uploadMode === 'file' ? 'var(--primary)' : 'transparent', color: uploadMode === 'file' ? '#000' : '#fff', fontWeight: uploadMode === 'file' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <Upload size={16} /> رفع فيديو (Bunny)
+                  </button>
+                  <button type="button" onClick={() => setUploadMode('url')} style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: 'none', cursor: 'pointer', background: uploadMode === 'url' ? 'var(--primary)' : 'transparent', color: uploadMode === 'url' ? '#000' : '#fff', fontWeight: uploadMode === 'url' ? 'bold' : 'normal', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <BookOpen size={16} /> رابط خارجي
+                  </button>
                 </div>
+
+                {uploadMode === 'file' ? (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف الفيديو</label>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      required={uploadMode === 'file'}
+                      onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
+                      className="input-field"
+                      style={{ padding: '0.8rem' }}
+                    />
+                    {isAddingLessonLoading && uploadProgress > 0 && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                          <span>جاري الرفع...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.2s' }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>رابط الفيديو</label>
+                    <input
+                      type="url"
+                      required={uploadMode === 'url'}
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      className="input-field"
+                      placeholder="رابط الفيديو (YouTube, Vimeo...)"
+                    />
+                  </div>
+                )}
                 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                   <button type="submit" disabled={isAddingLessonLoading} className="btn btn-solid" style={{ flex: 1 }}>

@@ -266,13 +266,23 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                   </div>
                 ) : (
                   <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <video 
-                      src={activeItem.videoUrl} 
-                      controls 
-                      autoPlay 
-                      onEnded={() => markCompleted(activeItem.id)}
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                    />
+                    {activeItem.videoUrl?.includes('iframe.mediadelivery.net') ? (
+                      <iframe
+                        src={activeItem.videoUrl}
+                        loading="lazy"
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                        allowFullScreen={true}
+                      ></iframe>
+                    ) : (
+                      <video 
+                        src={activeItem.videoUrl} 
+                        controls 
+                        autoPlay 
+                        onEnded={() => markCompleted(activeItem.id)}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                      />
+                    )}
                   </div>
                 )}
 
