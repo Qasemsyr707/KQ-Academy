@@ -9,11 +9,15 @@ import { useEffect } from 'react';
 import '@livekit/components-styles';
 import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/components-react';
 
-export default function CoursePlayerClient({ course, chapters }: { course: any, chapters: any[] }) {
-  const [activeItem, setActiveItem] = useState<any>(chapters[0]?.lessons?.[0] || chapters[0]?.quizzes?.[0]);
+export default function CoursePlayerClient({ course, chapters, hasAccess = false }: { course: any, chapters: any[], hasAccess?: boolean }) {
+  // Find first accessible item
+  const firstAccessibleChapter = chapters.find(c => hasAccess || c.isFree);
+  const initialActiveItem = firstAccessibleChapter?.lessons?.[0] || firstAccessibleChapter?.quizzes?.[0] || null;
+
+  const [activeItem, setActiveItem] = useState<any>(initialActiveItem);
   const [completedItems, setCompletedItems] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [openChapters, setOpenChapters] = useState<string[]>([chapters[0]?.id]);
+  const [openChapters, setOpenChapters] = useState<string[]>(firstAccessibleChapter ? [firstAccessibleChapter.id] : []);
   
   // Certificate & Review States
   const [certId, setCertId] = useState<string | null>(null);
@@ -67,7 +71,11 @@ export default function CoursePlayerClient({ course, chapters }: { course: any, 
     }
   }, [activeItem]);
 
-  const toggleChapter = (chapterId: string) => {
+  const toggleChapter = (chapterId: string, isFree: boolean) => {
+    if (!hasAccess && !isFree) {
+      alert('هذا الفصل مدفوع. يجب عليك الاشتراك في الكورس لفتح هذه الدروس.');
+      return;
+    }
     if (openChapters.includes(chapterId)) {
       setOpenChapters(openChapters.filter(id => id !== chapterId));
     } else {
@@ -450,8 +458,15 @@ export default function CoursePlayerClient({ course, chapters }: { course: any, 
             )}
 
             {!activeItem && (
-               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'rgba(255,255,255,0.5)' }}>
-                الرجاء اختيار درس أو اختبار من القائمة
+               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'rgba(255,255,255,0.5)', flexDirection: 'column', gap: '1rem' }}>
+                <Lock size={48} color="rgba(255,255,255,0.2)" />
+                <h3 style={{ fontSize: '1.5rem' }}>المحتوى مقفل</h3>
+                <p>يجب عليك شراء الكورس أو اختيار درس من الفصول المجانية.</p>
+                {!hasAccess && (
+                  <Link href={`/courses/${course.id}`} style={{ background: 'var(--primary)', color: '#000', padding: '0.8rem 2rem', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', marginTop: '1rem' }}>
+                    شراء الكورس الآن
+                  </Link>
+                )}
               </div>
             )}
 
@@ -559,17 +574,22 @@ export default function CoursePlayerClient({ course, chapters }: { course: any, 
 
             {/* Curriculum List */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {chapters.map((chapter, index) => (
+              {chapters.map((chapter, index) => {
+                const isLocked = !hasAccess && !chapter.isFree;
+                return (
                 <div key={chapter.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                   <button 
-                    onClick={() => toggleChapter(chapter.id)}
-                    style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem 1.5rem', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'right' }}
+                    onClick={() => toggleChapter(chapter.id, chapter.isFree)}
+                    style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem 1.5rem', background: 'transparent', border: 'none', color: isLocked ? 'rgba(255,255,255,0.3)' : '#fff', cursor: 'pointer', textAlign: 'right' }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                       <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>القسم {index + 1}</span>
-                      <span style={{ fontWeight: 'bold' }}>{chapter.title}</span>
+                      <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {chapter.title}
+                        {chapter.isFree && !hasAccess && <span style={{ fontSize: '0.7rem', background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>مجاني</span>}
+                      </span>
                     </div>
-                    {openChapters.includes(chapter.id) ? <ChevronUp size={20} color="rgba(255,255,255,0.4)" /> : <ChevronDown size={20} color="rgba(255,255,255,0.4)" />}
+                    {isLocked ? <Lock size={18} color="rgba(255,255,255,0.3)" /> : (openChapters.includes(chapter.id) ? <ChevronUp size={20} color="rgba(255,255,255,0.4)" /> : <ChevronDown size={20} color="rgba(255,255,255,0.4)" />)}
                   </button>
 
                   <AnimatePresence>
@@ -643,7 +663,7 @@ export default function CoursePlayerClient({ course, chapters }: { course: any, 
                     )}
                   </AnimatePresence>
                 </div>
-              ))}
+              )})}
             </div>
           </motion.div>
         )}

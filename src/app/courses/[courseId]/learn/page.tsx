@@ -66,18 +66,18 @@ export default async function CourseLearnPage({ params }: { params: Promise<{ co
   // Fallback Mock Data if DB has no chapters yet
   const displayChapters = course.chapters.length > 0 ? course.chapters : [
     {
-      id: 'c1', title: 'الفصل الأول: مقدمة في التسويق', lessons: [
+      id: 'c1', title: 'الفصل الأول: مقدمة في التسويق', isFree: true, lessons: [
         { id: 'l1', title: 'مرحباً بك في الكورس', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '05:30' },
         { id: 'l2', title: 'ما هو التسويق الرقمي؟', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '12:45' }
       ]
     },
     {
-      id: 'c2', title: 'الفصل الثاني: استراتيجيات منصات التواصل', lessons: [
+      id: 'c2', title: 'الفصل الثاني: استراتيجيات منصات التواصل', isFree: false, lessons: [
         { id: 'l3', title: 'خوارزميات فيسبوك وانستغرام', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '20:15' },
         { id: 'l4', title: 'كيفية كتابة محتوى بيعي (Copywriting)', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '18:10' }
       ]
     }
   ];
 
-  return <CoursePlayerClient course={course} chapters={displayChapters} />;
+  return <CoursePlayerClient course={course} chapters={displayChapters} hasAccess={!!enrollment || course.instructorId === (session.user as any).id || (session.user as any).role === 'ADMIN'} />;
 }

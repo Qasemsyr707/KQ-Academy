@@ -86,6 +86,7 @@ model Chapter {
   id          String   @id @default(cuid())
   title       String
   order       Int      @default(0)
+  isFree      Boolean  @default(false)
   courseId    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

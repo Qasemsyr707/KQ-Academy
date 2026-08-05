@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
-    const { title, courseId } = await req.json();
+    const { title, courseId, isFree = false } = await req.json();
 
     if (!title || !courseId) {
       return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 });
@@ -23,7 +23,8 @@ export async function POST(req: Request) {
       data: {
         title,
         courseId,
-        order: existingCount
+        order: existingCount,
+        isFree
       }
     });
 
