@@ -42,6 +42,13 @@ export default async function AdminDashboard() {
     orderBy: { createdAt: 'desc' }
   });
 
+  // Fetch Settings
+  const allSettings = await prisma.setting.findMany();
+  const paymentSettings: Record<string, string> = {};
+  allSettings.forEach(s => {
+    paymentSettings[s.key] = s.value;
+  });
+
   return (
     <div style={{ padding: '2rem 5%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
       
@@ -65,7 +72,8 @@ export default async function AdminDashboard() {
           totalRevenue,
           activeInstructors,
           liveStreams,
-          pendingWallets
+          pendingWallets,
+          paymentSettings
         }} 
       />
 

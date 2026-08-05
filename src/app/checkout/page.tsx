@@ -18,9 +18,14 @@ function CheckoutContent() {
   const [discount, setDiscount] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [receiptImage, setReceiptImage] = useState<string | null>(null);
-  const [receiptFileName, setReceiptFileName] = useState<string | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({});
+  const [copiedText, setCopiedText] = useState('');
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(text);
+    setTimeout(() => setCopiedText(''), 2000);
+  };
 
   useEffect(() => {
     if (!courseId) return;
@@ -31,6 +36,7 @@ function CheckoutContent() {
         if (res.ok) {
           setCourse(data.course);
           setWalletData(data.wallet);
+          setPaymentSettings(data.paymentSettings || {});
         } else {
           setError(data.error);
         }
@@ -164,7 +170,7 @@ function CheckoutContent() {
           <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '2rem' }}>اختر طريقة الدفع</h2>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-            {['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'WALLET', 'MANUAL'].map(method => (
+            {['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'WALLET', 'MANUAL'].filter(m => paymentSettings[`ENABLE_${m}`] !== 'false').map(method => (
               <div 
                 key={method} 
                 onClick={() => setPaymentMethod(method)}
@@ -217,12 +223,67 @@ function CheckoutContent() {
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--warning)' }}>
                   <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--warning)' }}>تعليمات التحويل اليدوي</h3>
                   <div style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                    <p>يرجى تحويل المبلغ الإجمالي إلى أحد الحسابات التالية، ثم إرفاق صورة الإيصال ليتم مراجعته واعتماد طلبك من قبل الإدارة:</p>
-                    <ul style={{ margin: '1rem 0 1rem 1.5rem' }}>
-                      <li><strong>بنك بيمو:</strong> 123456789 (باسم: أكاديمية كيو كيو)</li>
-                      <li><strong>سيريتل كاش:</strong> 0930000000</li>
-                      <li><strong>MTN كاش:</strong> 0940000000</li>
-                    </ul>
+                    <p style={{ marginBottom: '1rem' }}>يرجى تحويل المبلغ الإجمالي إلى أحد الحسابات التالية. <strong>اضغط على أي نص لنسخه.</strong></p>
+                    
+                    {/* Sham Cash */}
+                    <div style={{ background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
+                      <h4 style={{ color: '#3EEDC4', fontWeight: 'bold', marginBottom: '0.5rem' }}>1. شام كاش (Sham Cash)</h4>
+                      <div 
+                        onClick={() => handleCopy('f698bd6104ecfc91435335321b7978fc')} 
+                        style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ wordBreak: 'break-all' }}>f698bd6104ecfc91435335321b7978fc</span>
+                        <span style={{ fontSize: '0.8rem', color: copiedText === 'f698bd6104ecfc91435335321b7978fc' ? 'var(--success)' : 'rgba(255,255,255,0.5)' }}>
+                          {copiedText === 'f698bd6104ecfc91435335321b7978fc' ? 'تم النسخ!' : 'نسخ'}
+                        </span>
+                      </div>
+                      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+                         {/* Using a placeholder for QR code since the image path isn't known, but providing a download link */}
+                         <a href="/sham-cash-qr.jpg" download style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(62, 237, 196, 0.1)', color: '#3EEDC4', padding: '0.5rem 1rem', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem' }}>
+                           <Upload size={16} /> تحميل صورة الباركود (QR)
+                         </a>
+                      </div>
+                    </div>
+
+                    {/* Binance */}
+                    <div style={{ background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
+                      <h4 style={{ color: '#f59e0b', fontWeight: 'bold', marginBottom: '0.5rem' }}>2. بينانس (Binance)</h4>
+                      <div 
+                        onClick={() => handleCopy('1014947222')} 
+                        style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Pay ID: 1014947222</span>
+                        <span style={{ fontSize: '0.8rem', color: copiedText === '1014947222' ? 'var(--success)' : 'rgba(255,255,255,0.5)' }}>
+                          {copiedText === '1014947222' ? 'تم النسخ!' : 'نسخ'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Syriatel Cash */}
+                    <div style={{ background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
+                      <h4 style={{ color: '#ef4444', fontWeight: 'bold', marginBottom: '0.5rem' }}>3. سيرتيل كاش (Syriatel Cash)</h4>
+                      <p style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.7)' }}>باسم: قاسم السخني</p>
+                      <div 
+                        onClick={() => handleCopy('0983635096')} 
+                        style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>0983635096</span>
+                        <span style={{ fontSize: '0.8rem', color: copiedText === '0983635096' ? 'var(--success)' : 'rgba(255,255,255,0.5)' }}>
+                          {copiedText === '0983635096' ? 'تم النسخ!' : 'نسخ'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Haram */}
+                    <div style={{ background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
+                      <h4 style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: '0.5rem' }}>4. شركة الهرم للحوالات</h4>
+                      <p style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.7)' }}>الاسم: قاسم عبد السلام السخني<br/>المحافظة: دمشق</p>
+                      <div 
+                        onClick={() => handleCopy('0983635096')} 
+                        style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>0983635096</span>
+                        <span style={{ fontSize: '0.8rem', color: copiedText === '0983635096' ? 'var(--success)' : 'rgba(255,255,255,0.5)' }}>
+                          {copiedText === '0983635096' ? 'تم النسخ!' : 'نسخ'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   
                   <div>

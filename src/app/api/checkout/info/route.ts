@@ -37,10 +37,19 @@ export async function GET(req: Request) {
     
     const exchangeRate = exchangeRateSetting ? parseFloat(exchangeRateSetting.value) : 14500;
 
+    const allSettings = await prisma.setting.findMany();
+    const paymentSettings: Record<string, string> = {};
+    allSettings.forEach(s => {
+      if (s.key.startsWith('ENABLE_')) {
+        paymentSettings[s.key] = s.value;
+      }
+    });
+
     return NextResponse.json({
       course,
       wallet: user,
-      exchangeRate
+      exchangeRate,
+      paymentSettings
     });
   } catch (error) {
     console.error('Checkout Info API Error:', error);

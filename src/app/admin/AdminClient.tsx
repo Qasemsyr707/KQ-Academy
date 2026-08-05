@@ -148,7 +148,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
                 <div key={payment.id} style={{ background: '#111', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{payment.user.name}</span>
-                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{payment.amount.toLocaleString()} ل.س</span>
+                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>${payment.amount.toLocaleString()}</span>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.2rem' }}>
                     الكورس: {payment.course.title} <br/>
@@ -215,6 +215,62 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
           </div>
         </div>
 
+      </div>
+
+      {/* Payment Settings Section (Owner Only) */}
+      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginTop: '1rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Settings color="var(--primary)" /> إعدادات بوابات الدفع (خاص بالمالك)
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>يمكنك هنا تفعيل أو تعطيل أي وسيلة دفع في المنصة. الوسائل المعطلة لن تظهر للطلاب في صفحة الدفع.</p>
+        
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
+          {['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'WALLET', 'MANUAL'].map(method => (
+            <div key={method} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#111', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', flex: '1 1 300px' }}>
+              <div>
+                <h4 style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.3rem' }}>
+                  {method === 'STRIPE' ? 'البطاقة الائتمانية' 
+                  : method === 'PAYPAL' ? 'باي بال' 
+                  : method === 'TABBY' ? 'تابي (Tabby)'
+                  : method === 'TAMARA' ? 'تمارا (Tamara)'
+                  : method === 'WALLET' ? 'المحفظة الداخلية' 
+                  : 'التحويل اليدوي'}
+                </h4>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', margin: 0 }}>{method}</p>
+              </div>
+              <button 
+                onClick={async () => {
+                   try {
+                     const isEnabled = stats.paymentSettings?.[`ENABLE_${method}`] !== 'false';
+                     const res = await fetch('/api/admin/settings', {
+                       method: 'POST',
+                       headers: { 'Content-Type': 'application/json' },
+                       body: JSON.stringify({ key: `ENABLE_${method}`, value: isEnabled ? 'false' : 'true' })
+                     });
+                     if (res.ok) {
+                       window.location.reload();
+                     } else {
+                       alert('ليس لديك صلاحية أو حدث خطأ');
+                     }
+                   } catch(e) {
+                     alert('حدث خطأ');
+                   }
+                }}
+                style={{ 
+                  background: stats.paymentSettings?.[`ENABLE_${method}`] !== 'false' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                  color: stats.paymentSettings?.[`ENABLE_${method}`] !== 'false' ? '#22c55e' : '#ef4444', 
+                  border: `1px solid ${stats.paymentSettings?.[`ENABLE_${method}`] !== 'false' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                  padding: '0.6rem 1.5rem', 
+                  borderRadius: '20px', 
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  minWidth: '100px'
+                }}>
+                {stats.paymentSettings?.[`ENABLE_${method}`] !== 'false' ? 'مفعل' : 'معطل'}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
