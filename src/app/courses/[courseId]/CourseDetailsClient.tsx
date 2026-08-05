@@ -11,7 +11,6 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
 
   const faqs = [
     { q: 'متى يمكنني البدء في الكورس؟', a: 'يمكنك البدء فور إتمام عملية الشراء. جميع الدروس المسجلة ستكون متاحة لك مباشرة.' },
-    { q: 'هل يمكنني استرداد أموالي إذا لم يعجبني الكورس؟', a: 'نعم، نحن نقدم ضمان استرداد الأموال خلال 14 يوماً إذا لم تكن راضياً بنسبة 100% عن المحتوى.' },
     { q: 'هل سأحصل على شهادة بعد الإتمام؟', a: 'بالتأكيد، عند إتمام جميع الدروس واجتياز الاختبارات القصيرة، ستحصل على شهادة معتمدة يمكن إضافتها للسيرة الذاتية.' },
     { q: 'هل الكورس متاح مدى الحياة؟', a: 'نعم، بمجرد شرائك للكورس ستحصل على وصول غير محدود مدى الحياة لجميع التحديثات والدروس المستقبلية الخاصة بهذا الكورس.' }
   ];
@@ -77,7 +76,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
               <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '0.5rem', color: '#fff', textAlign: 'center' }}>
                  {course.priceSYP > 0 ? `${course.priceSYP.toLocaleString()} ل.س` : (course.price > 0 ? `$${course.price}` : 'مجاني')}
               </h2>
-              <div style={{ textAlign: 'center', color: 'var(--success)', marginBottom: '2rem', fontWeight: 'bold' }}>ضمان استرداد الأموال لمدة 14 يوماً</div>
+
 
               {isEnrolled ? (
                  <Link href={`/courses/${course.id}/learn`} className="btn btn-solid" style={{ width: '100%', padding: '1.2rem', fontSize: '1.2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
