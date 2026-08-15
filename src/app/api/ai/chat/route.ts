@@ -37,8 +37,24 @@ export async function POST(req: Request) {
       parts: [{ text: msg.content }]
     }));
 
+    // Gemini API strict rule: history MUST start with 'user' and alternate.
+    // Since our client starts with a welcome message from the 'assistant', we remove it.
+    if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
+      formattedHistory.shift();
+    }
+    
+    // To be extra safe against consecutive roles (which also crashes Gemini):
+    const safeHistory = [];
+    let expectedRole = 'user';
+    for (const msg of formattedHistory) {
+      if (msg.role === expectedRole) {
+        safeHistory.push(msg);
+        expectedRole = expectedRole === 'user' ? 'model' : 'user';
+      }
+    }
+
     const chat = model.startChat({
-      history: formattedHistory,
+      history: safeHistory,
       generationConfig: {
         maxOutputTokens: 2000,
       },
