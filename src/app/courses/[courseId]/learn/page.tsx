@@ -1,10 +1,11 @@
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import CoursePlayerClient from './CoursePlayerClient';
 
 export default async function CourseLearnPage({ params }: { params: Promise<{ courseId: string }> }) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   const resolvedParams = await params;
 
   if (!session) {
