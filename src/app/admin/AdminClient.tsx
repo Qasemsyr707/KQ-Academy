@@ -153,6 +153,14 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
                   <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.2rem' }}>
                     الكورس: {payment.course.title} <br/>
                     طريقة الدفع: {payment.paymentMethod}
+                    {payment.receiptImage && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <a href={payment.receiptImage} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#3EEDC4', textDecoration: 'none', background: 'rgba(62, 237, 196, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.85rem' }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                          عرض صورة الإيصال / الحوالة
+                        </a>
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '1rem' }}>
                     <button onClick={() => handleUpdatePayment(payment.id, 'APPROVED')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', padding: '0.8rem', borderRadius: '8px', border: '1px solid rgba(34, 197, 94, 0.2)', cursor: 'pointer', fontWeight: 'bold' }}>
