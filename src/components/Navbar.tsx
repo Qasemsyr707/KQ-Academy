@@ -58,7 +58,7 @@ export default function Navbar() {
         <img 
           src="/logo.png" 
           alt="KQ Academy Logo" 
-          style={{ height: '48px', width: 'auto', objectFit: 'contain' }} 
+          style={{ height: '48px', width: 'auto', objectFit: 'contain', mixBlendMode: 'screen' }} 
         />
       </Link>
 
