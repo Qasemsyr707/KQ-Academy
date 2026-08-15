@@ -1,53 +1,82 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Headphones, Mic, MicOff, Users, ChevronRight, Hash, MessageSquare, Plus, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Headphones, Mic, MicOff, Users, ChevronRight, Hash, MessageSquare, Plus, Settings, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
-
-const mockRooms = [
-  {
-    id: 1,
-    name: 'مراجعة فيزياء - البكالوريا',
-    topic: 'الفيزياء',
-    listeners: 45,
-    speakers: 3,
-    active: true,
-    avatars: [
-      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-      'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop',
-    ]
-  },
-  {
-    id: 2,
-    name: 'تحدي البرمجة بـ React',
-    topic: 'تكنولوجيا',
-    listeners: 120,
-    speakers: 5,
-    active: true,
-    avatars: [
-      'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop',
-      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
-    ]
-  },
-  {
-    id: 3,
-    name: 'نقاش مفتوح: تنظيم الوقت للدراسة',
-    topic: 'تطوير الذات',
-    listeners: 85,
-    speakers: 4,
-    active: false,
-    avatars: [
-      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop',
-    ]
-  }
-];
+import { LiveKitRoom, RoomAudioRenderer, useParticipants, useLocalParticipant, VideoConference } from '@livekit/components-react';
+import '@livekit/components-styles';
+import { useSession } from 'next-auth/react';
 
 export default function StudyRoomsPage() {
-  const [activeRoom, setActiveRoom] = useState<number | null>(null);
+  const { data: session } = useSession();
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeRoom, setActiveRoom] = useState<any | null>(null);
   const [isMuted, setIsMuted] = useState(true);
+  
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newRoomTitle, setNewRoomTitle] = useState('');
+  const [newRoomTheme, setNewRoomTheme] = useState('#a855f7');
+  const [isCreating, setIsCreating] = useState(false);
+
+  const [liveKitToken, setLiveKitToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = async () => {
+    try {
+      const res = await fetch('/api/study-rooms');
+      if (res.ok) {
+        const data = await res.json();
+        setRooms(data);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoomTitle.trim()) return;
+    setIsCreating(true);
+    try {
+      const res = await fetch('/api/study-rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newRoomTitle, themeColor: newRoomTheme })
+      });
+      if (res.ok) {
+        const room = await res.json();
+        setRooms([room, ...rooms]);
+        setIsCreateModalOpen(false);
+        setNewRoomTitle('');
+        joinRoom(room);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const joinRoom = async (room: any) => {
+    setActiveRoom(room);
+    setLiveKitToken(null);
+    try {
+      const res = await fetch(`/api/livekit/token?room=${room.id}&username=${session?.user?.name || 'Student'}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLiveKitToken(data.token);
+      }
+    } catch (error) {
+      console.error('Failed to get token:', error);
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -63,7 +92,10 @@ export default function StudyRoomsPage() {
           </div>
           <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>غرف الدراسة الصوتية</h1>
         </div>
-        <button style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+        <button 
+          onClick={() => setIsCreateModalOpen(true)}
+          style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+        >
           <Plus size={18} /> إنشاء غرفة
         </button>
       </div>
@@ -79,117 +111,173 @@ export default function StudyRoomsPage() {
               <p style={{ color: 'rgba(255,255,255,0.6)' }}>انضم إلى زملائك، استمع للنقاشات، وشارك أفكارك.</p>
             </div>
 
-            <div style={{ display: 'grid', gap: '1.5rem' }}>
-              {mockRooms.map((room) => (
-                <div 
-                  key={room.id}
-                  onClick={() => setActiveRoom(room.id)}
-                  style={{ 
-                    background: '#111', borderRadius: '24px', padding: '1.5rem', 
-                    border: activeRoom === room.id ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.05)',
-                    cursor: 'pointer', transition: 'all 0.2s', position: 'relative', overflow: 'hidden'
-                  }}
-                >
-                  {room.active && (
-                    <div style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', padding: '0.4rem 1rem', borderBottomLeftRadius: '16px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ width: '6px', height: '6px', background: '#a855f7', borderRadius: '50%', animation: 'pulse 2s infinite' }} />
-                      نشط الآن
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', gap: '0.5rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: '0.5rem', marginTop: room.active ? '1rem' : '0' }}>
-                    <Hash size={14} /> {room.topic}
-                  </div>
-                  
-                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>{room.name}</h3>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      {room.avatars.map((avatar, idx) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img 
-                          key={idx} src={avatar} alt="User" 
-                          style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #111', marginLeft: '-10px', zIndex: room.avatars.length - idx }} 
-                        />
-                      ))}
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '2px solid #111', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '-10px', fontSize: '0.8rem', zIndex: 0 }}>
-                        +{room.speakers + room.listeners - room.avatars.length}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '1rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <Users size={16} /> {room.listeners} المستمعين
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <Mic size={16} /> {room.speakers} المتحدثين
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
-
-        {/* Sidebar (Active Room Details) */}
-        {activeRoom && (
-          <motion.div 
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 350, opacity: 1 }}
-            style={{ background: '#111', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}
-          >
-            <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h3 style={{ fontWeight: 'bold' }}>الغرفة الحالية</h3>
-                <button onClick={() => setActiveRoom(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}>مغادرة</button>
+            {loading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+                <Loader2 size={32} className="animate-spin" color="#a855f7" />
               </div>
-
-              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                <div style={{ width: '100px', height: '100px', borderRadius: '35%', background: 'rgba(168, 85, 247, 0.1)', margin: '0 auto 1.5rem auto', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={mockRooms.find(r => r.id === activeRoom)?.avatars[0]} alt="Speaker" style={{ width: '100%', height: '100%', borderRadius: '35%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: '#a855f7', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #111' }}>
-                    <Mic size={14} color="#fff" />
-                  </div>
-                </div>
-                <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.3rem' }}>م. أحمد السوري</h4>
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>يتحدث الآن...</div>
+            ) : rooms.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.5)' }}>
+                لا توجد غرف نشطة حالياً. كن أول من ينشئ غرفة!
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: 'auto' }}>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', position: 'relative' }}>
-                      {i < 3 ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={mockRooms[0].avatars[i]} alt="User" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', opacity: i === 0 ? 1 : 0.5 }} />
-                      ) : null}
+            ) : (
+              <div style={{ display: 'grid', gap: '1.5rem' }}>
+                {rooms.map((room) => (
+                  <div 
+                    key={room.id}
+                    onClick={() => joinRoom(room)}
+                    style={{ 
+                      background: '#111', borderRadius: '24px', padding: '1.5rem', 
+                      border: activeRoom?.id === room.id ? `1px solid ${room.themeColor || '#a855f7'}` : '1px solid rgba(255,255,255,0.05)',
+                      cursor: 'pointer', transition: 'all 0.2s', position: 'relative', overflow: 'hidden'
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: '0.5rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                      <Hash size={14} color={room.themeColor || '#a855f7'} /> غرفة عامة
+                    </div>
+                    
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>{room.title}</h3>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: '1rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Users size={16} /> الانضمام
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                <button 
-                  onClick={() => setIsMuted(!isMuted)}
-                  style={{ flex: 1, background: isMuted ? 'rgba(255,255,255,0.05)' : 'rgba(239, 68, 68, 0.1)', color: isMuted ? '#fff' : '#ef4444', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                >
-                  {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
-                </button>
-                <button style={{ width: '60px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <MessageSquare size={20} />
-                </button>
-                <button style={{ width: '60px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <Settings size={20} />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
+        {/* Sidebar (Active Room Details) */}
+        <AnimatePresence>
+          {activeRoom && liveKitToken && (
+            <motion.div 
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 380, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              style={{ background: '#111', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            >
+              <LiveKitRoom
+                video={false}
+                audio={!isMuted}
+                token={liveKitToken}
+                serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+                data-lk-theme="default"
+                style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                onDisconnected={() => setActiveRoom(null)}
+              >
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{activeRoom.title}</h3>
+                  <button onClick={() => { setActiveRoom(null); setLiveKitToken(null); }} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold' }}>مغادرة</button>
+                </div>
+
+                <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+                  <RoomAudioRenderer />
+                  <ParticipantList />
+                </div>
+
+                <div style={{ padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '1rem' }}>
+                  <button 
+                    onClick={() => setIsMuted(!isMuted)}
+                    style={{ flex: 1, background: isMuted ? 'rgba(255,255,255,0.05)' : 'rgba(239, 68, 68, 0.1)', color: isMuted ? '#fff' : '#ef4444', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+                  </button>
+                  <button style={{ width: '60px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <MessageSquare size={20} />
+                  </button>
+                </div>
+              </LiveKitRoom>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
+
+      {/* Create Room Modal */}
+      {isCreateModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            style={{ background: '#111', padding: '2rem', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>إنشاء غرفة دراسة</h2>
+              <button onClick={() => setIsCreateModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+            
+            <form onSubmit={handleCreateRoom}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>موضوع الغرفة (الاسم)</label>
+                <input 
+                  type="text" 
+                  value={newRoomTitle}
+                  onChange={e => setNewRoomTitle(e.target.value)}
+                  placeholder="مثال: نقاش فيزياء البكالوريا..."
+                  style={{ width: '100%', padding: '1rem', background: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', outline: 'none' }}
+                  autoFocus
+                />
+              </div>
+              
+              <div style={{ marginBottom: '2rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>لون الغرفة المميز</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'].map(color => (
+                    <button 
+                      key={color}
+                      type="button"
+                      onClick={() => setNewRoomTheme(color)}
+                      style={{ 
+                        width: '32px', height: '32px', borderRadius: '50%', background: color, border: 'none', cursor: 'pointer',
+                        boxShadow: newRoomTheme === color ? `0 0 0 3px #111, 0 0 0 5px ${color}` : 'none'
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button 
+                type="submit"
+                disabled={isCreating || !newRoomTitle.trim()}
+                style={{ width: '100%', background: newRoomTheme, color: '#fff', border: 'none', padding: '1rem', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', opacity: (!newRoomTitle.trim() || isCreating) ? 0.5 : 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+              >
+                {isCreating ? <Loader2 className="animate-spin" /> : 'بدء الغرفة الآن'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// Helper component to render LiveKit participants
+function ParticipantList() {
+  const participants = useParticipants();
+  const { localParticipant } = useLocalParticipant();
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+      {participants.map(p => (
+        <div key={p.identity} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: '#a855f7', position: 'relative', border: p.isSpeaking ? '2px solid #3b82f6' : '2px solid transparent' }}>
+            {p.name?.[0] || 'U'}
+            {!p.isMicrophoneEnabled && (
+              <div style={{ position: 'absolute', bottom: -5, right: -5, background: '#ef4444', borderRadius: '50%', padding: '2px' }}>
+                <MicOff size={12} color="#fff" />
+              </div>
+            )}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+            {p.name} {p.identity === localParticipant.identity ? '(أنت)' : ''}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
