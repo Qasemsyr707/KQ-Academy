@@ -226,6 +226,25 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
     }
   };
 
+  const handleIssueCertificate = async () => {
+    try {
+      const res = await fetch('/api/certificates/issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId: course.id })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        window.location.href = '/features/certificates';
+      } else {
+        alert(data.error);
+      }
+    } catch (e) {
+      alert('حدث خطأ في استخراج الشهادة');
+    }
+  };
+
   const progress = calculateProgress();
   const isQuiz = activeItem && 'questions' in activeItem;
 
@@ -243,6 +262,11 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
             <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{course.title}</h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {progress === 100 && (
+              <button onClick={handleIssueCertificate} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: '#000', padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                <Award size={16} /> استخراج الشهادة
+              </button>
+            )}
             <button onClick={() => setShowReview(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(203, 161, 83, 0.1)', color: 'var(--warning)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(203, 161, 83, 0.3)', cursor: 'pointer', fontWeight: 'bold' }}>
               <Star size={16} fill="var(--warning)" /> تقييم الكورس
             </button>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Users, UploadCloud, Video, FileEdit, Star, TrendingUp, DollarSign, Bot, ShieldCheck, HelpCircle, Wallet } from 'lucide-react';
+import { Users, UploadCloud, Video, FileEdit, Star, TrendingUp, DollarSign, Bot, ShieldCheck, HelpCircle, Wallet, Award } from 'lucide-react';
 import RevenueChart from '@/components/instructor/RevenueChart';
 
 interface ActiveCourse {
@@ -88,6 +88,7 @@ export default function InstructorDashboardClient({
               <Link href="/instructor/courses" className="btn btn-solid" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><UploadCloud size={20} /> رفع درس جديد (DRM)</Link>
               <Link href="/instructor/live/schedule" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><Video size={20} /> جدولة بث مباشر</Link>
               <Link href="/instructor/quizzes" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><FileEdit size={20} /> إدارة الاختبارات</Link>
+              <Link href="/instructor/certificates" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><Award size={20} /> شهادات طلابي</Link>
               <Link href="/instructor/wallet" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none', borderColor: 'var(--success)', color: 'var(--success)' }}><Wallet size={20} /> سحب الأرباح</Link>
             </div>
           </div>

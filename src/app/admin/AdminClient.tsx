@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Tag, CheckCircle, XCircle, Users, BookOpen, CreditCard, Video, Shield, Settings, Activity, Megaphone } from 'lucide-react';
+import { Tag, CheckCircle, XCircle, Users, BookOpen, CreditCard, Video, Shield, Settings, Activity, Megaphone, Award } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
@@ -74,6 +74,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
         {[
           { href: '/admin/users', icon: Users, color: '#3b82f6', title: 'إدارة المستخدمين', subtitle: `${stats.totalUsers} مستخدم` },
           { href: '/admin/courses', icon: BookOpen, color: '#8b5cf6', title: 'إدارة الكورسات', subtitle: `${stats.totalCourses} كورس` },
+          { href: '/admin/certificates', icon: Award, color: '#f59e0b', title: 'إدارة الشهادات', subtitle: 'سجل الشهادات المصدرة' },
           { href: '/admin/live', icon: Video, color: '#ef4444', title: 'البث المباشر', subtitle: `${stats.liveStreams} بث حالي` },
           { href: '/admin/wallet', icon: CreditCard, color: '#22c55e', title: 'إدارة المحافظ', subtitle: `${stats.pendingWallets} طلب معلق` },
           { href: '/admin/marketing', icon: Megaphone, color: '#CBA153', title: 'التسويق والنمو', subtitle: 'حزم • اشتراكات • إيميل' }
