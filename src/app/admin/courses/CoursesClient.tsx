@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Search, Edit, Trash2, CheckCircle, XCircle, Book, DollarSign, Image as ImageIcon, Users } from 'lucide-react';
 import Image from 'next/image';
 
-export default function CoursesClient({ initialCourses }: { initialCourses: any[] }) {
+export default function CoursesClient({ initialCourses, instructors }: { initialCourses: any[], instructors: any[] }) {
   const [courses, setCourses] = useState(initialCourses);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
@@ -14,6 +14,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
   const [editTitle, setEditTitle] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editPriceSYP, setEditPriceSYP] = useState('');
+  const [editInstructorId, setEditInstructorId] = useState('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
@@ -31,6 +32,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
     setEditTitle(course.title);
     setEditPrice(course.price.toString());
     setEditPriceSYP(course.priceSYP.toString());
+    setEditInstructorId(course.instructor?.id || course.instructorId);
     setMsg({ type: '', text: '' });
   };
 
@@ -47,7 +49,8 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
           status: editStatus,
           title: editTitle,
           price: editPrice,
-          priceSYP: editPriceSYP
+          priceSYP: editPriceSYP,
+          instructorId: editInstructorId
         }),
       });
 
@@ -230,6 +233,21 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
                   onChange={e => setEditTitle(e.target.value)}
                   style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', outline: 'none' }}
                 />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>المدرب (نقل الملكية)</label>
+                <select 
+                  value={editInstructorId} 
+                  onChange={e => setEditInstructorId(e.target.value)}
+                  style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', outline: 'none' }}
+                >
+                  {instructors.map(inst => (
+                    <option key={inst.id} value={inst.id} style={{ background: '#111' }}>
+                      {inst.name} ({inst.email})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

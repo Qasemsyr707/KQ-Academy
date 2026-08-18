@@ -21,6 +21,11 @@ export default async function AdminCoursesPage() {
     orderBy: { createdAt: 'desc' }
   });
 
+  const instructors = await prisma.user.findMany({
+    where: { role: { in: ['INSTRUCTOR', 'ADMIN'] } },
+    select: { id: true, name: true, email: true }
+  });
+
   return (
     <div style={{ padding: '2rem 5%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -30,7 +35,7 @@ export default async function AdminCoursesPage() {
         </Link>
       </div>
 
-      <CoursesClient initialCourses={courses} />
+      <CoursesClient initialCourses={courses} instructors={instructors} />
     </div>
   );
 }
