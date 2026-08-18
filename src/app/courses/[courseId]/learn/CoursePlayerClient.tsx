@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Lock, ArrowRight, Menu, X, Award, Star, Paperclip, CheckSquare, MessageCircle, Send, Radio } from 'lucide-react';
+import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Lock, ArrowRight, Menu, X, Award, Star, Paperclip, CheckSquare, MessageCircle, Send, Radio, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -582,6 +582,22 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
               </div>
             </div>
 
+              {/* Course Attachments */}
+              {course.attachments && course.attachments.length > 0 && (
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h4 style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Paperclip size={14} /> مرفقات الكورس
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {course.attachments.map((att: any) => (
+                      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem', background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '8px' }}>
+                        <FileText size={16} /> {att.name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             {/* Curriculum List */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {chapters.map((chapter, index) => {
@@ -610,6 +626,22 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         exit={{ height: 0, opacity: 0 }}
                         style={{ overflow: 'hidden' }}
                       >
+                          {/* Chapter Attachments */}
+                          {chapter.attachments && chapter.attachments.length > 0 && (
+                            <div style={{ padding: '1rem 1.5rem', background: 'rgba(0,0,0,0.2)' }}>
+                              <h5 style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <Paperclip size={12} /> مرفقات الفصل
+                              </h5>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                {chapter.attachments.map((att: any) => (
+                                  <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', textDecoration: 'none', fontSize: '0.8rem' }}>
+                                    <FileText size={14} /> {att.name}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                         {/* Lessons */}
                         {chapter.lessons?.map((lesson: any, lessonIdx: number) => {
                           const isActive = activeItem?.id === lesson.id;

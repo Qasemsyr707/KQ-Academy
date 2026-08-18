@@ -81,20 +81,22 @@ model Course {
   questions    CourseQuestion[]
   careerPaths  CareerPathCourse[]
   bundles      BundleCourse[]
+  attachments  Attachment[]
 }
 
 model Chapter {
   id          String   @id @default(cuid())
   title       String
+  courseId    String
   order       Int      @default(0)
   isFree      Boolean  @default(false)
-  courseId    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   course      Course   @relation(fields: [courseId], references: [id])
   lessons     Lesson[]
   quizzes     Quiz[]
+  attachments Attachment[]
 }
 
 model Lesson {
@@ -118,11 +120,17 @@ model Attachment {
   id        String   @id @default(cuid())
   name      String
   url       String
-  lessonId  String
+  
+  lessonId  String?
+  chapterId String?
+  courseId  String?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  lesson    Lesson?   @relation(fields: [lessonId], references: [id])
+  chapter   Chapter?  @relation(fields: [chapterId], references: [id])
+  course    Course?   @relation(fields: [courseId], references: [id])
 }
 
 model Quiz {

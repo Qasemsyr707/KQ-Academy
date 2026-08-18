@@ -31,9 +31,11 @@ export default async function CourseLearnPage({ params }: { params: Promise<{ co
   const course = await prisma.course.findUnique({
     where: { id: resolvedParams.courseId },
     include: {
+      attachments: true,
       chapters: {
         orderBy: { order: 'asc' },
         include: {
+          attachments: true,
           lessons: {
             orderBy: { order: 'asc' },
             include: {

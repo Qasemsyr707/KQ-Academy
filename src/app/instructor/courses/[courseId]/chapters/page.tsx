@@ -13,8 +13,14 @@ export default async function ChaptersManagementPage({ params }: { params: Promi
   const course = await prisma.course.findUnique({
     where: { id: resolvedParams.courseId },
     include: {
+      attachments: true,
       chapters: {
-        include: { lessons: true },
+        include: { 
+          lessons: {
+            include: { attachments: true }
+          },
+          attachments: true
+        },
         orderBy: { order: 'asc' }
       }
     }

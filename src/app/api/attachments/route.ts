@@ -12,17 +12,23 @@ export async function POST(req: Request) {
 
     // For this prototype, we accept a direct URL to a file. 
     // In production, this would handle a multipart form data upload to S3.
-    const { name, url, lessonId } = await req.json();
+    const { name, url, lessonId, chapterId, courseId } = await req.json();
 
-    if (!name || !url || !lessonId) {
+    if (!name || !url) {
       return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 });
+    }
+    
+    if (!lessonId && !chapterId && !courseId) {
+      return NextResponse.json({ error: 'يجب تحديد الكورس أو الفصل أو الدرس' }, { status: 400 });
     }
 
     const attachment = await prisma.attachment.create({
       data: {
         name,
         url,
-        lessonId
+        lessonId: lessonId || null,
+        chapterId: chapterId || null,
+        courseId: courseId || null
       }
     });
 
