@@ -201,6 +201,8 @@ export default function ChaptersClient({ course }: { course: any }) {
       console.error(error);
       alert('خطأ في الاتصال بالخادم');
     }
+  };
+
   const handleAddAttachment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!attachmentName.trim() || !attachmentFile || !isAddingAttachment) return;
