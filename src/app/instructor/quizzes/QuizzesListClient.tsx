@@ -28,7 +28,12 @@ export default function QuizzesListClient({ quizzes }: { quizzes: any[] }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
           {quizzes.map((quiz) => (
             <div key={quiz.id} style={{ background: '#111', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{quiz.title}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{quiz.title}</h3>
+                <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '12px', background: quiz.type === 'MANUAL_FILE' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(96, 165, 250, 0.1)', color: quiz.type === 'MANUAL_FILE' ? '#10b981' : '#60a5fa' }}>
+                  {quiz.type === 'MANUAL_FILE' ? 'ملف مرفق' : 'مؤتمت'}
+                </span>
+              </div>
               <p style={{ fontSize: '0.85rem', color: 'var(--primary)', marginBottom: '1.5rem' }}>
                 الكورس: {quiz.chapter.course.title} <br/>
                 الفصل: {quiz.chapter.title}
@@ -36,13 +41,18 @@ export default function QuizzesListClient({ quizzes }: { quizzes: any[] }) {
               
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' }}>{quiz._count.questions}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><CheckCircle size={14} /> سؤال</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' }}>{quiz.type === 'MANUAL_FILE' ? '-' : quiz._count.questions}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><CheckCircle size={14} /> {quiz.type === 'MANUAL_FILE' ? 'غير متوفر' : 'سؤال'}</div>
+                </div>
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.05)' }}></div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>{quiz.totalMarks}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>العلامة الكلية</div>
                 </div>
                 <div style={{ width: '1px', background: 'rgba(255,255,255,0.05)' }}></div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--success)' }}>{quiz._count.attempts}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><Users size={14} /> محاولة</div>
+                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><Users size={14} /> تسليم</div>
                 </div>
               </div>
 

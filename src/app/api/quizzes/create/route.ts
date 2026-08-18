@@ -12,10 +12,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'غير مصرح لك بإجراء هذه العملية' }, { status: 401 });
     }
 
-    const { title, chapterId, questions } = await request.json();
+    const { title, chapterId, type, passingScore, totalMarks, fileUrl, questions } = await request.json();
 
-    if (!title || !chapterId || !questions || !Array.isArray(questions) || questions.length === 0) {
-      return NextResponse.json({ error: 'البيانات غير مكتملة' }, { status: 400 });
+    if (!title || !chapterId || !type) {
+      return NextResponse.json({ error: 'البيانات الأساسية غير مكتملة' }, { status: 400 });
+    }
+
+    if (type === 'AUTOMATIC' && (!questions || !Array.isArray(questions) || questions.length === 0)) {
+      return NextResponse.json({ error: 'يجب إضافة سؤال واحد على الأقل' }, { status: 400 });
+    }
+
+    if (type === 'MANUAL_FILE' && !fileUrl) {
+      return NextResponse.json({ error: 'يجب رفع ملف الاختبار' }, { status: 400 });
     }
 
     // Verify chapter ownership via course
@@ -30,23 +38,38 @@ export async function POST(request: Request) {
 
     // Create the Quiz and its Questions in a transaction
     const newQuiz = await prisma.$transaction(async (tx) => {
+      // Calculate total marks for AUTOMATIC
+      let calcTotalMarks = 0;
+      if (type === 'AUTOMATIC') {
+        calcTotalMarks = questions.reduce((sum: number, q: any) => sum + Number(q.points || 1), 0);
+      } else {
+        calcTotalMarks = Number(totalMarks) || 100;
+      }
+
       const quiz = await tx.quiz.create({
         data: {
           title,
           chapterId,
+          type,
+          fileUrl: type === 'MANUAL_FILE' ? fileUrl : null,
+          passingScore: Number(passingScore) || 50,
+          totalMarks: calcTotalMarks
         }
       });
 
-      // Create questions
-      for (const q of questions) {
-        await tx.question.create({
-          data: {
-            text: q.text,
-            options: JSON.stringify(q.options),
-            correctAnswer: Number(q.correctAnswer),
-            quizId: quiz.id
-          }
-        });
+      // Create questions if AUTOMATIC
+      if (type === 'AUTOMATIC') {
+        for (const q of questions) {
+          await tx.question.create({
+            data: {
+              text: q.text,
+              options: JSON.stringify(q.options),
+              correctAnswer: Number(q.correctAnswer),
+              points: Number(q.points) || 1,
+              quizId: quiz.id
+            }
+          });
+        }
       }
 
       return quiz;

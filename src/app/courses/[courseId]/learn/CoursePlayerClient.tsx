@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Lock, ArrowRight, Menu, X, Award, Star, Paperclip, CheckSquare, MessageCircle, Send, Radio, FileText } from 'lucide-react';
+import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Lock, ArrowRight, Menu, X, Award, Star, Paperclip, CheckSquare, MessageCircle, Send, Radio, FileText, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -430,12 +430,16 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                 </div>
 
                 {quizResult ? (
-                  <div style={{ textAlign: 'center', padding: '2rem', background: quizResult.passed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', borderRadius: '16px' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: quizResult.passed ? '#22c55e' : '#ef4444', marginBottom: '1rem' }}>
-                      {quizResult.passed ? 'نجاح! 🎉' : 'لم تجتز الاختبار 😔'}
+                  <div style={{ textAlign: 'center', padding: '2rem', background: quizResult.status === 'PENDING_GRADING' ? 'rgba(203, 161, 83, 0.1)' : (quizResult.passed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'), borderRadius: '16px' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: quizResult.status === 'PENDING_GRADING' ? 'var(--warning)' : (quizResult.passed ? '#22c55e' : '#ef4444'), marginBottom: '1rem' }}>
+                      {quizResult.status === 'PENDING_GRADING' ? 'بانتظار التصحيح ⏳' : (quizResult.passed ? 'نجاح! 🎉' : 'لم تجتز الاختبار 😔')}
                     </h3>
-                    <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>النتيجة: {quizResult.score}%</p>
-                    {quizResult.passed ? (
+                    {quizResult.status !== 'PENDING_GRADING' && (
+                      <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>النتيجة: {quizResult.score} / {activeItem.totalMarks || 100}</p>
+                    )}
+                    {quizResult.status === 'PENDING_GRADING' ? (
+                      <p style={{ color: 'rgba(255,255,255,0.7)' }}>تم استلام ملف إجابتك وهو قيد المراجعة والتصحيح من قبل المدرب.</p>
+                    ) : quizResult.passed ? (
                       <p style={{ color: 'rgba(255,255,255,0.7)' }}>تم تسجيل الاختبار كمكتمل، يمكنك متابعة الدروس.</p>
                     ) : (
                       <button onClick={() => { setQuizResult(null); setQuizAnswers({}); }} style={{ background: 'var(--primary)', color: '#000', padding: '0.8rem 2rem', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
@@ -445,15 +449,65 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                   </div>
                 ) : (
                   <>
-                    {activeItem.questions?.length === 0 ? (
+                    {activeItem.type === 'MANUAL_FILE' ? (
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '12px', textAlign: 'center' }}>
+                        <h4 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>هذا الاختبار يتطلب تحميل ملف الأسئلة وحله، ثم رفع الإجابة.</h4>
+                        <a href={activeItem.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: '#000', padding: '1rem 2rem', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none', marginBottom: '2rem' }}>
+                          <Download size={20} /> تحميل ملف أسئلة الاختبار
+                        </a>
+
+                        <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
+                          <h4 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>رفع ملف الإجابة</h4>
+                          <div style={{ padding: '2rem', border: '2px dashed rgba(255,255,255,0.2)', borderRadius: '12px', background: 'rgba(255,255,255,0.02)' }}>
+                            <input 
+                              type="file" 
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setIsSubmittingQuiz(true);
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                formData.append('type', 'document');
+                                try {
+                                  const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                                  if (res.ok) {
+                                    const { url } = await res.json();
+                                    // Submit manual quiz
+                                    const submitRes = await fetch('/api/quizzes/submit', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ quizId: activeItem.id, answerFileUrl: url })
+                                    });
+                                    if (submitRes.ok) {
+                                      setQuizResult({ status: 'PENDING_GRADING' });
+                                    } else {
+                                      alert('حدث خطأ أثناء إرسال الاختبار');
+                                    }
+                                  } else {
+                                    alert('حدث خطأ أثناء رفع الملف');
+                                  }
+                                } catch (error) {
+                                  alert('حدث خطأ أثناء الرفع');
+                                }
+                                setIsSubmittingQuiz(false);
+                              }}
+                              style={{ width: '100%', cursor: 'pointer' }}
+                              accept=".pdf,.doc,.docx,.jpg,.png"
+                            />
+                            {isSubmittingQuiz && <p style={{ marginTop: '1rem', color: 'var(--primary)' }}>جاري الرفع والإرسال...</p>}
+                          </div>
+                        </div>
+                      </div>
+                    ) : activeItem.questions?.length === 0 ? (
                       <p style={{ textAlign: 'center', opacity: 0.5 }}>لم يتم إضافة أسئلة لهذا الاختبار بعد.</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         {activeItem.questions?.map((q: any, qIndex: number) => {
                           const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
                           return (
-                            <div key={q.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px' }}>
-                              <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>{qIndex + 1}. {q.text}</h4>
+                            <div key={q.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', position: 'relative' }}>
+                              <span style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'rgba(203, 161, 83, 0.1)', color: 'var(--primary)', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>{q.points} علامات</span>
+                              <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem', paddingLeft: '4rem' }}>{qIndex + 1}. {q.text}</h4>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 {options.map((opt: string, optIndex: number) => (
                                   <label key={optIndex} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: quizAnswers[q.id] === optIndex ? 'rgba(203, 161, 83, 0.2)' : 'rgba(255,255,255,0.05)', border: quizAnswers[q.id] === optIndex ? '1px solid var(--primary)' : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}>

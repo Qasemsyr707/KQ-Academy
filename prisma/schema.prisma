@@ -134,11 +134,15 @@ model Attachment {
 }
 
 model Quiz {
-  id        String   @id @default(cuid())
-  title     String
-  chapterId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  title        String
+  chapterId    String
+  type         String   @default("AUTOMATIC") // AUTOMATIC or MANUAL_FILE
+  fileUrl      String?  // For MANUAL_FILE type
+  passingScore Float    @default(50)
+  totalMarks   Float?   // Set manually for file-based, calculated automatically for automatic
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   chapter   Chapter        @relation(fields: [chapterId], references: [id])
   questions Question[]
@@ -150,6 +154,7 @@ model Question {
   text          String
   options       String   // Stored as JSON string e.g. ["A", "B", "C", "D"]
   correctAnswer Int      // Index of the correct option
+  points        Float    @default(1)
   quizId        String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -158,12 +163,14 @@ model Question {
 }
 
 model QuizAttempt {
-  id        String   @id @default(cuid())
-  userId    String
-  quizId    String
-  score     Float
-  passed    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  quizId        String
+  score         Float?   // Null if PENDING_GRADING
+  passed        Boolean  @default(false)
+  status        String   @default("COMPLETED") // COMPLETED or PENDING_GRADING
+  answerFileUrl String?  // For MANUAL_FILE student submissions
+  createdAt     DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id])
   quiz      Quiz     @relation(fields: [quizId], references: [id])

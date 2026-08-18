@@ -9,7 +9,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     if (!session) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
 
     const params = await props.params;
-    const { answers } = await req.json(); // answers is an object mapping questionId to selected option index
+    const { answers, answerFileUrl } = await req.json(); // answers is an object mapping questionId to selected option index
 
     const quiz = await prisma.quiz.findUnique({
       where: { id: params.id },
@@ -18,24 +18,48 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
     if (!quiz) return NextResponse.json({ error: 'الاختبار غير موجود' }, { status: 404 });
 
-    let correctCount = 0;
+    // Handle MANUAL_FILE quiz submission
+    if (quiz.type === 'MANUAL_FILE') {
+      if (!answerFileUrl) {
+        return NextResponse.json({ error: 'يجب إرفاق ملف الإجابة' }, { status: 400 });
+      }
+
+      await prisma.quizAttempt.create({
+        data: {
+          userId: session.user.id,
+          quizId: params.id,
+          score: null,
+          passed: false,
+          status: 'PENDING_GRADING',
+          answerFileUrl
+        }
+      });
+
+      return NextResponse.json({ 
+        status: 'PENDING_GRADING',
+        message: 'تم استلام الإجابة بنجاح وهي قيد المراجعة'
+      }, { status: 200 });
+    }
+
+    // Handle AUTOMATIC quiz submission
+    let studentPoints = 0;
     
     quiz.questions.forEach(q => {
       const userAnswer = answers[q.id];
       if (userAnswer === q.correctAnswer) {
-        correctCount++;
+        studentPoints += q.points || 1;
       }
     });
 
-    const score = (correctCount / quiz.questions.length) * 100;
-    const passed = score >= 60; // 60% passing grade
+    const passed = studentPoints >= quiz.passingScore;
 
     const attempt = await prisma.quizAttempt.create({
       data: {
         userId: session.user.id,
         quizId: params.id,
-        score,
-        passed
+        score: studentPoints,
+        passed,
+        status: 'COMPLETED'
       }
     });
 
@@ -48,11 +72,12 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     }
 
     return NextResponse.json({ 
-      score, 
-      passed, 
-      message: passed ? 'مبروك! لقد اجتزت الاختبار وكسبت 50 نقطة خبرة' : 'للأسف لم تجتز الاختبار، حاول مرة أخرى.',
-      correctCount,
-      total: quiz.questions.length
+      attempt: {
+        score: studentPoints,
+        passed
+      },
+      message: passed ? 'مبروك! لقد اجتزت الاختبار' : 'للأسف لم تجتز الاختبار، حاول مرة أخرى.',
+      total: quiz.totalMarks || quiz.questions.reduce((sum, q) => sum + (q.points||1), 0)
     }, { status: 200 });
 
   } catch (error) {
