@@ -9,15 +9,34 @@ import { useEffect } from 'react';
 import '@livekit/components-styles';
 import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/components-react';
 
-export default function CoursePlayerClient({ course, chapters, hasAccess = false }: { course: any, chapters: any[], hasAccess?: boolean }) {
+export default function CoursePlayerClient({ course, chapters, hasAccess = false, initialLessonId }: { course: any, chapters: any[], hasAccess?: boolean, initialLessonId?: string }) {
   // Find first accessible item
   const firstAccessibleChapter = chapters.find(c => hasAccess || c.isFree);
-  const initialActiveItem = firstAccessibleChapter?.lessons?.[0] || firstAccessibleChapter?.quizzes?.[0] || null;
+  
+  // Find specific lesson if provided
+  let specificLesson = null;
+  let specificChapterId = null;
+  if (initialLessonId) {
+    for (const c of chapters) {
+      if (c.lessons) {
+        const found = c.lessons.find((l: any) => l.id === initialLessonId);
+        if (found) {
+          specificLesson = found;
+          specificChapterId = c.id;
+          break;
+        }
+      }
+    }
+  }
+
+  const initialActiveItem = specificLesson || firstAccessibleChapter?.lessons?.[0] || firstAccessibleChapter?.quizzes?.[0] || null;
 
   const [activeItem, setActiveItem] = useState<any>(initialActiveItem);
   const [completedItems, setCompletedItems] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [openChapters, setOpenChapters] = useState<string[]>(firstAccessibleChapter ? [firstAccessibleChapter.id] : []);
+  const [openChapters, setOpenChapters] = useState<string[]>(
+    specificChapterId ? [specificChapterId] : (firstAccessibleChapter ? [firstAccessibleChapter.id] : [])
+  );
   
   // Certificate & Review States
   const [certId, setCertId] = useState<string | null>(null);

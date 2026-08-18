@@ -385,6 +385,16 @@ export default function ChaptersClient({ course }: { course: any }) {
                             <button onClick={() => setIsAddingAttachment({ type: 'lesson', id: lesson.id })} className="btn" style={{ padding: '0.2rem', color: '#10b981' }} title="إضافة مرفق للدرس">
                               <Paperclip size={16} />
                             </button>
+                            {lesson.isLive && (
+                              <Link 
+                                href={`/courses/${course.id}/learn?lessonId=${lesson.id}`} 
+                                target="_blank"
+                                style={{ fontSize: '0.8rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '0.2rem 0.5rem', borderRadius: '12px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 'bold' }}
+                                title="الدخول للقاعة"
+                              >
+                                <Video size={12} /> دخول القاعة
+                              </Link>
+                            )}
                             <span style={{ fontSize: '0.8rem', background: lesson.isLive ? 'rgba(244,63,94,0.1)' : 'rgba(255,255,255,0.1)', color: lesson.isLive ? '#f43f5e' : '#fff', padding: '0.2rem 0.5rem', borderRadius: '12px' }}>
                               {lesson.isLive ? 'بث مباشر' : 'فيديو مسجل'}
                             </span>

@@ -4,9 +4,10 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import CoursePlayerClient from './CoursePlayerClient';
 
-export default async function CourseLearnPage({ params }: { params: Promise<{ courseId: string }> }) {
+export default async function CourseLearnPage(props: { params: Promise<{ courseId: string }>, searchParams: Promise<{ lessonId?: string }> }) {
   const session = await getServerSession(authOptions);
-  const resolvedParams = await params;
+  const resolvedParams = await props.params;
+  const resolvedSearchParams = await props.searchParams;
 
   if (!session) {
     redirect('/login');
@@ -21,11 +22,6 @@ export default async function CourseLearnPage({ params }: { params: Promise<{ co
       }
     }
   });
-
-  // If strict mode:
-  // if (!enrollment) {
-  //   redirect(`/courses/${params.courseId}`);
-  // }
 
   // Fetch course with chapters, lessons, attachments, and quizzes
   const course = await prisma.course.findUnique({
@@ -82,5 +78,10 @@ export default async function CourseLearnPage({ params }: { params: Promise<{ co
     }
   ];
 
-  return <CoursePlayerClient course={course} chapters={displayChapters} hasAccess={!!enrollment || course.instructorId === (session.user as any).id || (session.user as any).role === 'ADMIN'} />;
+  return <CoursePlayerClient 
+    course={course} 
+    chapters={displayChapters} 
+    hasAccess={!!enrollment || course.instructorId === (session.user as any).id || (session.user as any).role === 'ADMIN'} 
+    initialLessonId={resolvedSearchParams?.lessonId}
+  />;
 }
