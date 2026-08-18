@@ -80,30 +80,41 @@ export default function AdminWalletClient({ initialTransactions, initialRate }: 
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
             {transactions.map(tx => (
-              <div key={tx.id} style={{ background: '#111', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div key={tx.id} style={{ background: '#111', padding: '1.5rem', borderRadius: '12px', border: tx.type === 'WITHDRAW' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, padding: '0.2rem 1rem', background: tx.type === 'WITHDRAW' ? 'var(--danger)' : 'var(--success)', color: tx.type === 'WITHDRAW' ? '#fff' : '#000', fontSize: '0.8rem', fontWeight: 'bold', borderBottomRightRadius: '8px' }}>
+                  {tx.type === 'WITHDRAW' ? 'سحب أرباح' : 'شحن محفظة'}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', marginTop: '1rem' }}>
                   <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{tx.user.name}</span>
-                  <span style={{ color: tx.currency === 'USD' ? '#22c55e' : 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                    {tx.amount.toLocaleString()} {tx.currency === 'USD' ? '$' : 'ل.س'}
+                  <span style={{ color: tx.type === 'WITHDRAW' ? '#ef4444' : (tx.currency === 'USD' ? '#22c55e' : 'var(--primary)'), fontWeight: 'bold', fontSize: '1.2rem' }}>
+                    {tx.type === 'WITHDRAW' ? '-' : '+'}{tx.amount.toLocaleString()} {tx.currency === 'USD' ? '$' : 'ل.س'}
                   </span>
                 </div>
                 <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1rem' }}>
                   البريد: {tx.user.email} <br/>
                   تاريخ الطلب: {new Date(tx.createdAt).toLocaleDateString('ar-SY')}
                 </div>
-                {tx.receiptImage && (
+                
+                {tx.type === 'WITHDRAW' && tx.provider && (
+                  <div style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem', color: '#fff', borderLeft: '3px solid var(--danger)' }}>
+                    <strong>تفاصيل التحويل:</strong> <br/> {tx.provider}
+                  </div>
+                )}
+
+                {tx.type !== 'WITHDRAW' && tx.receiptImage && (
                   <div style={{ marginBottom: '1.5rem' }}>
                     <a href={tx.receiptImage} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
                       عرض صورة الإيصال المرفقة
                     </a>
                   </div>
                 )}
+                
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button onClick={() => handleApproveReject(tx.id, 'APPROVE')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e', padding: '0.8rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                    <CheckCircle size={18} /> قبول الشحن
+                    <CheckCircle size={18} /> {tx.type === 'WITHDRAW' ? 'موافقة وتم التحويل' : 'قبول الشحن'}
                   </button>
                   <button onClick={() => handleApproveReject(tx.id, 'REJECT')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '0.8rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                    <XCircle size={18} /> رفض
+                    <XCircle size={18} /> {tx.type === 'WITHDRAW' ? 'رفض واسترجاع' : 'رفض'}
                   </button>
                 </div>
               </div>

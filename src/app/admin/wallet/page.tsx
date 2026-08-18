@@ -9,7 +9,10 @@ export default async function AdminWalletPage() {
   await requireRolePage(['ADMIN']);
 
   const pendingTransactions = await prisma.walletTransaction.findMany({
-    where: { status: 'PENDING', type: 'DEPOSIT' },
+    where: { 
+      status: 'PENDING', 
+      type: { in: ['DEPOSIT', 'WITHDRAW'] } 
+    },
     include: {
       user: { select: { name: true, email: true } }
     },
