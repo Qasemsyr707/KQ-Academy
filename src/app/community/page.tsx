@@ -41,6 +41,7 @@ export default function CommunityPage() {
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
+  const [sharedPostId, setSharedPostId] = useState<string | null>(null);
 
   const toggleLike = async (id: string) => {
     const isLiking = !liked[id];
@@ -99,6 +100,14 @@ export default function CommunityPage() {
     } catch (e) {
       console.error('Failed to post comment');
     }
+  };
+
+  const handleShare = (postId: string) => {
+    const url = `${window.location.origin}/community#post-${postId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setSharedPostId(postId);
+      setTimeout(() => setSharedPostId(null), 2000);
+    });
   };
 
   const handlePost = async () => {
@@ -239,7 +248,7 @@ export default function CommunityPage() {
             </div>
           ) : (
             posts.map(post => (
-              <div key={post.id} style={{
+              <div key={post.id} id={`post-${post.id}`} style={{
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.06)',
                 borderRadius: '16px', padding: '1.5rem',
@@ -299,13 +308,16 @@ export default function CommunityPage() {
                     <MessageSquare size={18} />
                     {post._count.comments} تعليق
                   </button>
-                  <button style={{
+                  <button 
+                    onClick={() => handleShare(post.id)}
+                    style={{
                     display: 'flex', alignItems: 'center', gap: '0.4rem',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.5)', fontFamily: 'inherit',
-                    fontSize: '0.9rem', fontWeight: 600, marginRight: 'auto'
+                    color: sharedPostId === post.id ? 'var(--success)' : 'rgba(255,255,255,0.5)', fontFamily: 'inherit',
+                    fontSize: '0.9rem', fontWeight: 600, marginRight: 'auto',
+                    transition: 'color 0.2s'
                   }}>
-                    <Share2 size={18} /> مشاركة
+                    <Share2 size={18} /> {sharedPostId === post.id ? 'تم النسخ!' : 'مشاركة'}
                   </button>
                 </div>
 
