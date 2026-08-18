@@ -13,9 +13,14 @@ export default function QuizzesListClient({ quizzes }: { quizzes: any[] }) {
           </Link>
           <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>إدارة الاختبارات 📝</h1>
         </div>
-        <Link href="/instructor/quizzes/create" className="btn btn-solid" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Plus size={20} /> إنشاء اختبار جديد
-        </Link>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <Link href="/instructor/quizzes/submissions" className="btn" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(203, 161, 83, 0.1)', color: 'var(--warning)', border: '1px solid var(--warning)' }}>
+            <FileEdit size={20} /> تصحيح الإجابات
+          </Link>
+          <Link href="/instructor/quizzes/create" className="btn btn-solid" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Plus size={20} /> إنشاء اختبار جديد
+          </Link>
+        </div>
       </div>
 
       {quizzes.length === 0 ? (
