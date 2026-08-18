@@ -13,7 +13,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'البيانات غير مكتملة' }, { status: 400 });
     }
 
-    // Run transaction: Update payment status AND create Enrollment
+    // Fetch payment to get course and amount
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: { course: true }
+    });
+
+    if (!payment) {
+      return NextResponse.json({ error: 'الدفعة غير موجودة' }, { status: 404 });
+    }
+
+    if (payment.status === 'APPROVED') {
+      return NextResponse.json({ error: 'تمت الموافقة على هذه الدفعة مسبقاً' }, { status: 400 });
+    }
+
+    // Determine currency based on amount (hacky but works since we don't store currency)
+    const isSYP = payment.amount >= 10000;
+
+    // Run transaction: Update payment status, create Enrollment, Update instructor wallet
     await prisma.$transaction([
       prisma.payment.update({
         where: { id: paymentId },
@@ -32,6 +49,14 @@ export async function POST(req: Request) {
           userId,
           courseId,
           progress: 0
+        }
+      }),
+      // Increment instructor's wallet
+      prisma.user.update({
+        where: { id: payment.course.instructorId },
+        data: {
+          walletSYP: isSYP ? { increment: payment.amount } : undefined,
+          walletUSD: !isSYP ? { increment: payment.amount } : undefined,
         }
       })
     ]);
