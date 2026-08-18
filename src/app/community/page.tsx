@@ -37,10 +37,68 @@ export default function CommunityPage() {
     fetchPosts();
   }, []);
 
-  const toggleLike = (id: string) => {
-    setLiked(prev => ({ ...prev, [id]: !prev[id] }));
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, upvotes: p.upvotes + (liked[id] ? -1 : 1) } : p));
-    // NOTE: In a real app, send a request to the server to persist the like
+  const [activeCommentsPostId, setActiveCommentsPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<Record<string, any[]>>({});
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  const toggleLike = async (id: string) => {
+    const isLiking = !liked[id];
+    setLiked(prev => ({ ...prev, [id]: isLiking }));
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, upvotes: p.upvotes + (isLiking ? 1 : -1) } : p));
+    
+    try {
+      await fetch(`/api/community/${id}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ liked: isLiking })
+      });
+    } catch (e) {
+      console.error('Failed to update like');
+    }
+  };
+
+  const toggleComments = async (postId: string) => {
+    if (activeCommentsPostId === postId) {
+      setActiveCommentsPostId(null);
+      return;
+    }
+    setActiveCommentsPostId(postId);
+    if (!comments[postId]) {
+      setLoadingComments(true);
+      try {
+        const res = await fetch(`/api/community/${postId}/comments`);
+        if (res.ok) {
+          const data = await res.json();
+          setComments(prev => ({ ...prev, [postId]: data }));
+        }
+      } catch (e) {
+        console.error('Failed to load comments');
+      }
+      setLoadingComments(false);
+    }
+  };
+
+  const handlePostComment = async (postId: string) => {
+    if (!newComment.trim() || !session) return;
+    try {
+      const res = await fetch(`/api/community/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newComment })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setComments(prev => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), data]
+        }));
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, _count: { comments: p._count.comments + 1 } } : p));
+        setNewComment('');
+      }
+    } catch (e) {
+      console.error('Failed to post comment');
+    }
   };
 
   const handlePost = async () => {
@@ -229,11 +287,14 @@ export default function CommunityPage() {
                     <Heart size={18} fill={liked[post.id] ? '#ef4444' : 'none'} />
                     {post.upvotes}
                   </button>
-                  <button style={{
+                  <button 
+                    onClick={() => toggleComments(post.id)}
+                    style={{
                     display: 'flex', alignItems: 'center', gap: '0.4rem',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.5)', fontFamily: 'inherit',
-                    fontSize: '0.9rem', fontWeight: 600
+                    color: activeCommentsPostId === post.id ? 'var(--primary)' : 'rgba(255,255,255,0.5)', fontFamily: 'inherit',
+                    fontSize: '0.9rem', fontWeight: 600,
+                    transition: 'color 0.2s'
                   }}>
                     <MessageSquare size={18} />
                     {post._count.comments} تعليق
@@ -247,6 +308,79 @@ export default function CommunityPage() {
                     <Share2 size={18} /> مشاركة
                   </button>
                 </div>
+
+                {/* Comments Section */}
+                {activeCommentsPostId === post.id && (
+                  <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    {loadingComments ? (
+                      <div style={{ textAlign: 'center', padding: '1rem', color: 'rgba(255,255,255,0.5)' }}>
+                        <Loader2 size={24} className="animate-spin mx-auto" />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {comments[post.id]?.map(comment => (
+                          <div key={comment.id} style={{ display: 'flex', gap: '0.75rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px' }}>
+                            <div style={{
+                              width: '32px', height: '32px', borderRadius: '50%',
+                              background: getAvatarColor(comment.user.name), color: '#000',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontWeight: 900, fontSize: '0.9rem', flexShrink: 0
+                            }}>
+                              {comment.user.name.charAt(0)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {comment.user.name}
+                                {comment.user.role === 'INSTRUCTOR' && <span style={{ fontSize: '0.6rem', background: 'var(--primary)', color: '#000', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>مدرب</span>}
+                              </div>
+                              <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', margin: 0, whiteSpace: 'pre-wrap' }}>
+                                {comment.content}
+                              </p>
+                              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.4rem' }}>
+                                {new Date(comment.createdAt).toLocaleDateString('ar-SA')}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {(!comments[post.id] || comments[post.id].length === 0) && (
+                          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', padding: '1rem' }}>
+                            لا توجد تعليقات بعد. كن أول من يعلق!
+                          </div>
+                        )}
+                        
+                        {/* Add Comment Input */}
+                        {session && (
+                          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                            <input
+                              type="text"
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              placeholder="اكتب تعليقاً..."
+                              style={{
+                                flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '20px', padding: '0.6rem 1rem', color: '#fff', fontSize: '0.9rem', outline: 'none'
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handlePostComment(post.id);
+                              }}
+                            />
+                            <button
+                              onClick={() => handlePostComment(post.id)}
+                              disabled={!newComment.trim()}
+                              style={{
+                                background: 'var(--primary)', color: '#000', border: 'none', borderRadius: '50%',
+                                width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: newComment.trim() ? 'pointer' : 'not-allowed', opacity: newComment.trim() ? 1 : 0.5
+                              }}
+                            >
+                              <Send size={16} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           )}
