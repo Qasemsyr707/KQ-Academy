@@ -50,7 +50,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
 
   // Quiz State
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
-  const [quizResult, setQuizResult] = useState<{ score: number, passed: boolean } | null>(null);
+  const [quizResult, setQuizResult] = useState<{ score?: number, passed?: boolean, status?: string } | null>(null);
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
 
   // Q&A State
