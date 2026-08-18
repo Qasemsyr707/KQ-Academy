@@ -53,13 +53,14 @@ export default function Navbar() {
       <Link href="/" style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        flexShrink: 0
+        flexShrink: 0,
+        textDecoration: 'none',
+        color: '#fff',
+        fontWeight: '900',
+        fontSize: '1.5rem',
+        letterSpacing: '-0.5px'
       }}>
-        <img 
-          src="/logo.png" 
-          alt="KQ Academy Logo" 
-          style={{ height: '48px', width: 'auto', objectFit: 'contain', mixBlendMode: 'screen' }} 
-        />
+        <span style={{ color: 'var(--primary)' }}>KQ</span> Academy
       </Link>
 
       {/* Nav Links */}
