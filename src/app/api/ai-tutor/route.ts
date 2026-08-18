@@ -4,21 +4,56 @@ export async function POST(request: Request) {
   try {
     const { message } = await request.json();
     
-    // Simulate AI delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    let reply = "مرحباً! أنا المساعد الذكي الخاص بك. كيف يمكنني مساعدتك في رحلتك التعليمية اليوم؟";
-    
-    if (message.includes('رياضيات') || message.includes('حساب')) {
-      reply = "الرياضيات مادة رائعة! بناءً على تقييمك الأخير، أقترح مراجعة درس 'التفاضل والتكامل' لأنك واجهت بعض الصعوبة فيه. هل نبدأ الآن؟";
-    } else if (message.includes('خطة') || message.includes('مسار')) {
-      reply = "لقد قمت بتحليل سرعة تعلمك. مسارك المخصص الجديد يركز على الدروس التفاعلية القصيرة لزيادة الاستيعاب. لقد أضفت 3 دروس جديدة إلى قائمتك.";
-    } else if (message.includes('صعب')) {
-      reply = "لا تقلق! لقد قمت بتعديل مستوى الصعوبة لك في الاختبار القادم ليناسب مستواك الحالي. التدريب المستمر هو مفتاح النجاح.";
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      // Return a valid JSON placeholder if API key is missing so the app doesn't crash, but inform the user.
+      console.warn("GEMINI_API_KEY is not set in environment variables!");
+      
+      if (message.includes('JSON')) {
+        return NextResponse.json({ 
+          reply: `\`\`\`json
+[
+  {
+    "text": "يرجى إضافة مفتاح GEMINI_API_KEY إلى إعدادات Vercel لتفعيل الذكاء الاصطناعي الحقيقي. هذا سؤال تجريبي.",
+    "options": ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
+    "correctAnswer": 0,
+    "points": 1
+  }
+]
+\`\`\``
+        });
+      }
+
+      return NextResponse.json({ reply: "عذراً، مفتاح GEMINI_API_KEY غير متوفر في إعدادات النظام. يرجى إضافته ليعمل المساعد الذكي." });
     }
+
+    // Call Google Gemini API
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: message }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Gemini API Error:', errorData);
+      return NextResponse.json({ error: 'Failed to fetch from Gemini API' }, { status: 500 });
+    }
+
+    const data = await response.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "لم يتمكن الذكاء الاصطناعي من معالجة الطلب.";
 
     return NextResponse.json({ reply });
   } catch (error) {
+    console.error('AI Tutor API Error:', error);
     return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
 }

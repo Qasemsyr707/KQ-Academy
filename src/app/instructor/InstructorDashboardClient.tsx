@@ -99,7 +99,7 @@ export default function InstructorDashboardClient({
             <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '1.5rem' }}>
               دع الذكاء الاصطناعي يقرأ ملف الـ PDF الخاص بك ويقوم بتوليد 50 سؤال اختبار تكيفي تلقائياً.
             </p>
-            <button className="btn" style={{ width: '100%', fontSize: '0.9rem', borderColor: 'var(--primary)' }}>توليد أسئلة بالـ AI ✨</button>
+            <Link href="/instructor/quizzes/create" className="btn" style={{ width: '100%', fontSize: '0.9rem', borderColor: 'var(--primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>توليد أسئلة بالـ AI ✨</Link>
           </div>
         </motion.div>
 
