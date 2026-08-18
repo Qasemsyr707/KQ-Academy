@@ -91,22 +91,6 @@ export default async function VerifyCertificatePage({
         direction: 'ltr',
       }}>
 
-        {/* Extremely subtle abstract geometric glow instead of borders */}
-        <div style={{
-          position: 'absolute', top: '-10%', left: '-10%',
-          width: '50%', height: '50%',
-          background: 'radial-gradient(ellipse, rgba(203,161,83,0.08) 0%, transparent 60%)',
-          pointerEvents: 'none',
-          filter: 'blur(40px)'
-        }} />
-        
-        <div style={{
-          position: 'absolute', bottom: '-10%', right: '-10%',
-          width: '50%', height: '50%',
-          background: 'radial-gradient(ellipse, rgba(203,161,83,0.08) 0%, transparent 60%)',
-          pointerEvents: 'none',
-          filter: 'blur(40px)'
-        }} />
 
         {/* CONTENT */}
         <div style={{
