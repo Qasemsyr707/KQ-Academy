@@ -414,11 +414,14 @@ model ShortComment {
   shortId   String
   userId    String
   content   String   @db.Text
+  parentId  String?  // Optional parent comment ID for replies
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  short     Short    @relation(fields: [shortId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  short     Short          @relation(fields: [shortId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    ShortComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   ShortComment[] @relation("CommentReplies")
 }
 
 

@@ -12,6 +12,7 @@ export default function ShortsClient({ initialShorts }: { initialShorts: any[] }
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ id: string, name: string } | null>(null);
 
   const currentVideo = shorts[currentVideoIndex];
 
@@ -63,12 +64,25 @@ export default function ShortsClient({ initialShorts }: { initialShorts: any[] }
       const res = await fetch(`/api/shorts/${currentVideo.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment })
+        body: JSON.stringify({ content: newComment, parentId: replyingTo?.id })
       });
       if (res.ok) {
         const data = await res.json();
-        setComments([data.comment, ...comments]);
+        if (data.isReply && replyingTo) {
+          // It's a reply, find the parent comment and add the reply to it
+          setComments(comments.map(c => {
+            if (c.id === replyingTo.id || c.id === data.comment.parentId) {
+              return { ...c, replies: [...(c.replies || []), data.comment] };
+            }
+            return c;
+          }));
+        } else {
+          // It's a top-level comment
+          setComments([data.comment, ...comments]);
+        }
+        
         setNewComment('');
+        setReplyingTo(null);
         setShorts(shorts.map(s => s.id === currentVideo.id ? { ...s, _count: { ...s._count, comments: s._count.comments + 1 } } : s));
       } else if (res.status === 401) {
         alert('يجب تسجيل الدخول للتعليق');
@@ -245,29 +259,71 @@ export default function ShortsClient({ initialShorts }: { initialShorts: any[] }
                 <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', marginTop: '2rem' }}>لا توجد تعليقات بعد. كن أول من يعلق!</div>
               ) : (
                 comments.map(c => (
-                  <div key={c.id} style={{ display: 'flex', gap: '0.8rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', flexShrink: 0 }}>
-                      {c.user.image && <img src={c.user.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                  <div key={c.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                    {/* Main Comment */}
+                    <div style={{ display: 'flex', gap: '0.8rem' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', flexShrink: 0 }}>
+                        {c.user.image && <img src={c.user.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                          <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>{c.user.name}</span>
+                          {c.user.role === 'INSTRUCTOR' && <span style={{ fontSize: '0.7rem', background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>مدرب</span>}
+                          {c.user.role === 'ADMIN' && <span style={{ fontSize: '0.7rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>مدير</span>}
+                        </div>
+                        <div style={{ fontSize: '0.95rem', marginBottom: '0.3rem' }}>{c.content}</div>
+                        <button 
+                          onClick={() => setReplyingTo({ id: c.id, name: c.user.name })}
+                          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', cursor: 'pointer', padding: 0, fontWeight: 'bold' }}
+                        >
+                          رد
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 'bold', marginBottom: '0.2rem' }}>{c.user.name}</div>
-                      <div style={{ fontSize: '0.95rem' }}>{c.content}</div>
-                    </div>
+
+                    {/* Replies */}
+                    {c.replies && c.replies.length > 0 && (
+                      <div style={{ paddingRight: '2.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', borderRight: '2px solid rgba(255,255,255,0.05)', marginRight: '1rem' }}>
+                        {c.replies.map((reply: any) => (
+                          <div key={reply.id} style={{ display: 'flex', gap: '0.8rem' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', flexShrink: 0 }}>
+                              {reply.user.image && <img src={reply.user.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                            </div>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>{reply.user.name}</span>
+                                {reply.user.role === 'INSTRUCTOR' && <span style={{ fontSize: '0.65rem', background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>مدرب</span>}
+                                {reply.user.role === 'ADMIN' && <span style={{ fontSize: '0.65rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>مدير</span>}
+                              </div>
+                              <div style={{ fontSize: '0.9rem' }}>{reply.content}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
             </div>
 
-            <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '0.5rem' }}>
-              <input 
-                type="text" 
-                value={newComment} 
-                onChange={e => setNewComment(e.target.value)}
-                placeholder="أضف تعليقاً..." 
-                style={{ flex: 1, padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '20px', color: '#fff', outline: 'none' }}
-                onKeyDown={e => e.key === 'Enter' && submitComment()}
-              />
-              <button onClick={submitComment} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 'bold', padding: '0 1rem', cursor: 'pointer' }}>نشر</button>
+            <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {replyingTo && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', padding: '0 0.5rem' }}>
+                  <span>الرد على <strong>{replyingTo.name}</strong></span>
+                  <button onClick={() => setReplyingTo(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}>إلغاء</button>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input 
+                  type="text" 
+                  value={newComment} 
+                  onChange={e => setNewComment(e.target.value)}
+                  placeholder={replyingTo ? "اكتب ردك هنا..." : "أضف تعليقاً..."}
+                  style={{ flex: 1, padding: '0.8rem 1rem', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '20px', color: '#fff', outline: 'none' }}
+                  onKeyDown={e => e.key === 'Enter' && submitComment()}
+                />
+                <button onClick={submitComment} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 'bold', padding: '0 1rem', cursor: 'pointer' }}>نشر</button>
+              </div>
             </div>
           </motion.div>
         )}
