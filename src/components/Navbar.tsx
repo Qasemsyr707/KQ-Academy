@@ -72,6 +72,9 @@ export default function Navbar() {
         <Link href="/courses" style={{ fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
           <BookOpen size={16} /> الكورسات
         </Link>
+        <Link href="/curriculum" style={{ fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          <BookOpen size={16} /> المنهاج الدراسي
+        </Link>
         <Link href="/dashboard" style={{ fontWeight: 600, color: '#fff', textDecoration: 'none' }}>
           لوحة التحكم
         </Link>

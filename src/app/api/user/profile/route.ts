@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'غير مصرح لك' }, { status: 401 });
     }
 
-    const { name, phone, image } = await req.json();
+    const { name, phone, image, bio } = await req.json();
 
     const updatedUser = await prisma.user.update({
       where: { email: session.user.email },
@@ -18,6 +18,7 @@ export async function POST(req: Request) {
         ...(name && { name }),
         ...(phone && { phone }),
         ...(image !== undefined && { image }),
+        ...(bio !== undefined && { bio }),
       },
     });
 
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
         name: updatedUser.name,
         phone: updatedUser.phone,
         image: updatedUser.image,
+        bio: updatedUser.bio,
       } 
     });
   } catch (error: any) {

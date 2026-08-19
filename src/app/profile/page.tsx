@@ -2,8 +2,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
-import { User, Mail, Phone, Calendar, ShieldCheck, Settings, Trophy, Award } from 'lucide-react';
-
+import { User, Mail, Phone, Calendar, ShieldCheck, Trophy, Award } from 'lucide-react';
+import ProfileFormClient from './ProfileFormClient';
 export const dynamic = 'force-dynamic';
 
 export default async function ProfilePage() {
@@ -91,33 +91,7 @@ export default async function ProfilePage() {
             </div>
 
             {/* Account Settings */}
-            <div className="glass-card" style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Settings size={20} color="var(--primary)" /> إعدادات الحساب
-              </h3>
-              
-              <form style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>الاسم الكامل</label>
-                    <input type="text" defaultValue={user.name} disabled style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>البريد الإلكتروني</label>
-                    <input type="email" defaultValue={user.email} disabled style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
-                  </div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>رقم الهاتف</label>
-                  <input type="text" defaultValue={user.phone || ''} placeholder="أضف رقم هاتفك" disabled style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                  <button type="button" disabled style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '0.8rem 2rem', borderRadius: '8px', fontWeight: 'bold', cursor: 'not-allowed', opacity: 0.5 }}>
-                    حفظ التعديلات (قريباً)
-                  </button>
-                </div>
-              </form>
-            </div>
+            <ProfileFormClient user={user} />
 
           </div>
         </div>

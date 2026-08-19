@@ -15,6 +15,7 @@ model User {
   role      String   @default("STUDENT") // STUDENT, INSTRUCTOR, ADMIN
   phone     String?
   image     String?  @db.Text
+  bio       String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   walletUSD Float    @default(0)
@@ -61,6 +62,7 @@ model Course {
   id          String   @id @default(cuid())
   title       String
   description String?
+  type        String   @default("SKILL") // SKILL, CURRICULUM
   price       Float    @default(0) // USD
   priceSYP    Float    @default(0) // SYP
   category    String

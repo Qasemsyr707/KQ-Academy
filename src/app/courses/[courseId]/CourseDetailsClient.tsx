@@ -223,7 +223,9 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
               </div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{(course.instructor as any)?.name}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>مدرب محترف ومهندس برمجيات ذو خبرة تفوق الـ 10 سنوات في بناء تطبيقات الويب واسعة النطاق لشركات عالمية. أهدافه دائمًا نقل المعرفة التقنية بأبسط صورة ممكنة.</p>
+                <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                  {(course.instructor as any)?.bio || 'هذا المدرب لم يقم بإضافة نبذة شخصية بعد.'}
+                </p>
               </div>
             </div>
           </div>
