@@ -205,6 +205,12 @@ export default function CreateCoursePage() {
                     <option value="الحادي عشر">الحادي عشر</option>
                     <option value="البكالوريا - علمي">البكالوريا - علمي</option>
                     <option value="البكالوريا - أدبي">البكالوريا - أدبي</option>
+                    <option value="البكالوريا - تجاري">البكالوريا - تجاري</option>
+                    <option value="البكالوريا - صناعي">البكالوريا - صناعي</option>
+                    <option value="البكالوريا - نسوي">البكالوريا - نسوي</option>
+                    <option value="البكالوريا - زراعي">البكالوريا - زراعي</option>
+                    <option value="البكالوريا - معلوماتية">البكالوريا - معلوماتية</option>
+                    <option value="التعليم الشرعي">التعليم الشرعي</option>
                   </>
                 ) : (
                   <>
