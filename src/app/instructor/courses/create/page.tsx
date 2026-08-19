@@ -19,6 +19,21 @@ export default function CreateCoursePage() {
   const [customCategory, setCustomCategory] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  
+  // Dynamic features state
+  const [includes, setIncludes] = useState<string[]>([]);
+  const [newFeature, setNewFeature] = useState('');
+
+  const addFeature = () => {
+    if (newFeature.trim() !== '') {
+      setIncludes([...includes, newFeature.trim()]);
+      setNewFeature('');
+    }
+  };
+
+  const removeFeature = (index: number) => {
+    setIncludes(includes.filter((_, i) => i !== index));
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,7 +110,8 @@ export default function CreateCoursePage() {
           price: priceUSD,
           priceSYP: priceSYP,
           category: finalCategory,
-          thumbnail: uploadedThumbnailUrl
+          thumbnail: uploadedThumbnailUrl,
+          includes: includes
         })
       });
 
@@ -219,6 +235,34 @@ export default function CreateCoursePage() {
                 </>
               )}
             </div>
+          </div>
+
+          <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <label style={{ display: 'block', marginBottom: '0.8rem', color: '#fff', fontWeight: 'bold' }}>ماذا يتضمن هذا الكورس؟ (الميزات)</label>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem' }}>أضف ميزات الكورس مثل "متابعة شخصية"، "تدريب عملي"، الخ. سيتم عرض أيقونة الصح ✔️ بجانب كل ميزة.</p>
+            
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <input 
+                type="text" 
+                value={newFeature} 
+                onChange={e => setNewFeature(e.target.value)} 
+                onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addFeature(); } }}
+                placeholder="أدخل ميزة جديدة..." 
+                style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} 
+              />
+              <button type="button" onClick={addFeature} className="btn btn-solid" style={{ padding: '0 1.5rem', borderRadius: '8px' }}>إضافة</button>
+            </div>
+
+            {includes.length > 0 && (
+              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {includes.map((feature, idx) => (
+                  <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.4)', padding: '0.8rem 1rem', borderRadius: '8px' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.9)' }}>✔️ {feature}</span>
+                    <button type="button" onClick={() => removeFeature(idx)} style={{ color: 'var(--danger)', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>حذف</button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <button type="submit" disabled={loading} className="btn btn-solid" style={{ marginTop: '1rem', padding: '1rem', fontSize: '1.1rem', width: '100%' }}>

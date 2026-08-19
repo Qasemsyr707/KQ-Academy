@@ -51,6 +51,7 @@ model User {
   communityPosts        CommunityPost[]
   communityComments     CommunityComment[]
   shorts                Short[]
+  shortComments         ShortComment[]
   liveClasses           LiveClass[]
   matchmakingRequests   MatchmakingRequest[] @relation("UserMatchmaking")
   matchedWithRequests   MatchmakingRequest[] @relation("UserMatchedWith")
@@ -65,6 +66,7 @@ model Course {
   category    String
   thumbnail   String?
   previewVideoUrl String?
+  includes    Json?    // Stores array of strings or objects for course features
   rating      Float    @default(0.0)
   status      String   @default("PUBLISHED") // PENDING, PUBLISHED, REJECTED
   createdAt   DateTime @default(now())
@@ -77,6 +79,7 @@ model Course {
   payments     Payment[]
   reviews      Review[]
   certificates Certificate[]
+  shorts       Short[]
   coupons      Coupon[]
   questions    CourseQuestion[]
   careerPaths  CareerPathCourse[]
@@ -399,6 +402,21 @@ model Short {
   updatedAt   DateTime @updatedAt
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  comments    ShortComment[]
+}
+
+model ShortComment {
+  id        String   @id @default(cuid())
+  shortId   String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  short     Short    @relation(fields: [shortId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 

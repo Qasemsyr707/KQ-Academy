@@ -112,15 +112,25 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
               <div style={{ marginTop: '2rem' }}>
                 <h4 style={{ fontWeight: 'bold', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>هذا الكورس يتضمن:</h4>
                 <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
-                    <Video size={20} color="var(--primary)" /> 12 ساعة فيديو مسجل بجودة عالية
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
-                    <Infinity size={20} color="var(--primary)" /> وصول غير محدود مدى الحياة
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
-                    <Award size={20} color="var(--primary)" /> شهادة إتمام معتمدة
-                  </li>
+                  {course.includes && Array.isArray(course.includes) && course.includes.length > 0 ? (
+                    course.includes.map((feature: string, idx: number) => (
+                      <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
+                        <CheckCircle size={20} color="var(--primary)" /> {feature}
+                      </li>
+                    ))
+                  ) : (
+                    <>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
+                        <Video size={20} color="var(--primary)" /> 12 ساعة فيديو مسجل بجودة عالية
+                      </li>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
+                        <Infinity size={20} color="var(--primary)" /> وصول غير محدود مدى الحياة
+                      </li>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'rgba(255,255,255,0.8)' }}>
+                        <Award size={20} color="var(--primary)" /> شهادة إتمام معتمدة
+                      </li>
+                    </>
+                  )}
                 </ul>
               </div>
             </div>

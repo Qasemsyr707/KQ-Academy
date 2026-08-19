@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
-    const { title, description, price, priceSYP, category, thumbnail } = await req.json();
+    const { title, description, price, priceSYP, category, thumbnail, includes } = await req.json();
 
     if (!title) {
       return NextResponse.json({ error: 'عنوان الكورس مطلوب' }, { status: 400 });
@@ -24,7 +24,8 @@ export async function POST(req: Request) {
         category,
         instructorId: userId,
         status: 'PUBLISHED', // Default to published so it shows up immediately
-        thumbnail: thumbnail || `linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #0f172a 100%)`
+        thumbnail: thumbnail || `linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #0f172a 100%)`,
+        includes: includes || null
       }
     });
 
