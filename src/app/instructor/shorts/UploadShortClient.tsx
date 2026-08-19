@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import * as tus from 'tus-js-client';
-import { UploadCloud, PlaySquare, Link as LinkIcon, Save, Trash2, CheckCircle } from 'lucide-react';
+import { UploadCloud, PlaySquare, Link as LinkIcon, Save, Trash2, CheckCircle, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function UploadShortClient({ courses, initialShorts }: { courses: any[], initialShorts: any[] }) {

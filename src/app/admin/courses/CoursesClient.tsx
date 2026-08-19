@@ -15,6 +15,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
   const [editPrice, setEditPrice] = useState('');
   const [editPriceSYP, setEditPriceSYP] = useState('');
   const [editInstructorId, setEditInstructorId] = useState('');
+  const [editType, setEditType] = useState('SKILL');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
@@ -33,6 +34,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
     setEditPrice(course.price.toString());
     setEditPriceSYP(course.priceSYP.toString());
     setEditInstructorId(course.instructor?.id || course.instructorId);
+    setEditType(course.type || 'SKILL');
     setMsg({ type: '', text: '' });
   };
 
@@ -50,7 +52,8 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
           title: editTitle,
           price: editPrice,
           priceSYP: editPriceSYP,
-          instructorId: editInstructorId
+          instructorId: editInstructorId,
+          type: editType
         }),
       });
 
@@ -222,6 +225,18 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   <option value="PENDING" style={{ background: '#111' }}>قيد المراجعة (لا يظهر للطلاب)</option>
                   <option value="PUBLISHED" style={{ background: '#111' }}>منشور (يظهر للطلاب ومتاح للبيع)</option>
                   <option value="REJECTED" style={{ background: '#111' }}>مرفوض (محجوب بالكامل)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>نوع الكورس</label>
+                <select 
+                  value={editType} 
+                  onChange={e => setEditType(e.target.value)}
+                  style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', outline: 'none' }}
+                >
+                  <option value="SKILL" style={{ background: '#111' }}>كورس مهاري عام (برمجة، لغات، أعمال...)</option>
+                  <option value="CURRICULUM" style={{ background: '#111' }}>منهاج دراسي (بكالوريا، تاسع...)</option>
                 </select>
               </div>
 

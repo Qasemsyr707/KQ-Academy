@@ -17,6 +17,7 @@ export default function CreateCoursePage() {
   const [priceUSD, setPriceUSD] = useState('');
   const [category, setCategory] = useState('');
   const [customCategory, setCustomCategory] = useState('');
+  const [courseType, setCourseType] = useState('SKILL');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   
@@ -107,6 +108,7 @@ export default function CreateCoursePage() {
         body: JSON.stringify({
           title,
           description,
+          type: courseType,
           price: priceUSD,
           priceSYP: priceSYP,
           category: finalCategory,
@@ -155,6 +157,16 @@ export default function CreateCoursePage() {
             <textarea required value={description} onChange={e => setDescription(e.target.value)} placeholder="اكتب وصفاً مفصلاً لما سيتعلمه الطالب..." rows={4} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}></textarea>
           </div>
 
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>نوع الكورس</label>
+            <div style={{ position: 'relative' }}>
+              <select required value={courseType} onChange={e => { setCourseType(e.target.value); setCategory(''); }} style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', appearance: 'none' }}>
+                <option value="SKILL">كورس مهاري عام (برمجة، لغات، أعمال...)</option>
+                <option value="CURRICULUM">منهاج دراسي (بكالوريا، تاسع...)</option>
+              </select>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>السعر بالليرة السورية</label>
@@ -178,21 +190,40 @@ export default function CreateCoursePage() {
               <List size={20} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)' }} />
               <select required value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', appearance: 'none' }}>
                 <option value="" disabled>اختر تصنيفاً...</option>
-                <option value="البرمجة">البرمجة</option>
-                <option value="التصميم">التصميم</option>
-                <option value="اللغات">اللغات</option>
-                <option value="العلوم">العلوم</option>
-                <option value="البكالوريا">البكالوريا</option>
-                <option value="التسويق">التسويق</option>
-                <option value="الأعمال">الأعمال</option>
-                <option value="الطب والصحة">الطب والصحة</option>
-                <option value="الهندسة">الهندسة</option>
-                <option value="الفنون والموسيقى">الفنون والموسيقى</option>
-                <option value="تطوير الذات">تطوير الذات</option>
-                <option value="أخرى">أخرى (كتابة يدوية)</option>
+                {courseType === 'CURRICULUM' ? (
+                  <>
+                    <option value="الصف الأول">الصف الأول</option>
+                    <option value="الصف الثاني">الصف الثاني</option>
+                    <option value="الصف الثالث">الصف الثالث</option>
+                    <option value="الصف الرابع">الصف الرابع</option>
+                    <option value="الصف الخامس">الصف الخامس</option>
+                    <option value="الصف السادس">الصف السادس</option>
+                    <option value="الصف السابع">الصف السابع</option>
+                    <option value="الصف الثامن">الصف الثامن</option>
+                    <option value="الصف التاسع">الصف التاسع</option>
+                    <option value="الصف العاشر">الصف العاشر</option>
+                    <option value="الحادي عشر">الحادي عشر</option>
+                    <option value="البكالوريا - علمي">البكالوريا - علمي</option>
+                    <option value="البكالوريا - أدبي">البكالوريا - أدبي</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="البرمجة">البرمجة</option>
+                    <option value="التصميم">التصميم</option>
+                    <option value="اللغات">اللغات</option>
+                    <option value="العلوم">العلوم</option>
+                    <option value="التسويق">التسويق</option>
+                    <option value="الأعمال">الأعمال</option>
+                    <option value="الطب والصحة">الطب والصحة</option>
+                    <option value="الهندسة">الهندسة</option>
+                    <option value="الفنون والموسيقى">الفنون والموسيقى</option>
+                    <option value="تطوير الذات">تطوير الذات</option>
+                    <option value="أخرى">أخرى (كتابة يدوية)</option>
+                  </>
+                )}
               </select>
             </div>
-            {category === 'أخرى' && (
+            {courseType === 'SKILL' && category === 'أخرى' && (
               <div style={{ marginTop: '0.8rem' }}>
                 <input required type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="اكتب التصنيف هنا..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(203,161,83,0.5)', color: '#fff' }} />
               </div>

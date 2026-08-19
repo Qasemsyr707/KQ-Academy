@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
-    const { title, description, price, priceSYP, category, thumbnail, includes } = await req.json();
+    const { title, description, type, price, priceSYP, category, thumbnail, includes } = await req.json();
 
     if (!title) {
       return NextResponse.json({ error: 'عنوان الكورس مطلوب' }, { status: 400 });
@@ -19,6 +19,7 @@ export async function POST(req: Request) {
       data: {
         title,
         description,
+        type: type || 'SKILL',
         price: Number(price) || 0,
         priceSYP: Number(priceSYP) || 0,
         category,
