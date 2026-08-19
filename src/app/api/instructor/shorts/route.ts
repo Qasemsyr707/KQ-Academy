@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth';
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user || (session.user as any).role !== 'INSTRUCTOR') {
+    if (!session || !session.user || ((session.user as any).role !== 'INSTRUCTOR' && (session.user as any).role !== 'ADMIN')) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
