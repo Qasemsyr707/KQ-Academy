@@ -126,7 +126,7 @@ export default function ShortsClient({ initialShorts }: { initialShorts: any[] }
           {/* Video Area */}
           <div style={{ width: '100%', height: '100%', position: 'relative' }}>
             {currentVideo.videoUrl.includes('iframe') ? (
-              <iframe src={currentVideo.videoUrl + "?autoplay=1&loop=1&muted=0"} style={{ width: '100%', height: '100%', border: 'none' }} allow="autoplay; fullscreen" />
+              <iframe src={currentVideo.videoUrl + "?autoplay=true&loop=true&muted=false"} style={{ width: '100%', height: '100%', border: 'none' }} allow="autoplay; fullscreen" />
             ) : (
               <video src={currentVideo.videoUrl} autoPlay loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             )}
