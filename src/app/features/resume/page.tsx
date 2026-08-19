@@ -6,7 +6,7 @@ import { FileText, User, Briefcase, GraduationCap, Code, Download, Eye, Plus, Tr
 import Link from 'next/link';
 
 interface ResumeData {
-  personal: { name: string; title: string; email: string; phone: string; location: string; summary: string };
+  personal: { name: string; title: string; email: string; phone: string; location: string; summary: string; website?: string; image?: string };
   experience: { id: number; company: string; role: string; period: string; desc: string }[];
   education: { id: number; institution: string; degree: string; year: string }[];
   skills: string[];
@@ -15,23 +15,25 @@ interface ResumeData {
 
 const defaultData: ResumeData = {
   personal: {
-    name: 'أحمد محمد السوري',
-    title: 'مطور ويب | React & Next.js',
-    email: 'ahmed@kqacademy.com',
-    phone: '+963 991 234 567',
-    location: 'دمشق، سوريا',
-    summary: 'مطور ويب متخصص بتقنيات React وNext.js مع خبرة في بناء تطبيقات ويب عالية الأداء. حاصل على عدة شهادات تقنية معتمدة من أكاديمية K&Q.'
+    name: 'مراد ناصر',
+    title: 'محلل نظم',
+    email: 'hello@reallygreatsite.com',
+    phone: '+123-456-7890',
+    location: '123 Anywhere St., Any City',
+    website: 'www.reallygreatsite.com',
+    summary: 'أنا محلل أنظمة مركز على النتائج مع مهارات تواصل ممتازة، وكذلك فهم عميق للنظم الرقمية وعمليات سلسلة الإمداد.',
+    image: ''
   },
   experience: [
-    { id: 1, company: 'شركة التقنية المتطورة', role: 'مطور واجهات أمامية', period: '2024 - حتى الآن', desc: 'بناء وتطوير واجهات المستخدم باستخدام React وTypeScript، وتحسين أداء التطبيقات بنسبة 40%.' }
+    { id: 1, company: 'شركة الحلفاء بونيو', role: 'محلل نظم', period: '2018 - الآن', desc: 'مراجعة الأنظمة التنظيمية للعملاء\nترجمة متطلبات العمل إلى تصميمات وظيفية\nتدريب الموظفين والمستخدمين على برامج الكمبيوتر المختلفة' },
+    { id: 2, company: 'استوديو الأقمار', role: 'محلل بيانات خبير', period: '2017 - 2018', desc: 'جمع البيانات وتحليلها باستخدام أطر عمل مختلفة\nاستكشاف مشكلات البرامج وإصلاحها\nتطبيق الأساليب الإحصائية لتشخيص مشكلات العمل' }
   ],
   education: [
-    { id: 1, institution: 'جامعة دمشق', degree: 'بكالوريوس هندسة معلوماتية', year: '2024' }
+    { id: 1, institution: 'معهد الرؤية', degree: 'شهادة دراسات عليا', year: '2018 - 2019' },
+    { id: 2, institution: 'جامعة القاهرة', degree: 'بكالوريوس علوم', year: '2011 - 2015' }
   ],
-  skills: ['React', 'Next.js', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS'],
-  certificates: [
-    { id: 1, name: 'تطوير تطبيقات الويب باستخدام React', issuer: 'أكاديمية K&Q', year: '2024' }
-  ]
+  skills: ['التطوير الأساسي للبرمجيات', 'توثيق المشروعات', 'تحليل نموذج العمل التجاري', 'حل المشكلات', 'اختبار الجودة', 'التفكير في تصميم', 'البحث والتدريب'],
+  certificates: []
 };
 
 export default function ResumePage() {
@@ -42,6 +44,17 @@ export default function ResumePage() {
 
   const updatePersonal = (field: string, value: string) => {
     setData(d => ({ ...d, personal: { ...d.personal, [field]: value } }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updatePersonal('image', reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const addExperience = () => {
@@ -162,11 +175,16 @@ export default function ResumePage() {
 
             {activeSection === 'personal' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={labelStyle}>الصورة الشخصية (اختياري)</label>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} style={{ ...inputStyle, background: 'rgba(255,255,255,0.02)', padding: '0.5rem' }} />
+                </div>
                 {[
                   { key: 'name', label: 'الاسم الكامل' },
                   { key: 'title', label: 'المسمى الوظيفي' },
                   { key: 'email', label: 'البريد الإلكتروني' },
                   { key: 'phone', label: 'رقم الهاتف' },
+                  { key: 'website', label: 'الموقع الإلكتروني / لينكد إن' },
                   { key: 'location', label: 'الموقع / المدينة' },
                 ].map(field => (
                   <div key={field.key}>
@@ -303,77 +321,109 @@ export default function ResumePage() {
             animate={{ opacity: 1, scale: 1 }}
             id="resume-preview"
             style={{
-              width: '100%', maxWidth: '750px',
+              width: '100%', maxWidth: '850px',
+              minHeight: '1123px', // A4 Ratio approximate
               background: '#fff', color: '#1a1a1a',
-              borderRadius: '12px', overflow: 'hidden',
+              borderRadius: '0', overflow: 'hidden',
               boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-              direction: 'rtl', fontFamily: '"Segoe UI", system-ui, sans-serif'
+              direction: 'rtl', fontFamily: '"Segoe UI", system-ui, sans-serif',
+              position: 'relative', display: 'flex'
             }}
           >
-            {/* Header */}
-            <div style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', color: '#fff', padding: '2.5rem 3rem' }}>
-              <h2 style={{ fontSize: '2.2rem', fontWeight: 'bold', marginBottom: '0.4rem' }}>{data.personal.name || 'اسمك الكامل'}</h2>
-              <div style={{ color: '#cba153', fontWeight: '600', fontSize: '1.1rem', marginBottom: '1rem' }}>{data.personal.title || 'المسمى الوظيفي'}</div>
-              <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
-                {data.personal.email && <span>✉ {data.personal.email}</span>}
-                {data.personal.phone && <span>📞 {data.personal.phone}</span>}
-                {data.personal.location && <span>📍 {data.personal.location}</span>}
+            {/* Top Slanted Background across both columns */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '280px', background: '#223450', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 25%)', zIndex: 1 }} />
+
+            {/* Right Column (Dark Blue) */}
+            <div style={{ flex: '0 0 35%', background: '#223450', position: 'relative', zIndex: 2, padding: '3rem 2rem', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {/* Profile Image */}
+              <div style={{ width: '180px', height: '180px', borderRadius: '50%', background: '#4a6080', border: '5px solid #84a2d4', marginBottom: '1.5rem', overflow: 'hidden', flexShrink: 0, marginTop: '2rem', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {data.personal.image ? (
+                  <img src={data.personal.image} alt={data.personal.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <User size={80} color="#fff" />
+                )}
               </div>
+              <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center', lineHeight: 1.2 }}>{data.personal.name || 'اسمك الكامل'}</h2>
+              <div style={{ fontSize: '1.1rem', color: '#b3c4dd', marginBottom: '3rem', textAlign: 'center' }}>{data.personal.title || 'المسمى الوظيفي'}</div>
+
+              {/* Contact Info */}
+              <div style={{ width: '100%', marginBottom: '3rem' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', borderBottom: '2px solid #fff', paddingBottom: '0.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>معلومات الاتصال</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', fontSize: '0.9rem', direction: 'ltr', textAlign: 'right' }}>
+                  {data.personal.phone && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.8rem' }}><span>{data.personal.phone}</span> <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#4a6080', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span style={{ fontSize: '12px' }}>📞</span></div></div>}
+                  {data.personal.email && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.8rem' }}><span>{data.personal.email}</span> <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#4a6080', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span style={{ fontSize: '12px' }}>✉</span></div></div>}
+                  {data.personal.website && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.8rem' }}><span>{data.personal.website}</span> <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#4a6080', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span style={{ fontSize: '12px' }}>🌐</span></div></div>}
+                  {data.personal.location && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.8rem' }}><span style={{ direction: 'rtl' }}>{data.personal.location}</span> <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#4a6080', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><span style={{ fontSize: '12px' }}>📍</span></div></div>}
+                </div>
+              </div>
+
+              {/* Skills */}
+              {data.skills.length > 0 && (
+                <div style={{ width: '100%' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', borderBottom: '2px solid #fff', paddingBottom: '0.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>المهارات الأساسية</h3>
+                  <ul style={{ paddingRight: '1.2rem', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.95rem' }}>
+                    {data.skills.map(skill => <li key={skill}>{skill}</li>)}
+                  </ul>
+                </div>
+              )}
             </div>
 
-            <div style={{ padding: '2.5rem 3rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Left Column (White) */}
+            <div style={{ flex: '0 0 65%', position: 'relative', zIndex: 2, padding: '280px 3rem 3rem 3rem' }}>
               {/* Summary */}
               {data.personal.summary && (
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1a1a2e', borderBottom: '2px solid #cba153', paddingBottom: '0.4rem', marginBottom: '0.8rem' }}>نبذة مختصرة</h3>
-                  <p style={{ color: '#444', lineHeight: 1.8, fontSize: '0.95rem' }}>{data.personal.summary}</p>
+                <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+                  <h3 style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#223450', marginBottom: '1rem' }}>الملخص الشخصي</h3>
+                  <p style={{ color: '#333', lineHeight: 1.8, fontSize: '1.05rem', fontWeight: '600' }}>{data.personal.summary}</p>
                 </div>
               )}
 
               {/* Experience */}
               {data.experience.length > 0 && (
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1a1a2e', borderBottom: '2px solid #cba153', paddingBottom: '0.4rem', marginBottom: '1rem' }}>الخبرات العملية</h3>
-                  {data.experience.map(exp => (
-                    <div key={exp.id} style={{ marginBottom: '1.2rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                        <div>
-                          <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{exp.role || 'المسمى الوظيفي'}</div>
-                          <div style={{ color: '#cba153', fontSize: '0.9rem', fontWeight: '600' }}>{exp.company || 'اسم الشركة'}</div>
+                <div style={{ marginBottom: '3rem' }}>
+                  <h3 style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#223450', marginBottom: '1.5rem', textAlign: 'center' }}>التاريخ المهني</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {data.experience.map(exp => (
+                      <div key={exp.id} style={{ display: 'flex', gap: '1.5rem', position: 'relative' }}>
+                        <div style={{ flex: '0 0 110px', fontSize: '1rem', fontWeight: 'bold', color: '#223450', paddingTop: '0.2rem', textAlign: 'left' }}>
+                          {exp.period}
                         </div>
-                        <div style={{ color: '#888', fontSize: '0.85rem' }}>{exp.period}</div>
+                        <div style={{ width: '2px', background: '#d0d0d0', position: 'relative', flexShrink: 0 }}>
+                          <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#223450', position: 'absolute', top: '0.3rem', right: '-6px' }} />
+                        </div>
+                        <div style={{ flex: 1, paddingBottom: '1rem' }}>
+                          <h4 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#223450', margin: '0 0 0.3rem 0' }}>{exp.role || 'المسمى الوظيفي'}</h4>
+                          <div style={{ fontSize: '1rem', color: '#666', marginBottom: '0.8rem', fontWeight: 'bold' }}>{exp.company || 'الشركة'}</div>
+                          {exp.desc && (
+                            <ul style={{ paddingRight: '1.2rem', margin: 0, color: '#444', lineHeight: 1.7, fontSize: '0.95rem', fontWeight: '600' }}>
+                              {exp.desc.split('\n').filter(line => line.trim() !== '').map((line, idx) => <li key={idx}>{line}</li>)}
+                            </ul>
+                          )}
+                        </div>
                       </div>
-                      {exp.desc && <p style={{ color: '#555', lineHeight: 1.7, fontSize: '0.9rem', marginTop: '0.4rem' }}>{exp.desc}</p>}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
 
               {/* Education */}
               {data.education.length > 0 && (
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1a1a2e', borderBottom: '2px solid #cba153', paddingBottom: '0.4rem', marginBottom: '1rem' }}>التعليم</h3>
-                  {data.education.map(edu => (
-                    <div key={edu.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{ fontWeight: 'bold' }}>{edu.degree}</div>
-                        <div style={{ color: '#666', fontSize: '0.9rem' }}>{edu.institution}</div>
+                <div style={{ marginBottom: '3rem' }}>
+                  <h3 style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#223450', marginBottom: '1.5rem', textAlign: 'center' }}>التاريخ الأكاديمي</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {data.education.map(edu => (
+                      <div key={edu.id} style={{ display: 'flex', gap: '1.5rem', position: 'relative' }}>
+                        <div style={{ flex: '0 0 110px', fontSize: '1rem', fontWeight: 'bold', color: '#223450', paddingTop: '0.2rem', textAlign: 'left' }}>
+                          {edu.year}
+                        </div>
+                        <div style={{ width: '2px', background: '#d0d0d0', position: 'relative', flexShrink: 0 }}>
+                          <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#223450', position: 'absolute', top: '0.3rem', right: '-6px' }} />
+                        </div>
+                        <div style={{ flex: 1, paddingBottom: '1rem' }}>
+                          <h4 style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#223450', margin: '0 0 0.3rem 0' }}>{edu.institution || 'المؤسسة'}</h4>
+                          <div style={{ fontSize: '1rem', color: '#666', fontWeight: 'bold' }}>{edu.degree || 'الدرجة العلمية'}</div>
+                        </div>
                       </div>
-                      <div style={{ color: '#888', fontSize: '0.85rem' }}>{edu.year}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Skills */}
-              {data.skills.length > 0 && (
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1a1a2e', borderBottom: '2px solid #cba153', paddingBottom: '0.4rem', marginBottom: '1rem' }}>المهارات التقنية</h3>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-                    {data.skills.map(skill => (
-                      <span key={skill} style={{ background: '#f0f4ff', color: '#1a1a2e', padding: '0.3rem 0.9rem', borderRadius: '20px', fontSize: '0.88rem', fontWeight: '600', border: '1px solid #d0d8f0' }}>
-                        {skill}
-                      </span>
                     ))}
                   </div>
                 </div>
@@ -382,16 +432,23 @@ export default function ResumePage() {
               {/* Certificates */}
               {data.certificates.length > 0 && (
                 <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1a1a2e', borderBottom: '2px solid #cba153', paddingBottom: '0.4rem', marginBottom: '1rem' }}>الشهادات والدورات</h3>
-                  {data.certificates.map(cert => (
-                    <div key={cert.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                      <div>
-                        <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{cert.name}</div>
-                        <div style={{ color: '#cba153', fontSize: '0.85rem' }}>{cert.issuer}</div>
+                  <h3 style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#223450', marginBottom: '1.5rem', textAlign: 'center' }}>الشهادات</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {data.certificates.map(cert => (
+                      <div key={cert.id} style={{ display: 'flex', gap: '1.5rem', position: 'relative' }}>
+                        <div style={{ flex: '0 0 110px', fontSize: '1rem', fontWeight: 'bold', color: '#223450', paddingTop: '0.2rem', textAlign: 'left' }}>
+                          {cert.year}
+                        </div>
+                        <div style={{ width: '2px', background: '#d0d0d0', position: 'relative', flexShrink: 0 }}>
+                          <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#223450', position: 'absolute', top: '0.3rem', right: '-6px' }} />
+                        </div>
+                        <div style={{ flex: 1, paddingBottom: '0.5rem' }}>
+                          <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#223450', margin: '0 0 0.2rem 0' }}>{cert.name || 'اسم الشهادة'}</h4>
+                          <div style={{ fontSize: '1rem', color: '#666', fontWeight: 'bold' }}>{cert.issuer || 'الجهة المانحة'}</div>
+                        </div>
                       </div>
-                      <div style={{ color: '#888', fontSize: '0.85rem' }}>{cert.year}</div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
