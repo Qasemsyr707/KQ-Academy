@@ -47,8 +47,74 @@ export default function Navbar() {
       WebkitBackdropFilter: 'blur(20px)',
       borderBottom: '1px solid rgba(255,255,255,0.05)',
       zIndex: 100,
-      gap: '1rem'
+      zIndex: 100,
+      gap: '1rem',
+      flexWrap: 'wrap'
     }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .nav-links-wrapper {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          padding: 0.25rem 0;
+          scroll-behavior: smooth;
+          flex: 1;
+        }
+        .nav-links-wrapper::-webkit-scrollbar {
+          display: none;
+        }
+        .nav-link-item {
+          font-weight: 600;
+          color: rgba(255,255,255,0.85);
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          white-space: nowrap;
+          padding: 0.5rem 1rem;
+          border-radius: 30px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.05);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-link-item:hover {
+          background: rgba(203, 161, 83, 0.1);
+          border-color: rgba(203, 161, 83, 0.5);
+          color: var(--primary);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(203, 161, 83, 0.15);
+        }
+        .nav-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-shrink: 0;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+          nav {
+            padding: 0.5rem 1rem !important;
+            flex-direction: row;
+            justify-content: space-between;
+          }
+          .nav-links-wrapper {
+            order: 3;
+            width: 100%;
+            margin-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            flex: none;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 0.8rem;
+          }
+        }
+      `}} />
+
       {/* Logo */}
       <Link href="/" style={{ 
         display: 'flex', 
@@ -68,34 +134,36 @@ export default function Navbar() {
       </Link>
 
       {/* Nav Links */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-        <Link href="/courses" style={{ fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+      <div className="nav-links-wrapper">
+        <Link href="/courses" className="nav-link-item">
           <BookOpen size={16} /> الكورسات
         </Link>
-        <Link href="/curriculum" style={{ fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+        <Link href="/curriculum" className="nav-link-item">
           <BookOpen size={16} /> المنهاج الدراسي
         </Link>
-        <Link href="/dashboard" style={{ fontWeight: 600, color: '#fff', textDecoration: 'none' }}>
+        <Link href="/dashboard" className="nav-link-item">
           لوحة التحكم
         </Link>
-        <Link href="/instructor" style={{ fontWeight: 600, color: '#fff', textDecoration: 'none' }}>
+        <Link href="/instructor" className="nav-link-item">
           المدربون
         </Link>
-        <Link href="/community" style={{ fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+        <Link href="/community" className="nav-link-item">
           <Users size={16} /> المجتمع
         </Link>
 
         {/* Advanced Features Dropdown */}
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button 
+            className="nav-link-item"
             onClick={() => setShowDropdown(!showDropdown)}
             style={{ 
-              background: 'none', border: 'none', color: '#fff', fontWeight: 600, 
-              display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer',
-              fontSize: '1rem', fontFamily: 'inherit'
+              cursor: 'pointer', fontFamily: 'inherit',
+              background: showDropdown ? 'rgba(203, 161, 83, 0.1)' : undefined,
+              borderColor: showDropdown ? 'rgba(203, 161, 83, 0.5)' : undefined,
+              color: showDropdown ? 'var(--primary)' : undefined,
             }}
           >
-            ميزات متقدمة <ChevronDown size={16} />
+            ميزات متقدمة <ChevronDown size={16} style={{ transform: showDropdown ? 'rotate(180deg)' : 'none', transition: '0.3s' }} />
           </button>
           
           {showDropdown && (
@@ -108,13 +176,14 @@ export default function Navbar() {
               overflowY: 'auto',
               background: 'rgba(10,10,10,0.95)',
               border: '1px solid rgba(203,161,83,0.2)',
-              borderRadius: '12px',
+              borderRadius: '16px',
               padding: '0.5rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.25rem',
               boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
               backdropFilter: 'blur(20px)',
+              zIndex: 101,
             }}>
               {isAdmin && (
                 <Link onClick={() => setShowDropdown(false)} href="/admin" style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', color: '#eab308', fontWeight: 'bold', textDecoration: 'none', fontSize: '0.9rem' }}>⚙️ لوحة الإدارة</Link>
@@ -141,7 +210,7 @@ export default function Navbar() {
       </div>
 
       {/* Right Side Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+      <div className="nav-actions">
         {/* Wallet */}
         <Link href="/dashboard/wallet" style={{ 
           display: 'flex', alignItems: 'center', gap: '0.35rem', 
