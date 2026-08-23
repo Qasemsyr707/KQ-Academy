@@ -20,9 +20,8 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
     <div style={{ minHeight: '100vh', background: '#050505', color: '#fff' }}>
       
       {/* Hero Section with Glassmorphism */}
-      <div style={{ 
+      <div className="hero-section" style={{ 
         position: 'relative', 
-        padding: '6rem 5% 8rem', 
         background: course.thumbnail ? `url(${course.thumbnail}) center/cover fixed` : 'linear-gradient(135deg, #1e3a8a, #050505)',
         borderBottom: '1px solid rgba(255,255,255,0.05)'
       }}>
@@ -30,16 +29,16 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
         
         <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1, display: 'flex', gap: '4rem', flexWrap: 'wrap' }}>
           {/* Main Info */}
-          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} style={{ flex: '1 1 600px' }}>
+          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} style={{ flex: '1 1 500px' }}>
             <div style={{ background: 'rgba(255,255,255,0.1)', padding: '0.4rem 1rem', borderRadius: '30px', display: 'inline-block', marginBottom: '1.5rem', fontWeight: 'bold', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--primary)' }}>
               {course.category}
             </div>
             
-            <h1 style={{ fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', fontWeight: 900, marginBottom: '1.5rem', lineHeight: 1.2 }}>
+            <h1 className="course-title" style={{ fontWeight: 900, marginBottom: '1.5rem' }}>
               {course.title}
             </h1>
             
-            <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', marginBottom: '2rem', lineHeight: 1.8, maxWidth: '800px' }}>
+            <p className="course-desc" style={{ color: 'rgba(255,255,255,0.8)', maxWidth: '800px' }}>
               {course.description || 'وصف الكورس غير متوفر حالياً.'}
             </p>
             
@@ -62,8 +61,8 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
           </motion.div>
           
           {/* Floating Checkout Box */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ flex: '1 1 350px' }}>
-            <div className="glass-card" style={{ padding: '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', position: 'sticky', top: '100px', background: 'rgba(15,15,15,0.8)', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ flex: '1 1 300px' }}>
+            <div className="glass-card floating-box" style={{ borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', position: 'sticky', background: 'rgba(15,15,15,0.8)', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
               {/* Box Video Preview */}
               {course.previewVideoUrl ? (
                 <div style={{ width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '16px', position: 'relative', overflow: 'hidden', marginBottom: '2rem' }}>
@@ -138,14 +137,14 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
         </div>
       </div>
 
-      <div style={{ maxWidth: '1400px', margin: '-4rem auto 0', padding: '0 5%', position: 'relative', zIndex: 2, display: 'flex', gap: '4rem', flexWrap: 'wrap' }}>
+      <div className="main-content-area" style={{ maxWidth: '1400px', position: 'relative', zIndex: 2, display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
         
         {/* Main Content Area */}
-        <div style={{ flex: '1 1 700px' }}>
+        <div style={{ flex: '1 1 600px' }}>
           
           {/* Curriculum Section */}
-          <div style={{ background: '#0a0a0a', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="content-box" style={{ background: '#0a0a0a', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h2 className="section-title" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <BookOpen color="var(--primary)" /> منهج الكورس
             </h2>
             
@@ -209,11 +208,11 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
           </div>
 
           {/* Instructor Section */}
-          <div style={{ background: '#0a0a0a', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="content-box" style={{ background: '#0a0a0a', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h2 className="section-title" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <User color="var(--primary)" /> عن المدرب
             </h2>
-            <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
                  {(course.instructor as any)?.image ? (
                    <img src={(course.instructor as any).image} alt={(course.instructor as any).name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -231,8 +230,8 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
           </div>
 
           {/* FAQs Section */}
-          <div style={{ background: '#0a0a0a', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="content-box" style={{ background: '#0a0a0a', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h2 className="section-title" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <HelpCircle color="var(--primary)" /> الأسئلة الشائعة
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -246,9 +245,9 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
           </div>
 
           {/* Reviews Section */}
-          <div style={{ background: '#0a0a0a', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+          <div className="content-box" style={{ background: '#0a0a0a', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <h2 className="section-title" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                 <Star color="var(--warning)" fill="var(--warning)" /> آراء الطلاب ({course.reviews?.length || 0})
               </h2>
               {isEnrolled && <ReviewButton courseId={course.id} />}
@@ -323,6 +322,28 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
           </div>
         </div>
       )}
+
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Desktop Default */
+        .hero-section { padding: 6rem 5% 8rem; }
+        .course-title { font-size: clamp(2.5rem, 4vw, 3.5rem); line-height: 1.2; }
+        .course-desc { font-size: 1.2rem; margin-bottom: 2rem; line-height: 1.8; }
+        .floating-box { padding: 2.5rem; top: 100px; }
+        .main-content-area { margin: -4rem auto 0; padding: 0 5%; }
+        .content-box { padding: 3rem; margin-bottom: 3rem; }
+        .section-title { font-size: 2rem; margin-bottom: 2rem; }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 768px) {
+          .hero-section { padding: 5rem 1rem 2rem; }
+          .course-title { font-size: 1.8rem; line-height: 1.3; margin-bottom: 1rem !important; }
+          .course-desc { font-size: 1rem; margin-bottom: 1.5rem !important; line-height: 1.6; }
+          .floating-box { padding: 1.5rem; position: static; margin-top: 1rem; }
+          .main-content-area { margin: 1rem auto 0; padding: 0 1rem; }
+          .content-box { padding: 1.5rem; margin-bottom: 1.5rem; }
+          .section-title { font-size: 1.5rem; margin-bottom: 1.5rem; }
+        }
+      `}} />
     </div>
   );
 }

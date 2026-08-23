@@ -22,17 +22,16 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
     <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', paddingBottom: '5rem' }}>
       
       {/* Hero Section */}
-      <div style={{ 
+      <div className="courses-hero" style={{ 
         background: 'radial-gradient(circle at top right, rgba(203,161,83,0.15) 0%, transparent 60%)', 
-        padding: '6rem 5% 4rem', 
         textAlign: 'center',
         borderBottom: '1px solid rgba(255,255,255,0.05)'
       }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 'bold', marginBottom: '1.5rem', lineHeight: 1.2 }}>
+          <h1 className="hero-title" style={{ fontWeight: 'bold', marginBottom: '1.5rem' }}>
             اكتشف شغفك مع <span style={{ background: 'linear-gradient(to right, #fff, var(--primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>أفضل الكورسات</span>
           </h1>
-          <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.7)', maxWidth: '700px', margin: '0 auto 3rem' }}>
+          <p className="hero-desc" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: '700px', margin: '0 auto 3rem' }}>
             منصة تعليمية متكاملة توفر لك أحدث المناهج والكورسات المهنية المصممة خصيصاً لسوق العمل بأعلى جودة.
           </p>
 
@@ -59,7 +58,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
         </motion.div>
       </div>
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '3rem 5%' }}>
+      <div className="courses-container" style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Filters */}
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '3rem', overflowX: 'auto', paddingBottom: '1rem' }}>
           {categories.map((cat, idx) => (
@@ -91,7 +90,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem' }}>جرب البحث بكلمات أخرى أو تصفح الأقسام المختلفة.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2.5rem' }}>
+          <div className="courses-grid" style={{ display: 'grid', gap: '2.5rem' }}>
             <AnimatePresence>
               {filteredCourses.map((course, idx) => (
                 <motion.div
@@ -149,10 +148,10 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
                       </div>
 
                       {/* Footer & Price */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                        <span className="course-price" style={{ fontWeight: 900, color: '#fff' }}>
                           {course.priceSYP > 0 ? (
-                            <>{course.priceSYP.toLocaleString()} <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', fontWeight: 'normal' }}>ل.س</span></>
+                            <>{course.priceSYP.toLocaleString()} <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', fontWeight: 'normal' }}>ل.س</span></>
                           ) : course.price > 0 ? (
                             <>${course.price}</>
                           ) : (
@@ -174,9 +173,27 @@ export default function CoursesClient({ initialCourses }: { initialCourses: any[
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
+        /* Default / Desktop */
+        .courses-hero { padding: 6rem 5% 4rem; }
+        .hero-title { font-size: clamp(2rem, 5vw, 4rem); line-height: 1.2; }
+        .hero-desc { font-size: 1.2rem; }
+        .courses-container { padding: 3rem 5%; }
+        .courses-grid { grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
+        .course-price { font-size: 1.5rem; }
+        
         .glass-card:hover .thumb-overlay { opacity: 0.3 !important; }
         .glass-card:hover .arrow-btn { background: var(--primary) !important; }
         .glass-card:hover .arrow-btn svg { stroke: #000 !important; }
+
+        /* Mobile specific */
+        @media (max-width: 768px) {
+          .courses-hero { padding: 4rem 1rem 3rem; }
+          .hero-title { font-size: 1.8rem; line-height: 1.3; }
+          .hero-desc { font-size: 1rem; margin-bottom: 2rem !important; }
+          .courses-container { padding: 2rem 1rem; }
+          .courses-grid { grid-template-columns: 1fr; gap: 1.5rem !important; }
+          .course-price { font-size: 1.25rem; }
+        }
       `}} />
     </div>
   );
