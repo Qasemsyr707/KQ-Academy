@@ -88,7 +88,19 @@ export default function RootLayout({
               </Script>
             </>
           )}
-          <main style={{ marginTop: '80px', minHeight: 'calc(100vh - 80px)' }}>
+          <style dangerouslySetInnerHTML={{__html: `
+            .main-content {
+              margin-top: 80px;
+              min-height: calc(100vh - 80px);
+            }
+            @media (max-width: 768px) {
+              .main-content {
+                margin-top: 140px; /* Accounts for the new taller navbar on mobile */
+                min-height: calc(100vh - 140px);
+              }
+            }
+          `}} />
+          <main className="main-content">
             {children}
           </main>
           <footer style={{ 
