@@ -36,16 +36,30 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
       {/* Top Accent Line */}
       <div style={{ height: '4px', background: 'linear-gradient(to right, var(--primary), #b8852a, #3b82f6)', width: '100%' }} />
 
-      <div className="container" style={{ padding: '3rem 5%', maxWidth: '1400px', margin: '0 auto' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .dashboard-hero-stats { display: flex; gap: 3rem; text-align: center; background: rgba(0,0,0,0.4); padding: 2rem 3rem; borderRadius: 20px; border: 1px solid rgba(255,255,255,0.05); backdropFilter: blur(10px); }
+        .enroll-card { display: flex; align-items: center; gap: 2rem; }
+        .enroll-card-progress { width: 180px; flex-shrink: 0; }
+        @media (max-width: 768px) {
+          .dashboard-hero { flex-direction: column !important; gap: 1.5rem !important; padding: 1.5rem !important; }
+          .dashboard-hero-stats { padding: 1rem 1.5rem !important; gap: 1.5rem !important; width: 100% !important; justify-content: center; }
+          .enroll-card { flex-direction: column !important; align-items: flex-start !important; gap: 1rem !important; }
+          .enroll-card-progress { width: 100% !important; }
+          .enroll-card-btn { width: 100% !important; justify-content: center !important; }
+          .admin-banner { flex-direction: column !important; gap: 1rem !important; }
+        }
+      `}} />
+      <div className="container" style={{ padding: '2rem 5%', maxWidth: '1400px', margin: '0 auto' }}>
         
         {isAdmin && (
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
+            className="admin-banner"
             style={{ 
               background: 'linear-gradient(90deg, rgba(234, 179, 8, 0.1) 0%, rgba(234, 179, 8, 0.02) 100%)', 
               border: '1px solid rgba(234, 179, 8, 0.3)', 
-              padding: '1.25rem 2rem', 
+              padding: '1.25rem 1.5rem', 
               borderRadius: '16px', 
               marginBottom: '2rem', 
               display: 'flex', 
@@ -70,16 +84,18 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
 
         {/* Hero Section */}
         <motion.div 
-          className="glass-card" 
+          className="glass-card dashboard-hero" 
           style={{ 
             background: 'url(/abstract-bg.jpg) center/cover, linear-gradient(135deg, rgba(203, 161, 83, 0.15) 0%, rgba(10, 10, 10, 0.95) 100%)',
             backgroundBlendMode: 'overlay',
-            marginBottom: '3rem',
-            padding: '3rem',
+            marginBottom: '2rem',
+            padding: '2.5rem',
             borderRadius: '24px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1.5rem',
             border: '1px solid rgba(203, 161, 83, 0.2)',
             boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
           }}
@@ -88,34 +104,34 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <div>
-            <div style={{ display: 'inline-block', padding: '0.4rem 1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', fontSize: '0.9rem', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--primary)' }}>
+            <div style={{ display: 'inline-block', padding: '0.4rem 1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', fontSize: '0.85rem', marginBottom: '1rem', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--primary)' }}>
               لوحة التحكم (Dashboard)
             </div>
-            <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem', fontWeight: 900, letterSpacing: '-1px' }}>
+            <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.8rem)', marginBottom: '0.5rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
               مرحباً بعودتك، <span style={{ color: 'var(--primary)' }}>{firstName}</span> 👋
             </h1>
-            <p style={{ opacity: 0.8, fontSize: '1.2rem', margin: 0, maxWidth: '600px', lineHeight: 1.6 }}>
+            <p style={{ opacity: 0.8, fontSize: 'clamp(0.9rem, 2vw, 1.1rem)', margin: 0, maxWidth: '500px', lineHeight: 1.6 }}>
               جاهز لتحقيق هدف جديد اليوم؟ دعنا نتابع من حيث توقفنا.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '3rem', textAlign: 'center', background: 'rgba(0,0,0,0.4)', padding: '2rem 3rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
+          <div className="dashboard-hero-stats">
             <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textShadow: '0 0 20px rgba(249,115,22,0.4)' }}>
-                <Flame size={32} /> 1
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', textShadow: '0 0 20px rgba(249,115,22,0.4)' }}>
+                <Flame size={26} /> 1
               </div>
-              <p style={{ fontSize: '0.9rem', opacity: 0.7, margin: 0, fontWeight: 600, letterSpacing: '0.5px' }}>أيام متتالية</p>
+              <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0, fontWeight: 600 }}>أيام متتالية</p>
             </div>
             <div style={{ width: '1px', background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent)' }}></div>
             <div>
-              <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textShadow: '0 0 20px rgba(34,197,94,0.4)' }}>
-                <Trophy size={32} /> {points.toLocaleString()}
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', textShadow: '0 0 20px rgba(34,197,94,0.4)' }}>
+                <Trophy size={26} /> {points.toLocaleString()}
               </div>
-              <p style={{ fontSize: '0.9rem', opacity: 0.7, margin: 0, fontWeight: 600, letterSpacing: '0.5px' }}>نقطة خبرة (XP)</p>
+              <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0, fontWeight: 600 }}>نقطة خبرة (XP)</p>
             </div>
           </div>
         </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '3rem' }}>
+        <div className="dashboard-layout">
           
           {/* Main Content Area */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
@@ -130,7 +146,7 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
                 <TrendingUp color="var(--primary)" /> الوصول السريع
               </h2>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
+              <div className="grid-5">
                 {[
                   { href: '/dashboard/wallet', icon: Wallet, color: '#eab308', title: 'محفظتي' },
                   { href: '/features/ai-tutor', icon: Bot, color: '#3b82f6', title: 'المساعد الذكي' },
@@ -203,57 +219,52 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
                     return (
                       <div 
                         key={enrollment.id} 
-                        className="group"
+                        className="enroll-card"
                         style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '2rem', 
                           background: 'rgba(255,255,255,0.02)', 
-                          padding: '1.5rem', 
-                          borderRadius: '20px', 
+                          padding: '1.25rem', 
+                          borderRadius: '16px', 
                           border: '1px solid rgba(255,255,255,0.05)',
-                          transition: 'all 0.3s'
+                          transition: 'background 0.3s'
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                       >
-                        <div style={{ width: '120px', height: '80px', borderRadius: '12px', background: enrollment.course.thumbnail ? `url(${enrollment.course.thumbnail}) center/cover` : '#222', position: 'relative', overflow: 'hidden' }}>
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.3s' }} className="group-hover:opacity-100">
-                            <PlayCircle size={32} color="var(--primary)" />
+                        <div style={{ width: '100px', height: '68px', borderRadius: '10px', background: enrollment.course.thumbnail ? `url(${enrollment.course.thumbnail}) center/cover` : '#222', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <PlayCircle size={28} color="var(--primary)" />
                           </div>
                         </div>
                         
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                            <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '4px', color: 'rgba(255,255,255,0.8)' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.1)', padding: '0.15rem 0.5rem', borderRadius: '4px', color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap' }}>
                               {enrollment.course.category || 'كورس'}
                             </span>
-                            {progress === 100 && <span style={{ fontSize: '0.75rem', background: 'rgba(34,197,94,0.2)', color: '#22c55e', padding: '0.2rem 0.6rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><CheckCircle2 size={12} /> مكتمل</span>}
+                            {progress === 100 && <span style={{ fontSize: '0.72rem', background: 'rgba(34,197,94,0.2)', color: '#22c55e', padding: '0.15rem 0.5rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><CheckCircle2 size={11} /> مكتمل</span>}
                           </div>
-                          
-                          <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#fff' }}>{enrollment.course.title}</h4>
-                          <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <Clock size={14} /> آخر نشاط: {new Date(enrollment.updatedAt).toLocaleDateString('ar-SA')}
+                          <h4 style={{ fontSize: 'clamp(0.9rem, 2vw, 1.1rem)', fontWeight: 'bold', marginBottom: '0.4rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{enrollment.course.title}</h4>
+                          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: '0 0 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <Clock size={13} /> آخر نشاط: {new Date(enrollment.updatedAt).toLocaleDateString('ar-SA')}
                           </p>
+                          <div className="enroll-card-progress">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.4rem', fontWeight: 600 }}>
+                              <span style={{ color: 'rgba(255,255,255,0.7)' }}>نسبة الإنجاز</span>
+                              <span style={{ color: progress === 100 ? 'var(--success)' : 'var(--primary)' }}>{progress}%</span>
+                            </div>
+                            <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress}%` }}
+                                transition={{ duration: 1, ease: 'easeOut' }}
+                                style={{ height: '100%', background: progress === 100 ? 'var(--success)' : 'var(--primary)', borderRadius: '4px' }} 
+                              />
+                            </div>
+                          </div>
                         </div>
 
-                        <div style={{ width: '180px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.5rem', fontWeight: 600 }}>
-                            <span style={{ color: 'rgba(255,255,255,0.7)' }}>نسبة الإنجاز</span>
-                            <span style={{ color: progress === 100 ? 'var(--success)' : 'var(--primary)' }}>{progress}%</span>
-                          </div>
-                          <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${progress}%` }}
-                              transition={{ duration: 1, ease: 'easeOut' }}
-                              style={{ height: '100%', background: progress === 100 ? 'var(--success)' : 'var(--primary)', borderRadius: '4px', boxShadow: progress === 100 ? '0 0 10px rgba(34,197,94,0.5)' : '0 0 10px rgba(203,161,83,0.5)' }} 
-                            />
-                          </div>
-                        </div>
-
-                        <Link href={`/courses/${enrollment.courseId}/learn`} className="btn btn-outline" style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                          {progress === 0 ? 'ابدأ الآن' : progress === 100 ? 'مراجعة' : 'متابعة'} <ArrowRight size={16} />
+                        <Link href={`/courses/${enrollment.courseId}/learn`} className="btn btn-outline enroll-card-btn" style={{ padding: '0.65rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                          {progress === 0 ? 'ابدأ الآن' : progress === 100 ? 'مراجعة' : 'متابعة'} <ArrowRight size={15} />
                         </Link>
                       </div>
                     );

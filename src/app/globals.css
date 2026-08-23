@@ -97,9 +97,58 @@ a:hover {
 }
 
 .main-content {
-  margin-top: 100px;
-  min-height: calc(100vh - 100px);
+  margin-top: 80px;
+  min-height: calc(100vh - 80px);
 }
+
+/* ===== Responsive Grid System ===== */
+.grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
+.grid-2   { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+.grid-3   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.grid-4   { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.grid-5   { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+.dashboard-layout { display: grid; grid-template-columns: 1fr 380px; gap: 3rem; }
+
+/* ===== Flex Helpers ===== */
+.stack-mobile { display: flex; flex-direction: row; gap: 1rem; align-items: center; }
+.flex-wrap-center { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; }
+
+/* ===== Typography ===== */
+.hero-title-responsive { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900; }
+.section-title { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800; }
+
+/* ===== Mobile Overrides (max-width: 768px) ===== */
+@media (max-width: 768px) {
+  .main-content {
+    margin-top: 60px; /* Navbar height on mobile */
+    min-height: calc(100vh - 60px);
+  }
+
+  /* Grid overrides */
+  .grid-1-2         { grid-template-columns: 1fr; }
+  .grid-2           { grid-template-columns: 1fr; }
+  .grid-3           { grid-template-columns: repeat(2, 1fr); }
+  .grid-4           { grid-template-columns: repeat(2, 1fr); }
+  .grid-5           { grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+  .grid-auto        { grid-template-columns: 1fr; }
+  .dashboard-layout { grid-template-columns: 1fr; }
+
+  /* Flex overrides */
+  .stack-mobile { flex-direction: column; align-items: stretch; }
+
+  /* Container */
+  .container { padding: 1rem; }
+
+  /* Glass card */
+  .glass-card { padding: 1.25rem; border-radius: 16px; }
+}
+
+@media (max-width: 480px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-5 { grid-template-columns: repeat(2, 1fr); }
+}
+
 
 /* Premium Glass Card */
 .glass-card {

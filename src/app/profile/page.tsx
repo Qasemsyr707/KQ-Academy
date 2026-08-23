@@ -27,11 +27,24 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '4rem 5%' }}>
+    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: 'clamp(1.5rem, 4vw, 4rem) clamp(1rem, 5%, 5%)' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .profile-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start; }
+        .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        @media (max-width: 768px) {
+          .profile-grid { grid-template-columns: 1fr; }
+          .profile-stats { grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+          .profile-card { text-align: center !important; }
+          .stat-num { font-size: 1.4rem !important; }
+        }
+        @media (max-width: 420px) {
+          .profile-stats { grid-template-columns: 1fr; }
+        }
+      `}} />
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>الملف الشخصي</h1>
+        <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 'bold', marginBottom: '2rem' }}>الملف الشخصي</h1>
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'start' }}>
+        <div className="profile-grid">
           
           {/* Profile Card */}
           <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
@@ -64,12 +77,12 @@ export default async function ProfilePage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             
             {/* Quick Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+            <div className="profile-stats">
               <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
                 <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
                   <ShieldCheck size={24} color="#22c55e" />
                 </div>
-                <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{user.enrollments.length}</h3>
+                <h3 className="stat-num" style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{user.enrollments.length}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>كورسات مسجلة</p>
               </div>
               
@@ -77,7 +90,7 @@ export default async function ProfilePage() {
                 <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: 'rgba(203, 161, 83, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
                   <Trophy size={24} color="var(--primary)" />
                 </div>
-                <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{user.points.toLocaleString()}</h3>
+                <h3 className="stat-num" style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{user.points.toLocaleString()}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>نقطة خبرة (XP)</p>
               </div>
               
@@ -85,7 +98,7 @@ export default async function ProfilePage() {
                 <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto' }}>
                   <Award size={24} color="#a855f7" />
                 </div>
-                <h3 style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{user.certificates.length}</h3>
+                <h3 className="stat-num" style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>{user.certificates.length}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>شهادة معتمدة</p>
               </div>
             </div>
