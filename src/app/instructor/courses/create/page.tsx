@@ -250,23 +250,27 @@ export default function CreateCoursePage() {
               style={{ 
                 background: 'rgba(0,0,0,0.3)', 
                 border: '2px dashed rgba(255,255,255,0.1)', 
-                borderRadius: '12px', 
+                borderRadius: '16px', 
                 padding: thumbnailPreview ? '0' : '2rem', 
                 textAlign: 'center', 
                 cursor: 'pointer',
                 overflow: 'hidden',
                 position: 'relative',
-                minHeight: '200px',
+                width: '100%',
+                maxWidth: '300px',
+                aspectRatio: '1 / 1',
+                margin: '0 auto',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                alignItems: 'center'
               }}>
               {thumbnailPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={thumbnailPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
               ) : (
                 <>
-                  <ImageIcon size={40} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
+                  <ImageIcon size={48} color="var(--primary)" style={{ marginBottom: '1rem' }} />
                   <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>اضغط هنا لرفع صورة</p>
                   <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>PNG, JPG, GIF (Max. 5MB)</p>
                 </>
