@@ -164,14 +164,14 @@ function CheckoutContent() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1200px', margin: '3rem auto', padding: '0 5%', display: 'flex', gap: '4rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div style={{ maxWidth: '1200px', margin: '3rem auto', padding: '0 5%', display: 'flex', gap: 'clamp(1.5rem, 4vw, 4rem)', flexWrap: 'wrap', alignItems: 'flex-start' }}>
         
         {/* Left Side: Payment Details */}
-        <div style={{ flex: '1 1 600px' }}>
+        <div style={{ flex: '1 1 min(100%, 600px)' }}>
           
           <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '2rem' }}>اختر طريقة الدفع</h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          <div className="payment-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'WALLET', 'MANUAL'].filter(m => paymentSettings[`ENABLE_${m}`] !== 'false').map(method => (
               <div 
                 key={method} 
@@ -242,7 +242,7 @@ function CheckoutContent() {
                         <img 
                           src="/images/sham-cash-barcode.jpg" 
                           alt="Sham Cash Barcode" 
-                          style={{ width: '200px', height: 'auto', marginBottom: '1rem' }} 
+                          style={{ maxWidth: '200px', width: '100%', height: 'auto', marginBottom: '1rem' }} 
                         />
                         <a href="/images/sham-cash-barcode.jpg" download="sham-cash-barcode.jpg" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(62, 237, 196, 0.15)', color: '#000', padding: '0.6rem 1.2rem', borderRadius: '8px', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 'bold', border: '1px solid #3EEDC4' }}>
                            <Upload size={18} /> تحميل الباركود (Download)
@@ -409,8 +409,8 @@ function CheckoutContent() {
         </div>
 
         {/* Right Side: Order Summary */}
-        <div style={{ flex: '1 1 400px', position: 'sticky', top: '2rem' }}>
-          <div className="glass-card" style={{ padding: '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,15,15,0.8)', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+        <div className="checkout-summary" style={{ flex: '1 1 min(100%, 400px)', position: 'sticky', top: '2rem' }}>
+          <div className="glass-card checkout-card" style={{ padding: '2.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(15,15,15,0.8)', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>ملخص الطلب</h2>
             
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
@@ -474,8 +474,14 @@ function CheckoutContent() {
             </p>
           </div>
         </div>
-
       </div>
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          .checkout-summary { position: static !important; top: 0 !important; }
+          .payment-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .checkout-card { padding: 1.5rem !important; }
+        }
+      `}} />
     </div>
   );
 }

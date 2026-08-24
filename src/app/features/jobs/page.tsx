@@ -131,7 +131,7 @@ export default function JobsPage() {
                       gap: '1.5rem'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                       <div style={{ display: 'flex', gap: '1.5rem' }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={job.logo} alt={job.company} style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover' }} />
@@ -168,7 +168,7 @@ export default function JobsPage() {
                       </button>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '2rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <MapPin size={16} /> {job.location}
                       </div>

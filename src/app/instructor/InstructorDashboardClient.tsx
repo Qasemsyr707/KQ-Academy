@@ -36,7 +36,7 @@ export default function InstructorDashboardClient({
   revenueData,
 }: InstructorDashboardClientProps) {
   return (
-    <div className="container" style={{ padding: '2rem 5%' }}>
+    <div className="container" style={{ padding: 'clamp(1rem, 3vw, 2rem) 5%' }}>
       {/* Welcome Banner */}
       <motion.div 
         className="glass-card" 
@@ -46,26 +46,28 @@ export default function InstructorDashboardClient({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderLeft: '4px solid var(--primary)'
+          flexWrap: 'wrap',
+          gap: '1.5rem',
+          borderRight: '4px solid var(--primary)'
         }}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>مرحباً بك أستاذ <span style={{ color: 'var(--primary)' }}>{firstName}</span> 👑</h1>
+          <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2.5rem)', marginBottom: '0.5rem' }}>مرحباً بك أستاذ <span style={{ color: 'var(--primary)' }}>{firstName}</span> 👑</h1>
           <p style={{ opacity: 0.8, fontSize: '1.1rem' }}>لديك <strong style={{ color: 'var(--success)' }}>3</strong> أسئلة طلاب بانتظار الإجابة، وتقييمك العام ارتفع هذا الأسبوع!</p>
         </div>
-        <div style={{ display: 'flex', gap: '2rem', textAlign: 'center' }}>
+        <div style={{ display: 'flex', gap: '1.5rem', textAlign: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <div style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)', fontWeight: 800, color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
               <Users size={28} /> {totalStudents.toLocaleString()}
             </div>
             <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>إجمالي الطلاب</p>
           </div>
           <div style={{ width: '1px', background: 'var(--border-light)' }}></div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <div style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)', fontWeight: 800, color: 'var(--warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
               <Star size={28} fill="var(--warning)" /> {averageRating.toFixed(2)}
             </div>
             <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>متوسط التقييم</p>
@@ -73,11 +75,11 @@ export default function InstructorDashboardClient({
         </div>
       </motion.div>
 
-      <div className="grid" style={{ gridTemplateColumns: '1fr 3fr', gap: '2rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
         
         {/* Sidebar - Control Panel */}
         <motion.div 
-          style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: '1 1 300px', width: '100%' }}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
@@ -107,20 +109,20 @@ export default function InstructorDashboardClient({
 
         {/* Main Content Area */}
         <motion.div 
-          style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '2rem', flex: '1 1 min(100%, 800px)', minWidth: 0 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
           {/* Revenue & Analytics */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+          <div className="grid-3">
             <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{ background: 'rgba(34, 197, 94, 0.2)', padding: '1rem', borderRadius: '12px' }}>
                 <DollarSign size={24} color="var(--success)" />
               </div>
               <div>
                 <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>إجمالي الأرباح</p>
-                <h3 style={{ fontSize: '1.5rem' }}>${totalRevenue.toLocaleString()}</h3>
+                <h3 style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)' }}>${totalRevenue.toLocaleString()}</h3>
               </div>
             </div>
             <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>

@@ -33,7 +33,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
 
   const [activeItem, setActiveItem] = useState<any>(initialActiveItem);
   const [completedItems, setCompletedItems] = useState<string[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openChapters, setOpenChapters] = useState<string[]>(
     specificChapterId ? [specificChapterId] : (firstAccessibleChapter ? [firstAccessibleChapter.id] : [])
   );
@@ -250,41 +250,105 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#050505', color: '#fff', overflow: 'hidden' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .player-sidebar {
+          background: #0a0a0a;
+          border-right: 1px solid rgba(255,255,255,0.05);
+          display: flex;
+          flex-direction: column;
+          flex-shrink: 0;
+        }
+        .player-topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem 2rem;
+          background: #0a0a0a;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+        .player-topbar-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+        .player-topbar-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
+        .player-topbar h1 { font-size: 1rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+        .sidebar-backdrop {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          z-index: 150;
+        }
+        .quiz-card { padding: clamp(1rem, 3vw, 3rem); }
+        .quiz-question-pad { padding-right: clamp(0.5rem, 2vw, 4rem); }
+        .review-modal-card { max-height: 90vh; overflow-y: auto; }
+        @media (max-width: 768px) {
+          .player-sidebar {
+            position: fixed !important;
+            top: 0; right: -100%; bottom: 0;
+            width: min(85vw, 340px) !important;
+            z-index: 200;
+            overflow-y: auto;
+            transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+          }
+          .player-sidebar.open {
+            right: 0 !important;
+          }
+          .sidebar-backdrop.open {
+            display: block !important;
+          }
+          .player-topbar { padding: 0.75rem 1rem; }
+          .player-topbar h1 { font-size: 0.9rem; max-width: 130px; }
+          .player-topbar-right .cert-btn span,
+          .player-topbar-right .review-btn span { display: none; }
+          .player-content-area { padding: 1rem !important; }
+          .player-content-inner { margin: 0 !important; }
+          .livekit-container { height: auto !important; aspect-ratio: 16/9; }
+          .qa-input-row { flex-direction: column !important; }
+          .qa-input-row button { width: 100%; justify-content: center; }
+          .replies-indent { margin-right: 0.5rem !important; padding-right: 0.5rem !important; }
+        }
+      `}} />
       
+      {/* Sidebar Backdrop (mobile) */}
+      <div
+        className={`sidebar-backdrop ${sidebarOpen ? 'open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
       {/* Main Content (Video / Quiz Player) */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', transition: 'all 0.3s' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', transition: 'all 0.3s', minWidth: 0 }}>
         {/* Top Navbar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 2rem', background: '#0a0a0a', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
-              <Menu size={24} />
+        <div className="player-topbar">
+          <div className="player-topbar-left">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', borderRadius: '8px', padding: '0.4rem 0.6rem', flexShrink: 0 }}>
+              <Menu size={22} />
             </button>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{course.title}</h1>
+            <h1>{course.title}</h1>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className="player-topbar-right">
             {progress === 100 && (
-              <button onClick={handleIssueCertificate} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: '#000', padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                <Award size={16} /> استخراج الشهادة
+              <button onClick={handleIssueCertificate} className="cert-btn" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--primary)', color: '#000', padding: '0.45rem 0.85rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                <Award size={15} /> <span>الشهادة</span>
               </button>
             )}
-            <button onClick={() => setShowReview(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(203, 161, 83, 0.1)', color: 'var(--warning)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(203, 161, 83, 0.3)', cursor: 'pointer', fontWeight: 'bold' }}>
-              <Star size={16} fill="var(--warning)" /> تقييم الكورس
+            <button onClick={() => setShowReview(true)} className="review-btn" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(203,161,83,0.1)', color: 'var(--warning)', padding: '0.45rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(203,161,83,0.3)', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
+              <Star size={15} fill="var(--warning)" /> <span>تقييم</span>
             </button>
-            <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
-              العودة للوحة <ArrowRight size={16} />
+            <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '0.85rem' }}>
+              <ArrowRight size={15} />
             </Link>
           </div>
         </div>
 
         {/* Dynamic Area (Video OR Quiz) */}
-        <div style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
+        <div className="player-content-area" style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <div className="player-content-inner" style={{ width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
             
             {/* If Lesson (Video or Live) */}
             {!isQuiz && activeItem && (
               <>
                 {activeItem.isLive ? (
-                  <div style={{ position: 'relative', width: '100%', height: '600px', background: '#000', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: '1px solid var(--danger, #ef4444)' }}>
+                  <div className="livekit-container" style={{ position: 'relative', width: '100%', height: '600px', background: '#000', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: '1px solid var(--danger, #ef4444)' }}>
                     {isFetchingToken ? (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#fff' }}>جاري الاتصال بالبث المباشر...</div>
                     ) : liveToken ? (
@@ -330,8 +394,8 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                 )}
 
                 <div style={{ marginTop: '2rem' }}>
-                  <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1rem' }}>{activeItem.title}</h2>
-                  <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '2rem' }}>
+                  <h2 style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)', fontWeight: 'bold', marginBottom: '1rem' }}>{activeItem.title}</h2>
+                  <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '2rem', flexWrap: 'wrap' }}>
                     <button 
                       onClick={() => markCompleted(activeItem.id)}
                       style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: completedItems.includes(activeItem.id) ? 'rgba(34, 197, 94, 0.1)' : 'var(--primary)', color: completedItems.includes(activeItem.id) ? '#22c55e' : '#000', padding: '0.8rem 1.5rem', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
@@ -370,7 +434,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                     </h3>
                     
                     {/* Ask a Question */}
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+                    <div className="qa-input-row" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
                       <input 
                         type="text" 
                         placeholder="هل لديك سؤال حول هذا الدرس؟" 
@@ -400,7 +464,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                             
                             {/* Answers */}
                             {q.answers && q.answers.length > 0 && (
-                              <div style={{ marginLeft: '2rem', paddingLeft: '1rem', borderLeft: '2px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+                              <div className="replies-indent" style={{ marginRight: '1rem', paddingRight: '0.75rem', borderRight: '2px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
                                 {q.answers.map((ans: any) => (
                                   <div key={ans.id}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
@@ -442,13 +506,13 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
 
             {/* If Quiz */}
             {isQuiz && activeItem && (
-              <div style={{ background: '#111', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
+              <div className="quiz-card" style={{ background: '#111', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                   <div style={{ width: '60px', height: '60px', background: 'rgba(203, 161, 83, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <CheckSquare size={32} color="var(--warning)" />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 'bold' }}>{activeItem.title}</h2>
+                    <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 2rem)', fontWeight: 'bold' }}>{activeItem.title}</h2>
                     <p style={{ color: 'rgba(255,255,255,0.5)' }}>اختبر معلوماتك لفتح الفصول القادمة واستخراج الشهادة.</p>
                   </div>
                 </div>
@@ -531,7 +595,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                           return (
                             <div key={q.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', position: 'relative' }}>
                               <span style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'rgba(203, 161, 83, 0.1)', color: 'var(--primary)', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>{q.points} علامات</span>
-                              <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem', paddingLeft: '4rem' }}>{qIndex + 1}. {q.text}</h4>
+                              <h4 className="quiz-question-pad" style={{ fontSize: 'clamp(1rem, 2vw, 1.2rem)', fontWeight: 'bold', marginBottom: '1rem' }}>{qIndex + 1}. {q.text}</h4>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 {options.map((opt: string, optIndex: number) => (
                                   <label key={optIndex} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: quizAnswers[q.id] === optIndex ? 'rgba(203, 161, 83, 0.2)' : 'rgba(255,255,255,0.05)', border: quizAnswers[q.id] === optIndex ? '1px solid var(--primary)' : '1px solid transparent', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -610,7 +674,8 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                     initial={{ scale: 0.9, opacity: 0 }} 
                     animate={{ scale: 1, opacity: 1 }} 
                     exit={{ scale: 0.9, opacity: 0 }} 
-                    style={{ background: '#111', padding: '2rem', borderRadius: '16px', width: '90%', maxWidth: '500px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}
+                    className="review-modal-card"
+                    style={{ background: '#111', padding: 'clamp(1rem, 3vw, 2rem)', borderRadius: '16px', width: '90%', maxWidth: '500px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}
                   >
                     <button onClick={() => setShowReview(false)} style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
                       <X size={24} />
@@ -653,10 +718,11 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div 
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 400, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            style={{ background: '#0a0a0a', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={`player-sidebar ${sidebarOpen ? 'open' : ''}`}
+            style={{ width: '340px' }}
           >
             {/* Sidebar Header */}
             <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>

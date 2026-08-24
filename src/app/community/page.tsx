@@ -139,11 +139,11 @@ export default function CommunityPage() {
   };
 
   return (
-    <div style={{ padding: '2rem 3%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
+    <div style={{ padding: 'clamp(1rem, 3vw, 2rem) 3%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ 
-          fontSize: '2.5rem', fontWeight: 900,
+          fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 900,
           background: 'linear-gradient(135deg, #fff, rgba(255,255,255,0.7))',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           marginBottom: '0.5rem'
@@ -185,9 +185,9 @@ export default function CommunityPage() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', alignItems: 'start' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
         {/* Feed */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: '1 1 min(100%, 600px)', minWidth: 0 }}>
           {/* New Post */}
           <div style={{ 
             background: 'rgba(255,255,255,0.02)', 
@@ -399,7 +399,7 @@ export default function CommunityPage() {
         </div>
 
         {/* Sidebar - Leaderboard */}
-        <div style={{ position: 'sticky', top: '100px' }}>
+        <div style={{ position: 'sticky', top: '100px', flex: '1 1 300px', width: '100%' }}>
           <div style={{
             background: 'rgba(255,255,255,0.02)',
             border: '1px solid rgba(255,255,255,0.06)',

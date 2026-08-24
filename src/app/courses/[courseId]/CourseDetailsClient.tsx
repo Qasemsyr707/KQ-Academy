@@ -61,7 +61,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
           </motion.div>
           
           {/* Floating Checkout Box */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ flex: '1 1 300px' }}>
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} style={{ flex: '1 1 min(100%, 350px)' }}>
             <div className="glass-card floating-box" style={{ borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', position: 'sticky', background: 'rgba(15,15,15,0.8)', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
               {/* Box Video Preview */}
               {course.previewVideoUrl ? (
@@ -137,10 +137,10 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
         </div>
       </div>
 
-      <div className="main-content-area" style={{ maxWidth: '1400px', position: 'relative', zIndex: 2, display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+      <div className="main-content-area" style={{ maxWidth: '1400px', position: 'relative', zIndex: 2, display: 'flex', gap: 'clamp(1rem, 4vw, 2rem)', flexWrap: 'wrap' }}>
         
         {/* Main Content Area */}
-        <div style={{ flex: '1 1 600px' }}>
+        <div style={{ flex: '1 1 min(100%, 600px)' }}>
           
           {/* Curriculum Section */}
           <div className="content-box" style={{ background: '#0a0a0a', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -256,7 +256,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
             {course.reviews?.length === 0 ? (
               <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', padding: '2rem' }}>لا توجد تقييمات حتى الآن. كن أول من يشارك رأيه بعد إتمام الكورس!</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '1.5rem' }}>
                 {course.reviews?.map((review: any) => (
                   <div key={review.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
@@ -289,7 +289,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
         </div>
 
         {/* Dummy sidebar placeholder to maintain gap in flex */}
-        <div style={{ flex: '1 1 350px' }}></div>
+        <div style={{ flex: '1 1 min(100%, 350px)' }}></div>
       </div>
 
       {/* Free Lesson Preview Modal */}

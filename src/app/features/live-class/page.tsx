@@ -58,11 +58,11 @@ export default function LiveClassPage() {
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>الجلسات التفاعلية</h2>
+            <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 'bold', marginBottom: '0.5rem' }}>الجلسات التفاعلية</h2>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem' }}>انضم لدروس البث المباشر وتفاعل مع مدربيك وزملائك في الوقت الفعلي.</p>
           </div>
           
-          <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '16px' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '16px', flexWrap: 'wrap' }}>
             {[
               { id: 'ALL', label: 'الكل' },
               { id: 'LIVE', label: 'مباشر الآن', color: '#ef4444' },
@@ -87,7 +87,7 @@ export default function LiveClassPage() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+        <div className="live-sessions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 350px), 1fr))', gap: '2rem' }}>
           {filteredClasses.map((cls, idx) => (
             <motion.div
               initial={{ opacity: 0, y: 20 }}

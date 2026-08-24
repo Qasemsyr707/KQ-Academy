@@ -109,6 +109,9 @@ a:hover {
 .grid-5   { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
 .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
 .dashboard-layout { display: grid; grid-template-columns: 1fr 380px; gap: 3rem; }
+.instructor-layout { display: grid; grid-template-columns: 1fr 3fr; gap: 2rem; }
+.community-layout { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; align-items: start; }
+.live-sessions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 1.5rem; }
 
 /* ===== Flex Helpers ===== */
 .stack-mobile { display: flex; flex-direction: row; gap: 1rem; align-items: center; }
@@ -133,6 +136,10 @@ a:hover {
   .grid-5           { grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
   .grid-auto        { grid-template-columns: 1fr; }
   .dashboard-layout { grid-template-columns: 1fr; }
+  .instructor-layout { grid-template-columns: 1fr; }
+  .community-layout  { grid-template-columns: 1fr; }
+  .community-layout > div:last-child { position: static !important; }
+  .live-sessions-grid { grid-template-columns: 1fr; gap: 1rem; }
 
   /* Flex overrides */
   .stack-mobile { flex-direction: column; align-items: stretch; }
