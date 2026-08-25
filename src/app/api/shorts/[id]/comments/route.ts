@@ -5,9 +5,10 @@ import { authOptions } from '@/lib/auth';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
+    const { id } = await params;
     const comments = await prisma.shortComment.findMany({
       where: { 
-        shortId: params.id,
+        shortId: id,
         parentId: null, // Only fetch top-level comments 
       },
       include: {
@@ -29,6 +30,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
       return NextResponse.json({ error: 'يجب تسجيل الدخول' }, { status: 401 });
@@ -50,7 +52,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const comment = await prisma.shortComment.create({
       data: {
         content,
-        shortId: params.id,
+        shortId: id,
         userId: (session.user as any).id,
         parentId: finalParentId,
       },

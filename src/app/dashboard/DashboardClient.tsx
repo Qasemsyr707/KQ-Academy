@@ -131,10 +131,10 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
           </div>
         </motion.div>
 
-        <div className="dashboard-layout">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
           
           {/* Main Content Area */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem', flex: '1 1 min(100%, 800px)', minWidth: 0 }}>
             
             {/* Quick Actions - Bento Grid */}
             <motion.div 
@@ -146,7 +146,7 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
                 <TrendingUp color="var(--primary)" /> الوصول السريع
               </h2>
               
-              <div className="grid-5">
+              <div className="grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem' }}>
                 {[
                   { href: '/dashboard/wallet', icon: Wallet, color: '#eab308', title: 'محفظتي' },
                   { href: '/features/ai-tutor', icon: Bot, color: '#3b82f6', title: 'المساعد الذكي' },
@@ -275,7 +275,7 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
           </div>
 
           {/* Sidebar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', flex: '1 1 300px', width: '100%' }}>
             
             {/* Notifications */}
             <motion.div 
