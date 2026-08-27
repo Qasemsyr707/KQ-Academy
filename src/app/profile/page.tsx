@@ -72,9 +72,6 @@ export default async function ProfilePage() {
                 <Mail size={18} /> {user.email}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'rgba(255,255,255,0.7)' }}>
-                <Phone size={18} /> {user.phone || 'غير محدد'}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'rgba(255,255,255,0.7)' }}>
                 <Calendar size={18} /> انضم في {user.createdAt.toLocaleDateString('ar-SA')}
               </div>
             </div>

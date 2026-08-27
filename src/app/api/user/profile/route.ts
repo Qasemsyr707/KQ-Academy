@@ -10,13 +10,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'غير مصرح لك' }, { status: 401 });
     }
 
-    const { name, phone, image, bio } = await req.json();
+    const { name, image, bio } = await req.json();
 
     const updatedUser = await prisma.user.update({
       where: { email: session.user.email },
       data: {
         ...(name && { name }),
-        ...(phone && { phone }),
         ...(image !== undefined && { image }),
         ...(bio !== undefined && { bio }),
       },
@@ -26,7 +25,6 @@ export async function POST(req: Request) {
       message: 'تم تحديث الملف الشخصي بنجاح', 
       user: {
         name: updatedUser.name,
-        phone: updatedUser.phone,
         image: updatedUser.image,
         bio: updatedUser.bio,
       } 

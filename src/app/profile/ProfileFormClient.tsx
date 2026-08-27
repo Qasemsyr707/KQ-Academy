@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 export default function ProfileFormClient({ user }: { user: any }) {
   const [loading, setLoading] = useState(false);
   const [bio, setBio] = useState(user.bio || '');
-  const [phone, setPhone] = useState(user.phone || '');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [message, setMessage] = useState('');
   const router = useRouter();
@@ -87,7 +86,6 @@ export default function ProfileFormClient({ user }: { user: any }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           bio, 
-          phone, 
           ...(imageUrl && { image: imageUrl })
         })
       });
@@ -123,16 +121,12 @@ export default function ProfileFormClient({ user }: { user: any }) {
           </div>
         </div>
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>تغيير الصورة الشخصية</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} style={{ color: 'rgba(255,255,255,0.7)', width: '100%', fontSize: '0.85rem' }} />
             </div>
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>رقم الهاتف</label>
-            <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="أدخل رقم الهاتف" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
           </div>
         </div>
 
