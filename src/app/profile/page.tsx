@@ -49,15 +49,17 @@ export default async function ProfilePage() {
           {/* Profile Card */}
           <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
             <div style={{ 
-              width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #b45309)', 
+              width: '100%', maxWidth: '200px', minHeight: '120px', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', 
               margin: '0 auto 1.5rem auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '3rem', fontWeight: 'bold', color: '#000',
-              overflow: 'hidden', position: 'relative'
+              overflow: 'hidden', position: 'relative', border: '1px solid rgba(255,255,255,0.05)'
             }}>
               {user.image ? (
-                <img src={user.image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={user.image} alt="Profile" style={{ width: '100%', height: 'auto', maxHeight: '250px', objectFit: 'contain' }} />
               ) : (
-                user.name.charAt(0)
+                <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #b45309)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {user.name.charAt(0)}
+                </div>
               )}
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{user.name}</h2>
