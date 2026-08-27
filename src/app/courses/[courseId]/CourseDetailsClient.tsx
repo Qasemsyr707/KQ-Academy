@@ -93,7 +93,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
                 </div>
               )}
               
-              <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '0.5rem', color: '#fff', textAlign: 'center' }}>
+              <h2 style={{ fontSize: 'clamp(1.6rem, 5vw, 2.2rem)', fontWeight: 900, marginBottom: '1rem', color: '#fff', textAlign: 'center' }}>
                  {course.priceSYP > 0 ? `${course.priceSYP.toLocaleString()} ل.س` : (course.price > 0 ? `$${course.price}` : 'مجاني')}
               </h2>
 
