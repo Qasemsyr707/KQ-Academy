@@ -12,6 +12,53 @@ export default function ProfileFormClient({ user }: { user: any }) {
   const [message, setMessage] = useState('');
   const router = useRouter();
 
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_SIZE = 1200;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
+                type: 'image/webp',
+                lastModified: Date.now(),
+              });
+              resolve(newFile);
+            } else {
+              resolve(file); // fallback to original
+            }
+          }, 'image/webp', 0.85);
+        };
+        img.onerror = () => resolve(file); // fallback to original
+      };
+      reader.onerror = () => resolve(file); // fallback to original
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -21,8 +68,9 @@ export default function ProfileFormClient({ user }: { user: any }) {
       let imageUrl = undefined;
       
       if (imageFile) {
+        const compressedFile = await compressImage(imageFile);
         const formData = new FormData();
-        formData.append('file', imageFile);
+        formData.append('file', compressedFile);
         
         const uploadRes = await fetch('/api/upload', {
           method: 'POST',
