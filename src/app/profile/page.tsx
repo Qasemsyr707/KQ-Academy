@@ -51,9 +51,14 @@ export default async function ProfilePage() {
             <div style={{ 
               width: '120px', height: '120px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #b45309)', 
               margin: '0 auto 1.5rem auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '3rem', fontWeight: 'bold', color: '#000'
+              fontSize: '3rem', fontWeight: 'bold', color: '#000',
+              overflow: 'hidden', position: 'relative'
             }}>
-              {user.name.charAt(0)}
+              {user.image ? (
+                <img src={user.image} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                user.name.charAt(0)
+              )}
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{user.name}</h2>
             <div style={{ display: 'inline-block', background: 'rgba(203, 161, 83, 0.1)', color: 'var(--primary)', padding: '0.3rem 1rem', borderRadius: '20px', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
