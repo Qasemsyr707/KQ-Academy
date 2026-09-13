@@ -312,7 +312,6 @@ export default function CurriculumClient({ course }: { course: any }) {
                               <span style={{ fontSize: '0.85rem', color: '#cba153' }}>{attachmentUrl && attachmentUrl.startsWith('data:') ? 'تم اختيار الملف بنجاح ✅' : '📥 اضغط هنا لرفع ملف من جهازك'}</span>
                               <input 
                                 type="file" 
-                                accept=".pdf,.png,.jpg,.jpeg,.zip,.rar,.doc,.docx"
                                 onChange={handleFileUpload}
                                 style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: 0, cursor: 'pointer', width: '100%' }}
                               />
@@ -365,10 +364,10 @@ export default function CurriculumClient({ course }: { course: any }) {
 
                   {!isLiveLesson ? (
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>ملف الفيديو للدرس (MP4)</label>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>ملف الدرس (فيديو أو صوت)</label>
                       <input 
                         type="file" 
-                        accept="video/mp4,video/x-m4v,video/x-matroska,video/avi,video/quicktime,video/*"
+                        accept="video/*,audio/*"
                         onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {
                             setNewLessonVideoFile(e.target.files[0]);
