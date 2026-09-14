@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, Briefcase, ArrowLeft, Users, Award, Zap } from 'lucide-react';
+import { BookOpen, Briefcase, ArrowLeft, Users, Award, Zap, Search } from 'lucide-react';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -73,6 +73,28 @@ export default async function HomePage() {
           }}>
             نجمع بين قوة المناهج المدرسية (بكالوريا وتاسع) وأحدث المهارات المطلوبة في سوق العمل لضمان تفوقك الأكاديمي والمهني المستمر.
           </p>
+
+          <form action="/courses" method="GET" style={{ 
+            display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', 
+            maxWidth: '600px', margin: '0 auto 2.5rem', padding: '0.4rem', borderRadius: '20px', 
+            border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ padding: '0 1rem', color: 'rgba(255,255,255,0.5)' }}>
+              <Search size={24} />
+            </div>
+            <input 
+              name="q"
+              type="text" 
+              placeholder="ابحث عن كورس، مدرب، أو مهارة..." 
+              style={{ 
+                flex: 1, background: 'transparent', border: 'none', color: '#fff', 
+                fontSize: '1.1rem', padding: '1rem 0', outline: 'none'
+              }} 
+            />
+            <button type="submit" style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '0.8rem 2rem', borderRadius: '15px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem' }}>
+              بحث
+            </button>
+          </form>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center', marginBottom: '4rem' }}>
             <Link href="/courses" style={{

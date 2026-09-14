@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, BookOpen, Star, User, Clock, X, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
+import { Search, Filter, BookOpen, Star, User, Clock, X, SlidersHorizontal, ArrowUpDown, DollarSign, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
