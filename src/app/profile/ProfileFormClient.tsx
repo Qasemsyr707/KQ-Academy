@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
 export default function ProfileFormClient({ user }: { user: any }) {
   const [loading, setLoading] = useState(false);
@@ -150,9 +151,12 @@ export default function ProfileFormClient({ user }: { user: any }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-          <button type="submit" disabled={loading} className="btn btn-solid" style={{ padding: '0.8rem 2rem', borderRadius: '8px', fontWeight: 'bold' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+          <button type="submit" disabled={loading} className="btn btn-solid" style={{ padding: '0.8rem 2rem', borderRadius: '8px', fontWeight: 'bold', flex: 1 }}>
             {loading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+          </button>
+          <button type="button" onClick={() => signOut({ callbackUrl: '/' })} style={{ padding: '0.8rem 2rem', borderRadius: '8px', fontWeight: 'bold', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <LogOut size={18} /> تسجيل الخروج
           </button>
         </div>
       </form>
