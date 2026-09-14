@@ -212,17 +212,17 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
             <h2 className="section-title" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <User color="var(--primary)" /> عن المدرب
             </h2>
-            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', overflow: 'hidden', flexShrink: 0 }}>
                  {(course.instructor as any)?.image ? (
                    <img src={(course.instructor as any).image} alt={(course.instructor as any).name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                  ) : (
                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={48} color="rgba(255,255,255,0.5)" /></div>
                  )}
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: '1 1 250px' }}>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{(course.instructor as any)?.name}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
                   {(course.instructor as any)?.bio || 'هذا المدرب لم يقم بإضافة نبذة شخصية بعد.'}
                 </p>
               </div>
