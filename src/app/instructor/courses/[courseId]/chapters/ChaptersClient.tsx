@@ -39,6 +39,43 @@ export default function ChaptersClient({ course }: { course: any }) {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
 
+  // Course Includes State
+  const [isEditingIncludes, setIsEditingIncludes] = useState(false);
+  const [includes, setIncludes] = useState<string[]>(course.includes || []);
+  const [newFeature, setNewFeature] = useState('');
+  const [isIncludesLoading, setIsIncludesLoading] = useState(false);
+
+  const addFeature = () => {
+    if (newFeature.trim() !== '') {
+      setIncludes([...includes, newFeature.trim()]);
+      setNewFeature('');
+    }
+  };
+
+  const removeFeature = (index: number) => {
+    setIncludes(includes.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateIncludes = async () => {
+    setIsIncludesLoading(true);
+    try {
+      const res = await fetch(`/api/courses/${course.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ includes })
+      });
+      if (res.ok) {
+        setIsEditingIncludes(false);
+        router.refresh();
+      } else {
+        alert('فصل تحديث ميزات الكورس');
+      }
+    } catch (e) {
+      alert('خطأ في الاتصال');
+    }
+    setIsIncludesLoading(false);
+  };
+
   const handleAddChapter = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -295,6 +332,9 @@ export default function ChaptersClient({ course }: { course: any }) {
             <p style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{course.title}</p>
           </div>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button onClick={() => setIsEditingIncludes(true)} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>
+              <Settings size={20} /> ميزات الكورس
+            </button>
             <button onClick={() => setIsAddingAttachment({ type: 'course', id: course.id })} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>
               <Paperclip size={20} /> مرفقات عامة
             </button>
@@ -733,6 +773,58 @@ export default function ChaptersClient({ course }: { course: any }) {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Includes Modal */}
+        {isEditingIncludes && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+            <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>ميزات الكورس (يتضمن الكورس)</h2>
+                <button onClick={() => setIsEditingIncludes(false)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem' }}>أضف الميزات التي سيحصل عليها الطالب عند الاشتراك. (مثال: متابعة شخصية، شهادة معتمدة).</p>
+                  
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <input 
+                      type="text" 
+                      value={newFeature} 
+                      onChange={e => setNewFeature(e.target.value)} 
+                      onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addFeature(); } }}
+                      placeholder="أدخل ميزة جديدة..." 
+                      style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} 
+                    />
+                    <button type="button" onClick={addFeature} className="btn btn-solid" style={{ padding: '0 1.5rem', borderRadius: '8px' }}>إضافة</button>
+                  </div>
+
+                  {includes.length > 0 ? (
+                    <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+                      {includes.map((feature, idx) => (
+                        <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.4)', padding: '0.8rem 1rem', borderRadius: '8px' }}>
+                          <span style={{ fontSize: '0.9rem' }}>{feature}</span>
+                          <button type="button" onClick={() => removeFeature(idx)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', textAlign: 'center', padding: '1rem' }}>لا توجد ميزات مخصصة. سيتم عرض الميزات الافتراضية للطلاب.</p>
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button type="button" onClick={handleUpdateIncludes} disabled={isIncludesLoading} className="btn btn-solid" style={{ flex: 1 }}>
+                    {isIncludesLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                  </button>
+                  <button type="button" onClick={() => setIsEditingIncludes(false)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
+                    إلغاء
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
