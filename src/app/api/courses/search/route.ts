@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     if (price === 'free') {
       where.AND = [
         ...(where.AND || []),
-        { priceUSD: 0 },
+        { price: 0 },
         { priceSYP: 0 }
       ];
     } else if (price === 'paid') {
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
         ...(where.AND || []),
         {
           OR: [
-            { priceUSD: { gt: 0 } },
+            { price: { gt: 0 } },
             { priceSYP: { gt: 0 } }
           ]
         }
