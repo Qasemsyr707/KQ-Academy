@@ -149,6 +149,29 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Social Proof Section */}
+      <section style={{ 
+        padding: '3rem 2rem', 
+        background: '#111',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        textAlign: 'center'
+      }}>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.1rem', marginBottom: '2rem' }}>
+          تحظى <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>KQ Academy</span> بثقة أكثر من 17,000 شركة ومتعلم حول العالم
+        </p>
+        <div style={{ 
+          display: 'flex', justifyContent: 'center', gap: '4rem', flexWrap: 'wrap', 
+          opacity: 0.6, alignItems: 'center' 
+        }}>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Samsung_Lettermark.svg" alt="Samsung" style={{ height: '18px', filter: 'brightness(0) invert(1)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg" alt="Cisco" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
+        </div>
+      </section>
+
       {/* Courses Section */}
       <section style={{ padding: '5rem 2rem' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -301,6 +324,71 @@ export default async function HomePage() {
                 </div>
                 <h3 style={{ color: '#fff', fontWeight: 700, marginBottom: '0.75rem' }}>{feat.title}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', lineHeight: 1.6 }}>{feat.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section style={{ padding: '6rem 2rem', background: '#050505' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <h2 style={{ textAlign: 'center', fontSize: '2.5rem', fontWeight: 800, marginBottom: '3rem', color: '#fff' }}>
+            انضم إلى الآخرين الذين يغيرون حياتهم من خلال التعلّم
+          </h2>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+            gap: '2rem' 
+          }}>
+            {[
+              { 
+                text: 'عنجد الكورس كان نقطة تحول بحياتي.. الشرح مو طبيعي قديش سلس وبيدخل العقل بسرعة! حسيت حالي عم اتعلم من حدا بيعرفني من زمان وبيعرف شو اللي بيوقفني. يعطيكون ألف عافية!',
+                name: 'سارة الخطيب',
+                role: 'طالبة بكالوريا علمي',
+                img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop'
+              },
+              { 
+                text: 'الأساتذة بيشرحوا من قلب ورب، ما بيبخلوا علينا بولا معلومة. الكورسات المهنية فادتني كتير وخلتني ألاقي أول شغل إلي كمبرمج. منصة بترفع الراس والله!',
+                name: 'أحمد شحادة',
+                role: 'مطور ويب',
+                img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop'
+              },
+              { 
+                text: 'أحلى شي بالمنصة هي المرونة، بحضر الدروس بالوقت اللي بيناسبني والجودة ممتازة. فكرة إنو كل شي مترتب وبمكان واحد وفرت عليي كتير وقت وضياع.',
+                name: 'لينا الحمصي',
+                role: 'طالبة جامعية',
+                img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop'
+              },
+              { 
+                text: 'ولا أروع من هيك! الأساتذة متابعين معنا خطوة بخطوة، والمنصة سهلة وحلوة كتير.. صرت أنصح كل رفقاتي يسجلوا فيها لأنو صدقاً بتستاهل.',
+                name: 'عمر النجار',
+                role: 'مسوق رقمي',
+                img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop'
+              }
+            ].map((testi, i) => (
+              <div key={i} style={{ 
+                background: 'rgba(255,255,255,0.03)', 
+                border: '1px solid rgba(255,255,255,0.05)', 
+                borderRadius: '12px', 
+                padding: '2rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{ color: 'var(--primary)', fontSize: '3rem', lineHeight: 0.5, marginBottom: '1.5rem', opacity: 0.5 }}>"</div>
+                  <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1rem', lineHeight: 1.8, marginBottom: '2rem' }}>
+                    {testi.text}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem' }}>
+                  <img src={testi.img} alt={testi.name} style={{ width: '50px', height: '50px', borderRadius: '50%', objectFit: 'cover' }} />
+                  <div>
+                    <div style={{ color: '#fff', fontWeight: 'bold' }}>{testi.name}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>{testi.role}</div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
