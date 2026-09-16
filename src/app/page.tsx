@@ -149,28 +149,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Social Proof Section */}
-      <section style={{ 
-        padding: '3rem 2rem', 
-        background: '#111',
-        borderTop: '1px solid rgba(255,255,255,0.05)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        textAlign: 'center'
-      }}>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.1rem', marginBottom: '2rem' }}>
-          تحظى <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>KQ Academy</span> بثقة أكثر من 17,000 شركة ومتعلم حول العالم
-        </p>
-        <div style={{ 
-          display: 'flex', justifyContent: 'center', gap: '4rem', flexWrap: 'wrap', 
-          opacity: 0.6, alignItems: 'center' 
-        }}>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Samsung_Lettermark.svg" alt="Samsung" style={{ height: '18px', filter: 'brightness(0) invert(1)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg" alt="Cisco" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
-        </div>
-      </section>
+
 
       {/* Courses Section */}
       <section style={{ padding: '5rem 2rem' }}>
