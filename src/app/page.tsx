@@ -395,21 +395,72 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trusted By Section (Dark Theme) */}
-      <section style={{ background: '#0a0a0a', padding: '3rem 2rem', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 400, marginBottom: '2rem', color: 'rgba(255,255,255,0.6)' }}>
-          تحظى KQ Academy بثقة أكثر من 17,000 شركة ومتعلم حول العالم
+      {/* Advanced Trusted By Section */}
+      <section style={{ 
+        position: 'relative', 
+        background: '#050505', 
+        padding: '5rem 0', 
+        borderTop: '1px solid rgba(255,255,255,0.05)', 
+        overflow: 'hidden' 
+      }}>
+        {/* Glow Background */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '80%', height: '100%', background: 'radial-gradient(ellipse at center, rgba(203,161,83,0.08) 0%, transparent 60%)', pointerEvents: 'none' }}></div>
+        
+        <h2 style={{ 
+          fontSize: '1.2rem', 
+          fontWeight: 500, 
+          marginBottom: '3.5rem', 
+          textAlign: 'center',
+          color: 'rgba(255,255,255,0.8)',
+          letterSpacing: '0.5px',
+          position: 'relative',
+          zIndex: 1
+        }}>
+          تحظى <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>KQ Academy</span> بثقة أكثر من 17,000 شركة ومتعلم حول العالم
         </h2>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '3.5rem', flexWrap: 'wrap', alignItems: 'center', maxWidth: '1000px', margin: '0 auto' }}>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg" alt="Cisco" style={{ height: '30px', filter: 'brightness(0) invert(1) opacity(0.6)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Samsung_Lettermark.svg" alt="Samsung" style={{ height: '16px', filter: 'brightness(0) invert(1) opacity(0.6)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" style={{ height: '24px', filter: 'brightness(0) invert(1) opacity(0.6)' }} />
-          <div style={{ width: '30px', height: '30px', background: 'rgba(255,255,255,0.4)' }}></div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" style={{ height: '26px', filter: 'brightness(0) invert(1) opacity(0.6)' }} />
+
+        <div className="marquee-container" dir="ltr" style={{ display: 'flex', overflow: 'hidden', width: '100%', position: 'relative', zIndex: 1 }}>
+          <div className="marquee-track" style={{ display: 'flex' }}>
+            {[...Array(2)].map((_, i) => (
+              <div key={i} style={{ display: 'flex', gap: '6rem', alignItems: 'center', paddingRight: '6rem' }}>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" className="trusted-logo" style={{ height: '32px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" className="trusted-logo" style={{ height: '28px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="trusted-logo" style={{ height: '28px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" alt="Netflix" className="trusted-logo" style={{ height: '30px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg" alt="Spotify" className="trusted-logo" style={{ height: '35px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" className="trusted-logo" style={{ height: '32px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg" alt="Cisco" className="trusted-logo" style={{ height: '36px' }} />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       <style>{`
+        .trusted-logo {
+          filter: brightness(0) invert(1) opacity(0.4);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+        }
+        .trusted-logo:hover {
+          filter: brightness(0) invert(1) opacity(1) drop-shadow(0 0 15px rgba(255,255,255,0.4));
+          transform: scale(1.1);
+        }
+        .marquee-container {
+          mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+        }
+        .marquee-track {
+          width: max-content;
+          animation: scrollMarquee 40s linear infinite;
+        }
+        .marquee-container:hover .marquee-track {
+          animation-play-state: paused;
+        }
+        @keyframes scrollMarquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
         .course-card:hover {
           transform: translateY(-6px);
           border-color: rgba(203, 161, 83, 0.4) !important;
