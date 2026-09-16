@@ -382,13 +382,43 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         allowFullScreen={true}
                       ></iframe>
                     ) : (
-                      <video 
-                        src={activeItem.videoUrl} 
-                        controls 
-                        autoPlay 
-                        onEnded={() => markCompleted(activeItem.id)}
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                      />
+                      (() => {
+                        const url = activeItem.videoUrl || '';
+                        const isAudio = /\.(mp3|wav|ogg|aac|m4a)(\?.*)?$/i.test(url);
+                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url);
+                        const isPdf = /\.pdf(\?.*)?$/i.test(url);
+                        
+                        if (isAudio) {
+                          return (
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', flexDirection: 'column', gap: '1rem' }}>
+                              <div style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Radio size={40} color="var(--primary)" />
+                              </div>
+                              <audio controls src={url} style={{ width: '80%', maxWidth: '500px' }} onEnded={() => markCompleted(activeItem.id)} />
+                            </div>
+                          );
+                        }
+                        if (isImage) {
+                          return (
+                            <img src={url} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0a0a0a' }} alt={activeItem.title} />
+                          );
+                        }
+                        if (isPdf) {
+                          return (
+                            <iframe src={url} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: '#fff' }}></iframe>
+                          );
+                        }
+                        // Default fallback (Video/Other)
+                        return (
+                          <video 
+                            src={url} 
+                            controls 
+                            autoPlay 
+                            onEnded={() => markCompleted(activeItem.id)}
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                          />
+                        );
+                      })()
                     )}
                   </div>
                 )}

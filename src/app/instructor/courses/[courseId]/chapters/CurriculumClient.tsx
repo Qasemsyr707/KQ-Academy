@@ -22,6 +22,7 @@ export default function CurriculumClient({ course }: { course: any }) {
   const [addingAttachmentTo, setAddingAttachmentTo] = useState<string | null>(null);
   const [attachmentName, setAttachmentName] = useState('');
   const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
 
   // Quiz State
   const [addingQuizTo, setAddingQuizTo] = useState<string | null>(null);
@@ -62,53 +63,73 @@ export default function CurriculumClient({ course }: { course: any }) {
 
     try {
       if (!isLiveLesson && newLessonVideoFile) {
-        // 1. Create Video Object in Bunny
-        setUploadProgress(0);
-        const createRes = await fetch('/api/bunny/create-video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: newLessonTitle })
-        });
+        if (newLessonVideoFile.type.startsWith('video/')) {
+          // 1. Create Video Object in Bunny
+          setUploadProgress(0);
+          const createRes = await fetch('/api/bunny/create-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newLessonTitle })
+          });
 
-        if (!createRes.ok) {
-          throw new Error('فشل في تهيئة الفيديو على الخادم');
+          if (!createRes.ok) {
+            throw new Error('فشل في تهيئة الفيديو على الخادم');
+          }
+
+          const { videoId, libraryId } = await createRes.json();
+
+          // 2. Upload using Tus
+          await new Promise<void>((resolve, reject) => {
+            // Dynamic import of tus-js-client to avoid SSR issues if any
+            import('tus-js-client').then((tus) => {
+              const upload = new tus.Upload(newLessonVideoFile, {
+                endpoint: 'https://video.bunnycdn.com/tusupload',
+                retryDelays: [0, 3000, 5000, 10000, 20000],
+                headers: {
+                  AuthorizationSignature: videoId,
+                  AuthorizationExpire: (Math.floor(Date.now() / 1000) + 3600).toString(), // 1 hour
+                  VideoId: videoId,
+                  LibraryId: libraryId,
+                },
+                metadata: {
+                  filename: newLessonVideoFile.name,
+                  filetype: newLessonVideoFile.type
+                },
+                onError: (error) => {
+                  reject(error);
+                },
+                onProgress: (bytesUploaded, bytesTotal) => {
+                  const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(0);
+                  setUploadProgress(Number(percentage));
+                },
+                onSuccess: () => {
+                  finalVideoUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
+                  resolve();
+                }
+              });
+
+              upload.start();
+            }).catch(reject);
+          });
+        } else {
+          // Non-video file (audio, pdf, images, etc.) -> Local Upload
+          setUploadProgress(10);
+          const formData = new FormData();
+          formData.append('file', newLessonVideoFile);
+          
+          const uploadRes = await fetch('/api/upload-local', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (!uploadRes.ok) {
+            throw new Error('فشل رفع الملف المحلي');
+          }
+          
+          const { url } = await uploadRes.json();
+          finalVideoUrl = url;
+          setUploadProgress(100);
         }
-
-        const { videoId, libraryId } = await createRes.json();
-
-        // 2. Upload using Tus
-        await new Promise<void>((resolve, reject) => {
-          // Dynamic import of tus-js-client to avoid SSR issues if any
-          import('tus-js-client').then((tus) => {
-            const upload = new tus.Upload(newLessonVideoFile, {
-              endpoint: 'https://video.bunnycdn.com/tusupload',
-              retryDelays: [0, 3000, 5000, 10000, 20000],
-              headers: {
-                AuthorizationSignature: videoId,
-                AuthorizationExpire: (Math.floor(Date.now() / 1000) + 3600).toString(), // 1 hour
-                VideoId: videoId,
-                LibraryId: libraryId,
-              },
-              metadata: {
-                filename: newLessonVideoFile.name,
-                filetype: newLessonVideoFile.type
-              },
-              onError: (error) => {
-                reject(error);
-              },
-              onProgress: (bytesUploaded, bytesTotal) => {
-                const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(0);
-                setUploadProgress(Number(percentage));
-              },
-              onSuccess: () => {
-                finalVideoUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
-                resolve();
-              }
-            });
-
-            upload.start();
-          }).catch(reject);
-        });
       }
 
       // 3. Save Lesson to Database
@@ -153,7 +174,7 @@ export default function CurriculumClient({ course }: { course: any }) {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -162,11 +183,24 @@ export default function CurriculumClient({ course }: { course: any }) {
       setAttachmentName(file.name);
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAttachmentUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    setIsUploadingAttachment(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload-local', {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const { url } = await res.json();
+        setAttachmentUrl(url);
+      } else {
+        alert('فشل رفع الملف');
+      }
+    } catch (err) {
+      alert('خطأ أثناء الرفع');
+    }
+    setIsUploadingAttachment(false);
   };
 
   const handleAddAttachment = async (lessonId: string) => {
@@ -364,10 +398,10 @@ export default function CurriculumClient({ course }: { course: any }) {
 
                   {!isLiveLesson ? (
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>ملف الدرس (فيديو أو صوت)</label>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>ملف الدرس (فيديو، صوت، صورة، مستند)</label>
                       <input 
                         type="file" 
-                        accept="video/*,audio/*"
+                        accept="video/*,audio/*,image/*,.pdf,.doc,.docx,.zip,.rar"
                         onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {
                             setNewLessonVideoFile(e.target.files[0]);
