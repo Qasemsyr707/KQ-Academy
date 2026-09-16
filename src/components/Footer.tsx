@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, Linkedin, Youtube, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
 
 export default function Footer() {
   const footerLinks = [
@@ -147,11 +147,10 @@ export default function Footer() {
               <Globe size={16} /> العربية
             </button>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <a href="#" style={{ color: '#a1a1aa' }}><Facebook size={20} /></a>
-              <a href="#" style={{ color: '#a1a1aa' }}><Twitter size={20} /></a>
-              <a href="#" style={{ color: '#a1a1aa' }}><Instagram size={20} /></a>
-              <a href="#" style={{ color: '#a1a1aa' }}><Linkedin size={20} /></a>
-              <a href="#" style={{ color: '#a1a1aa' }}><Youtube size={20} /></a>
+              <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>فيسبوك</a>
+              <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>تويتر</a>
+              <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>انستغرام</a>
+              <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>يوتيوب</a>
             </div>
           </div>
         </div>
