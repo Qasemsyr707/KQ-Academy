@@ -395,6 +395,20 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Trusted By Section (Dark Theme) */}
+      <section style={{ background: '#0a0a0a', padding: '3rem 2rem', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 400, marginBottom: '2rem', color: 'rgba(255,255,255,0.6)' }}>
+          تحظى KQ Academy بثقة أكثر من 17,000 شركة ومتعلم حول العالم
+        </h2>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '3.5rem', flexWrap: 'wrap', alignItems: 'center', maxWidth: '1000px', margin: '0 auto' }}>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg" alt="Cisco" style={{ height: '30px', filter: 'brightness(0) invert(1) opacity(0.6)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Samsung_Lettermark.svg" alt="Samsung" style={{ height: '16px', filter: 'brightness(0) invert(1) opacity(0.6)' }} />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" style={{ height: '24px', filter: 'brightness(0) invert(1) opacity(0.6)' }} />
+          <div style={{ width: '30px', height: '30px', background: 'rgba(255,255,255,0.4)' }}></div>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" style={{ height: '26px', filter: 'brightness(0) invert(1) opacity(0.6)' }} />
+        </div>
+      </section>
+
       <style>{`
         .course-card:hover {
           transform: translateY(-6px);

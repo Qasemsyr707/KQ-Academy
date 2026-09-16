@@ -65,21 +65,6 @@ export default function Footer() {
 
   return (
     <footer style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-      {/* Top Banner - Udemy Style */}
-      <div style={{ background: '#f7f9fa', padding: '3rem 2rem', textAlign: 'center', borderBottom: '1px solid #d1d7dc' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '2.5rem', color: '#6a6f73' }}>
-          تحظى KQ Academy بثقة أكثر من 17,000 شركة وملايين المتعلمين حول العالم
-        </h2>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '4rem', flexWrap: 'wrap', alignItems: 'center', maxWidth: '1200px', margin: '0 auto' }}>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" style={{ height: '30px', filter: 'grayscale(100%) opacity(0.6)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" style={{ height: '28px', filter: 'grayscale(100%) opacity(0.6)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" style={{ height: '28px', filter: 'grayscale(100%) opacity(0.6)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Samsung_Lettermark.svg" alt="Samsung" style={{ height: '18px', filter: 'grayscale(100%) opacity(0.6)' }} />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg" alt="Cisco" style={{ height: '35px', filter: 'grayscale(100%) opacity(0.6)' }} />
-          <img src="https://upload.wikimedia.org/commons/6/69/Procter_%26_Gamble_logo.svg" alt="P&G" style={{ height: '35px', filter: 'grayscale(100%) opacity(0.6)' }} />
-        </div>
-      </div>
-
       {/* Main Dark Footer */}
       <div style={{ background: '#1c1d1f', color: '#fff', paddingTop: '4rem', paddingBottom: '2rem' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 2rem' }}>
