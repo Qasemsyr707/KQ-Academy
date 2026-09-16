@@ -19,6 +19,43 @@ export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = async () => {
+    if (status !== 'authenticated') return;
+    try {
+      const res = await fetch('/api/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.notifications?.filter((n: any) => !n.isRead).length || 0);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, [status]);
+
+  const markAllAsRead = async () => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAll: true })
+      });
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -354,32 +391,36 @@ export default function Navbar() {
             <button onClick={() => setShowNotifications(!showNotifications)} 
               style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', position: 'relative' }}>
               <Bell size={20} />
-              <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: '#fff', fontSize: '0.6rem', fontWeight: 'bold', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: '2px solid rgba(5,5,5,0.92)' }}>3</span>
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#ef4444', color: '#fff', fontSize: '0.6rem', fontWeight: 'bold', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: '2px solid rgba(5,5,5,0.92)' }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+              )}
             </button>
             {showNotifications && (
               <div style={{ position: 'absolute', top: 'calc(100% + 1rem)', right: '-80px', width: '300px', background: 'rgba(15,15,15,0.97)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)', overflow: 'hidden', zIndex: 50 }}>
                 <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h4 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>الإشعارات</h4>
-                  <button style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.8rem', cursor: 'pointer' }}>تحديد كـ مقروءة</button>
+                  <button onClick={markAllAsRead} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.8rem', cursor: 'pointer' }}>تحديد كـ مقروءة</button>
                 </div>
                 <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                  {[
-                    { title: 'مختبرات الـ AR أصبحت متاحة!', desc: 'قم بتجربة تشريح القلب البشري في الواقع المعزز.', time: 'قبل 10 دقائق', isNew: true },
-                    { title: 'تمت مراجعة مشروعك', desc: 'حصلت على تقييم 5 نجوم من المدرب.', time: 'قبل ساعتين', isNew: true },
-                    { title: 'تذكير بالبث المباشر', desc: 'جلسة المراجعة تبدأ بعد 30 دقيقة.', time: 'قبل 3 أيام', isNew: false }
-                  ].map((notif, idx) => (
-                    <div key={idx} style={{ padding: '0.85rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.02)', background: notif.isNew ? 'rgba(203,161,83,0.05)' : 'transparent', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', cursor: 'pointer' }}>
-                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: notif.isNew ? 'var(--primary)' : 'transparent', marginTop: '6px', flexShrink: 0 }} />
-                      <div>
-                        <h5 style={{ margin: '0 0 0.25rem 0', color: '#fff', fontSize: '0.875rem' }}>{notif.title}</h5>
-                        <p style={{ margin: 0, color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', lineHeight: 1.4 }}>{notif.desc}</p>
-                        <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.3rem', display: 'block' }}>{notif.time}</span>
-                      </div>
-                    </div>
-                  ))}
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>لا توجد إشعارات جديدة</div>
+                  ) : (
+                    notifications.map((notif: any) => (
+                      <Link href={notif.link || "#"} key={notif.id} onClick={() => setShowNotifications(false)} style={{ textDecoration: 'none', padding: '0.85rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.02)', background: !notif.isRead ? 'rgba(203,161,83,0.05)' : 'transparent', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', cursor: 'pointer' }}>
+                        <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: !notif.isRead ? 'var(--primary)' : 'transparent', marginTop: '6px', flexShrink: 0 }} />
+                        <div>
+                          <h5 style={{ margin: '0 0 0.25rem 0', color: '#fff', fontSize: '0.875rem' }}>{notif.title}</h5>
+                          <p style={{ margin: 0, color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', lineHeight: 1.4 }}>{notif.message}</p>
+                          <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.3rem', display: 'block' }}>
+                            {new Date(notif.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      </Link>
+                    ))
+                  )}
                 </div>
                 <Link href="/dashboard" onClick={() => setShowNotifications(false)} style={{ display: 'block', padding: '0.75rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', color: 'var(--primary)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                  عرض كل الإشعارات
+                  العودة للوحة التحكم
                 </Link>
               </div>
             )}

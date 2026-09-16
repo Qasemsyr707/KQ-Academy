@@ -56,6 +56,7 @@ model User {
   liveClasses           LiveClass[]
   matchmakingRequests   MatchmakingRequest[] @relation("UserMatchmaking")
   matchedWithRequests   MatchmakingRequest[] @relation("UserMatchedWith")
+  notifications         Notification[]
 }
 
 model Course {
@@ -557,4 +558,20 @@ model UserSubscription {
 
   user       User             @relation(fields: [userId], references: [id])
   plan       SubscriptionPlan @relation(fields: [planId], references: [id])
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String   @db.Text
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
