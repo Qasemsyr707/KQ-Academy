@@ -409,6 +409,13 @@ export default async function HomePage() {
                 <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg" alt="Spotify" className="trusted-logo" style={{ height: '35px' }} />
                 <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" className="trusted-logo" style={{ height: '32px' }} />
                 <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg" alt="Cisco" className="trusted-logo" style={{ height: '36px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/Ericsson_logo.svg" alt="Ericsson" className="trusted-logo" style={{ height: '28px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Citi_logo.svg" alt="Citi" className="trusted-logo" style={{ height: '32px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Hewlett_Packard_Enterprise_logo.svg" alt="Hewlett Packard" className="trusted-logo" style={{ height: '30px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/8/85/Procter_%26_Gamble_logo.svg" alt="P&G" className="trusted-logo" style={{ height: '40px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Vimeo_Logo.svg" alt="Vimeo" className="trusted-logo" style={{ height: '30px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg" alt="Samsung" className="trusted-logo" style={{ height: '24px' }} />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg" alt="Volkswagen" className="trusted-logo" style={{ height: '36px' }} />
               </div>
             ))}
           </div>
