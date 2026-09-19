@@ -244,11 +244,6 @@ export default function ChaptersClient({ course }: { course: any }) {
     e.preventDefault();
     if (!attachmentName.trim() || !attachmentFile || !isAddingAttachment) return;
 
-    if (attachmentFile.size > 4.5 * 1024 * 1024) {
-      alert('⚠️ حجم المرفق كبير جداً (يجب أن يكون أقل من 4.5 ميغابايت).\n\nإذا كنت تحاول رفع فيديو، يرجى استخدام زر "فصل جديد" ثم "إضافة درس جديد" لرفع الفيديوهات بأي حجم كان.');
-      return;
-    }
-
     setIsUploadingAttachment(true);
     try {
       const formData = new FormData();
@@ -578,12 +573,12 @@ export default function ChaptersClient({ course }: { course: any }) {
                   />
                 </div>
 
-                {/* Video Upload Field */}
+                {/* Video/Audio Upload Field */}
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف الفيديو</label>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف الفيديو أو الصوت</label>
                   <input
                     type="file"
-                    accept="video/*"
+                    accept="video/*,audio/*"
                     required
                     onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
                     className="input-field"
@@ -601,7 +596,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                     </div>
                   )}
                   <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
-                    سيتم رفع الفيديو وتشفيره تلقائياً لضمان حمايته.
+                    سيتم رفع الملف وتشفيره تلقائياً لضمان حمايته.
                   </p>
                 </div>
                 
@@ -750,18 +745,11 @@ export default function ChaptersClient({ course }: { course: any }) {
                   <input
                     type="file"
                     required
-                    accept=".pdf,.doc,.docx,.zip,.rar,image/*"
+                    accept=".pdf,.doc,.docx,.zip,.rar,image/*,audio/*,video/*"
                     onChange={(e) => setAttachmentFile(e.target.files ? e.target.files[0] : null)}
                     className="input-field"
                     style={{ padding: '0.8rem' }}
                   />
-                  <div style={{ marginTop: '0.8rem', padding: '0.8rem', background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '8px' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#eab308', margin: 0, lineHeight: 1.5 }}>
-                      <strong>ملاحظة هامة:</strong> هذا القسم مخصص لرفع الملفات الصغيرة فقط (أقل من 4.5 ميغابايت) مثل ملخصات الـ PDF أو الصور.
-                      <br /><br />
-                      <strong>لرفع فيديو كبير كعينة للطلاب:</strong> يرجى إغلاق هذه النافذة والضغط على زر "فصل جديد" لإنشاء فصل عينة، ثم "إضافة درس" لرفع الفيديو الخاص بك هناك بدون قيود على الحجم.
-                    </p>
-                  </div>
                 </div>
                 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
