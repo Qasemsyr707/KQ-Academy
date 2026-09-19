@@ -404,18 +404,47 @@ export default async function HomePage() {
               <div key={i} style={{ display: 'flex', gap: '6rem', alignItems: 'center', paddingRight: '6rem' }}>
                 <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" className="trusted-logo" style={{ height: '32px' }} />
                 <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" className="trusted-logo" style={{ height: '28px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="trusted-logo" style={{ height: '28px' }} />
+                
+                {/* Microsoft */}
+                <div className="trusted-logo" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px' }}>
+                    <div style={{ width: '10px', height: '10px', background: 'black' }}></div>
+                    <div style={{ width: '10px', height: '10px', background: 'black' }}></div>
+                    <div style={{ width: '10px', height: '10px', background: 'black' }}></div>
+                    <div style={{ width: '10px', height: '10px', background: 'black' }}></div>
+                  </div>
+                  <span style={{ fontSize: '22px', fontWeight: 600, color: 'black', fontFamily: '"Segoe UI", sans-serif', letterSpacing: '-0.5px' }}>Microsoft</span>
+                </div>
+
                 <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" alt="Netflix" className="trusted-logo" style={{ height: '30px' }} />
                 <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg" alt="Spotify" className="trusted-logo" style={{ height: '35px' }} />
                 <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" alt="Stripe" className="trusted-logo" style={{ height: '32px' }} />
                 <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg" alt="Cisco" className="trusted-logo" style={{ height: '36px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/Ericsson_logo.svg" alt="Ericsson" className="trusted-logo" style={{ height: '28px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Citi_logo.svg" alt="Citi" className="trusted-logo" style={{ height: '32px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Hewlett_Packard_Enterprise_logo.svg" alt="Hewlett Packard" className="trusted-logo" style={{ height: '30px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/8/85/Procter_%26_Gamble_logo.svg" alt="P&G" className="trusted-logo" style={{ height: '40px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Vimeo_Logo.svg" alt="Vimeo" className="trusted-logo" style={{ height: '30px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg" alt="Samsung" className="trusted-logo" style={{ height: '24px' }} />
-                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg" alt="Volkswagen" className="trusted-logo" style={{ height: '36px' }} />
+                
+                <img src="https://cdn.simpleicons.org/ericsson" alt="Ericsson" className="trusted-logo" style={{ height: '28px' }} />
+                
+                {/* Citi */}
+                <div className="trusted-logo" style={{ position: 'relative', display: 'inline-flex', alignItems: 'flex-end', height: '32px', paddingRight: '5px' }}>
+                  <svg width="40" height="32" viewBox="0 0 100 80" style={{ position: 'absolute', top: '-10px', left: '10px' }}>
+                    <path d="M 20 60 Q 50 10 80 60" fill="none" stroke="black" strokeWidth="12" strokeLinecap="round" />
+                  </svg>
+                  <span style={{ fontSize: '30px', fontWeight: 700, color: 'black', fontFamily: 'Arial, sans-serif', letterSpacing: '-1px', zIndex: 1 }}>citi</span>
+                </div>
+
+                {/* HPE */}
+                <div className="trusted-logo" style={{ display: 'inline-flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ width: '36px', height: '12px', background: 'black', marginBottom: '4px' }}></div>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: 'black', lineHeight: 1, fontFamily: 'Arial, sans-serif' }}>Hewlett Packard<br/>Enterprise</span>
+                </div>
+
+                {/* P&G */}
+                <div className="trusted-logo" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid black', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '14px', color: 'black', fontFamily: '"Times New Roman", Times, serif' }}>
+                  P&G
+                </div>
+
+                <img src="https://cdn.simpleicons.org/vimeo" alt="Vimeo" className="trusted-logo" style={{ height: '26px' }} />
+                <img src="https://cdn.simpleicons.org/samsung" alt="Samsung" className="trusted-logo" style={{ height: '22px' }} />
+                <img src="https://cdn.simpleicons.org/volkswagen" alt="Volkswagen" className="trusted-logo" style={{ height: '36px' }} />
               </div>
             ))}
           </div>
