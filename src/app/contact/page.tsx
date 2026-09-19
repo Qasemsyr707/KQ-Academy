@@ -1,4 +1,4 @@
-import { MapPin, MessageCircle } from 'lucide-react';
+import { MapPin, MessageCircle, Mail, Phone } from 'lucide-react';
 
 export default function ContactPage() {
   return (
@@ -20,6 +20,26 @@ export default function ContactPage() {
               <div>
                 <h4 style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>العنوان</h4>
                 <p style={{ margin: 0, fontWeight: 'bold' }}>دمشق، سوريا (F8Q4 542)</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(203,161,83,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                <Phone size={24} />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>رقم الهاتف</h4>
+                <a href="tel:0930108455" dir="ltr" style={{ margin: 0, fontWeight: 'bold', color: '#fff', textDecoration: 'none', display: 'inline-block' }}>0930 108 455</a>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(203,161,83,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                <Mail size={24} />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>البريد الإلكتروني</h4>
+                <a href="mailto:support@kqacademy.com" style={{ margin: 0, fontWeight: 'bold', color: '#fff', textDecoration: 'none' }}>support@kqacademy.com</a>
               </div>
             </div>
 
