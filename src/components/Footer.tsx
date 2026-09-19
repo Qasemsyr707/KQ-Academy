@@ -131,7 +131,7 @@ export default function Footer() {
               <Globe size={16} /> العربية
             </button>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>فيسبوك</a>
+              <a href="https://www.facebook.com/profile.php?id=61594346671502" target="_blank" rel="noopener noreferrer" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>فيسبوك</a>
               <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>تويتر</a>
               <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>انستغرام</a>
               <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none', fontSize: '0.9rem' }}>يوتيوب</a>
