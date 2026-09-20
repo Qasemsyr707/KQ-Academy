@@ -48,7 +48,6 @@ export default function Footer() {
         { label: 'من نحن', href: '/about' },
         { label: 'تواصل معنا', href: '/contact' },
         { label: 'الأسئلة الشائعة', href: '/faq' },
-        { label: 'المدونة', href: '/blog' },
         { label: 'انضم كمدرب', href: '/teach' },
       ],
     },
