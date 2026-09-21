@@ -93,75 +93,215 @@ export default function FAQPage() {
   const currentCategory = faqCategories.find(c => c.id === activeCategory);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30" dir="rtl">
+    <div style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)', minHeight: '100vh', direction: 'rtl', fontFamily: "'Cairo', sans-serif" }}>
       <Navbar />
 
-      <main className="pt-24 pb-20">
+      <style>{`
+        .faq-wrapper {
+          padding-top: 100px;
+          padding-bottom: 80px;
+        }
+        .hero-section {
+          padding: 80px 0;
+          text-align: center;
+          border-bottom: 1px solid var(--border-light);
+        }
+        .faq-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 40px;
+          align-items: flex-start;
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 60px 0;
+        }
+        .faq-sidebar {
+          flex: 1 1 300px;
+          position: sticky;
+          top: 100px;
+        }
+        .faq-content {
+          flex: 2 1 600px;
+        }
+        .category-btn {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 20px;
+          border-radius: 16px;
+          width: 100%;
+          text-align: right;
+          transition: all 0.3s;
+          background: #0a0a0a;
+          border: 1px solid rgba(255,255,255,0.05);
+          color: rgba(255,255,255,0.6);
+          cursor: pointer;
+          margin-bottom: 12px;
+          font-family: inherit;
+          font-size: 1.1rem;
+        }
+        .category-btn:hover {
+          background: rgba(255,255,255,0.05);
+          color: white;
+        }
+        .category-btn.active {
+          background: rgba(203,161,83,0.1);
+          border-color: rgba(203,161,83,0.3);
+          color: var(--primary);
+          box-shadow: 0 0 20px rgba(203,161,83,0.1);
+          font-weight: bold;
+        }
+        .category-icon {
+          padding: 8px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.05);
+        }
+        .category-btn.active .category-icon {
+          background: rgba(203,161,83,0.2);
+        }
+        .question-card {
+          background: #0a0a0a;
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 16px;
+          margin-bottom: 16px;
+          overflow: hidden;
+          transition: all 0.3s;
+        }
+        .question-card.active {
+          border-color: rgba(203,161,83,0.4);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .question-btn {
+          width: 100%;
+          padding: 24px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 1.1rem;
+          font-weight: bold;
+          text-align: right;
+        }
+        .question-btn h3 {
+          padding-right: 12px;
+          border-right: 2px solid transparent;
+          transition: all 0.3s;
+        }
+        .question-card.active .question-btn h3 {
+          color: var(--primary);
+          border-right-color: var(--primary);
+        }
+        .chevron-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.05);
+          transition: all 0.3s;
+        }
+        .question-card.active .chevron-icon {
+          background: var(--primary);
+          color: #000;
+          transform: rotate(180deg);
+        }
+        .question-answer {
+          padding: 0 24px 24px;
+          color: rgba(255,255,255,0.7);
+          line-height: 1.8;
+          border-top: 1px solid rgba(255,255,255,0.05);
+          margin-top: 10px;
+          padding-top: 20px;
+          font-size: 1.05rem;
+        }
+        .contact-box {
+          margin-top: 40px;
+          background: linear-gradient(135deg, #111, #0a0a0a);
+          padding: 32px;
+          border-radius: 24px;
+          border: 1px solid rgba(255,255,255,0.05);
+        }
+        .contact-btn {
+          display: inline-block;
+          width: 100%;
+          padding: 16px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          text-align: center;
+          border-radius: 12px;
+          font-weight: bold;
+          transition: all 0.3s;
+          margin-top: 20px;
+        }
+        .contact-btn:hover {
+          background: rgba(203,161,83,0.1);
+          color: var(--primary);
+          border-color: rgba(203,161,83,0.5);
+        }
+      `}</style>
+
+      <main className="faq-wrapper">
         
         {/* Premium Hero Section */}
-        <section className="relative overflow-hidden pt-12 pb-24 border-b border-white/5">
-          <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-primary/10 blur-[150px] rounded-full pointer-events-none" />
-          <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-blue-500/10 blur-[150px] rounded-full pointer-events-none" />
-          
-          <div className="container mx-auto px-6 relative z-10 text-center max-w-4xl">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border border-primary/20 mb-8 text-primary shadow-[0_0_30px_rgba(203,161,83,0.2)]">
+        <section className="hero-section">
+          <div className="container" style={{ position: 'relative', zIndex: 10 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(203,161,83,0.1)', border: '1px solid rgba(203,161,83,0.2)', marginBottom: '24px', color: 'var(--primary)', boxShadow: '0 0 30px rgba(203,161,83,0.2)' }}>
               <MessageCircle size={40} />
             </div>
-            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">الأسئلة <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary to-yellow-200">الشائعة</span></h1>
-            <p className="text-xl text-gray-400 leading-relaxed">
+            <h1 style={{ fontSize: '3.5rem', fontWeight: 900, marginBottom: '24px' }}>الأسئلة <span style={{ color: 'var(--primary)' }}>الشائعة</span></h1>
+            <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.7)', maxWidth: '800px', margin: '0 auto', lineHeight: 1.8 }}>
               جمعنا لك الإجابات الشاملة والمفصلة لجميع استفساراتك لتتمتع بتجربة تعليمية سلسة وواضحة.
             </p>
           </div>
         </section>
 
         {/* FAQ Section */}
-        <section className="py-16">
-          <div className="container mx-auto px-6 max-w-6xl">
-            <div className="flex flex-col lg:flex-row gap-12 items-start">
+        <section>
+          <div className="container">
+            <div className="faq-container">
               
               {/* Sidebar Categories */}
-              <div className="w-full lg:w-1/3 flex flex-col gap-3 sticky top-32 z-10">
-                <h3 className="text-lg font-bold mb-4 px-4 border-r-2 border-primary">أقسام المساعدة</h3>
+              <div className="faq-sidebar">
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '24px', paddingRight: '16px', borderRight: '3px solid var(--primary)' }}>أقسام المساعدة</h3>
+                
                 {faqCategories.map(category => (
                   <button
                     key={category.id}
                     onClick={() => {
                       setActiveCategory(category.id);
-                      setOpenQuestionIndex(0); // Reset open question when changing category
+                      setOpenQuestionIndex(0);
                     }}
-                    className={`flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 text-right ${
-                      activeCategory === category.id 
-                      ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_20px_rgba(203,161,83,0.1)] border' 
-                      : 'bg-[#0a0a0a] border-white/5 text-gray-400 hover:bg-white/5 hover:text-white border'
-                    }`}
+                    className={`category-btn ${activeCategory === category.id ? 'active' : ''}`}
                   >
-                    <div className={`p-2 rounded-xl ${activeCategory === category.id ? 'bg-primary/20' : 'bg-white/5'}`}>
+                    <div className="category-icon">
                       {category.icon}
                     </div>
-                    <span className="font-bold text-lg">{category.title}</span>
+                    <span>{category.title}</span>
                   </button>
                 ))}
 
                 {/* Contact Box */}
-                <div className="mt-8 bg-gradient-to-br from-[#111] to-[#0a0a0a] p-8 rounded-3xl border border-white/5 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-[50px] group-hover:bg-primary/20 transition-colors" />
-                  <div className="relative z-10">
-                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-6 border border-primary/30">
-                      <Mail size={24} />
-                    </div>
-                    <h4 className="text-xl font-bold mb-3">لم تجد إجابتك؟</h4>
-                    <p className="text-gray-400 mb-6 text-sm leading-relaxed">
-                      فريق الدعم الفني الخاص بنا متواجد دائماً للرد على جميع استفساراتك ومساعدتك.
-                    </p>
-                    <Link href="/contact" className="inline-block w-full py-3 bg-white/5 border border-white/10 hover:border-primary/50 text-center rounded-xl font-bold transition-colors hover:bg-primary/10 hover:text-primary">
-                      تواصل معنا الآن
-                    </Link>
+                <div className="contact-box">
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(203,161,83,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', marginBottom: '24px', border: '1px solid rgba(203,161,83,0.3)' }}>
+                    <Mail size={24} />
                   </div>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '12px' }}>لم تجد إجابتك؟</h4>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', lineHeight: 1.8 }}>
+                    فريق الدعم الفني الخاص بنا متواجد دائماً للرد على جميع استفساراتك ومساعدتك.
+                  </p>
+                  <Link href="/contact" className="contact-btn">
+                    تواصل معنا الآن
+                  </Link>
                 </div>
               </div>
 
               {/* FAQ Content Area */}
-              <div className="w-full lg:w-2/3">
+              <div className="faq-content">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeCategory}
@@ -169,32 +309,25 @@ export default function FAQPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3 }}
-                    className="flex flex-col gap-4"
+                    style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
                   >
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="p-3 bg-primary/10 rounded-xl text-primary border border-primary/20">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+                      <div style={{ padding: '12px', backgroundColor: 'rgba(203,161,83,0.1)', borderRadius: '16px', color: 'var(--primary)', border: '1px solid rgba(203,161,83,0.2)' }}>
                         {currentCategory?.icon}
                       </div>
-                      <h2 className="text-3xl font-bold">{currentCategory?.title}</h2>
+                      <h2 style={{ fontSize: '2rem', fontWeight: 'bold' }}>{currentCategory?.title}</h2>
                     </div>
 
                     {currentCategory?.questions.map((item, index) => {
                       const isOpen = openQuestionIndex === index;
                       return (
-                        <div 
-                          key={index} 
-                          className={`bg-[#0a0a0a] border transition-all duration-300 overflow-hidden ${
-                            isOpen ? 'border-primary/40 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]' : 'border-white/5 rounded-2xl hover:border-white/10'
-                          }`}
-                        >
+                        <div key={index} className={`question-card ${isOpen ? 'active' : ''}`}>
                           <button
                             onClick={() => setOpenQuestionIndex(isOpen ? null : index)}
-                            className="w-full p-6 flex justify-between items-center text-right focus:outline-none group"
+                            className="question-btn"
                           >
-                            <h3 className={`font-bold text-lg pr-2 border-r-2 transition-colors duration-300 ${isOpen ? 'text-primary border-primary' : 'text-gray-200 border-transparent group-hover:text-white'}`}>
-                              {item.q}
-                            </h3>
-                            <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-primary text-black rotate-180' : 'bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-white'}`}>
+                            <h3>{item.q}</h3>
+                            <div className="chevron-icon">
                               <ChevronDown size={20} />
                             </div>
                           </button>
@@ -207,7 +340,7 @@ export default function FAQPage() {
                                 exit={{ height: 0, opacity: 0 }}
                                 transition={{ duration: 0.3 }}
                               >
-                                <div className="p-6 pt-0 text-gray-400 leading-relaxed text-lg border-t border-white/5 mt-2">
+                                <div className="question-answer">
                                   {item.a}
                                 </div>
                               </motion.div>
