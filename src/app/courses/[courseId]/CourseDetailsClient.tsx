@@ -262,7 +262,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
                           </div>
                         </div>
                       </div>
-                      <p style={{ color: '#d1d7dc', lineHeight: 1.6, fontSize: '0.95rem' }}>"{review.comment}"</p>
+                      <p style={{ color: '#d1d7dc', lineHeight: 1.6, fontSize: '0.95rem' }}>{review.comment}</p>
                     </div>
                   ))}
                 </div>
