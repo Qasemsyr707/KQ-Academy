@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db';
 import { XCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import PrintTrigger from '../PrintTrigger';
-import QRCode from 'qrcode';
+import { QRCodeSVG } from 'qrcode.react';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,13 +46,7 @@ export default async function VerifyCertificatePage({
     );
   }
 
-  // Generate QR Code as data URL
   const verifyUrl = `https://kqacademy.com/verify/${certificate.id}`;
-  const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
-    width: 100,
-    margin: 1,
-    color: { dark: '#cba153', light: '#050505' }
-  });
 
   const issuedDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB', {
     year: 'numeric', month: 'long', day: 'numeric'
@@ -198,7 +192,14 @@ export default async function VerifyCertificatePage({
               
               {/* LEFT: QR Code (Minimal) */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
-                <img src={qrDataUrl} alt="Verification QR" style={{ width: '80px', height: '80px', opacity: 0.9 }} />
+                <QRCodeSVG 
+                  value={verifyUrl} 
+                  size={80} 
+                  bgColor="#050505" 
+                  fgColor="#cba153" 
+                  level="L" 
+                  includeMargin={false} 
+                />
                 <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: 'rgba(203,161,83,0.7)', letterSpacing: '0.1em' }}>
                   ID: {shortId}
                 </div>

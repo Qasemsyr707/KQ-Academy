@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const instructorId = session.user.id;
+    const instructorId = (session.user as any).id;
     const body = await req.json();
     const { title, description, courseId, scheduledAt, isImmediate, thumbnail } = body;
 
@@ -18,11 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing title or courseId' }, { status: 400 });
     }
 
-    // Verify course belongs to instructor
-    const course = await prisma.course.findUnique({
-      where: { id: courseId }
-    });
-
+    const course = await prisma.course.findUnique({ where: { id: courseId } });
     if (!course || course.instructorId !== instructorId) {
       return NextResponse.json({ error: 'Invalid course' }, { status: 403 });
     }
@@ -36,13 +32,47 @@ export async function POST(req: Request) {
         instructorId,
         isImmediate: !!isImmediate,
         scheduledAt: isImmediate ? new Date() : new Date(scheduledAt),
-        status: isImmediate ? 'live' : 'upcoming'
-      }
+        status: isImmediate ? 'live' : 'upcoming',
+      },
     });
 
     return NextResponse.json({ success: true, liveClass });
   } catch (error) {
-    console.error('Create Live Class Error:', error);
+    console.error('Create Live Error:', error);
     return NextResponse.json({ error: 'Failed to create live class' }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = (session.user as any).id;
+    const role = (session.user as any).role;
+
+    let liveClasses;
+    if (role === 'INSTRUCTOR') {
+      liveClasses = await prisma.liveClass.findMany({
+        where: { instructorId: userId },
+        include: { instructor: { select: { name: true, image: true } }, course: { select: { title: true } } },
+        orderBy: { scheduledAt: 'asc' },
+      });
+    } else {
+      // Students: only classes linked to their enrolled courses
+      const enrollments = await prisma.enrollment.findMany({ where: { userId }, select: { courseId: true } });
+      const courseIds = enrollments.map((e: any) => e.courseId);
+      liveClasses = await prisma.liveClass.findMany({
+        where: { courseId: { in: courseIds } },
+        include: { instructor: { select: { name: true, image: true } }, course: { select: { title: true } } },
+        orderBy: { scheduledAt: 'asc' },
+      });
+    }
+
+    return NextResponse.json({ liveClasses });
+  } catch (error) {
+    console.error('Get Live Error:', error);
+    return NextResponse.json({ error: 'Failed to fetch live classes' }, { status: 500 });
   }
 }
