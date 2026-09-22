@@ -3,6 +3,7 @@ import { XCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import PrintTrigger from '../PrintTrigger';
 import { QRCodeSVG } from 'qrcode.react';
+import PrintButton from '../PrintButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,12 +65,7 @@ export default async function VerifyCertificatePage({
         <Link href="/verify" style={{ color: 'rgba(203,161,83,0.8)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', fontFamily: "'Montserrat', sans-serif" }}>
           <ArrowRight size={16} /> Back to Verification
         </Link>
-        <button
-          onClick={() => window.print()}
-          style={{ padding: '0.6rem 1.4rem', background: 'rgba(203,161,83,0.15)', border: '1px solid rgba(203,161,83,0.4)', color: '#cba153', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontFamily: "'Montserrat', sans-serif" }}
-        >
-          Download / Print PDF
-        </button>
+        <PrintButton />
       </div>
 
       {/* ====== ADVANCED VERTICAL CERTIFICATE ====== */}
