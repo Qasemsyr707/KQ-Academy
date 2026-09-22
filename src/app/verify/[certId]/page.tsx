@@ -79,13 +79,14 @@ export default async function VerifyCertificatePage({
         boxShadow: '0 40px 100px rgba(203,161,83,0.15)', // Gold ambient shadow
         fontFamily: "'Montserrat', sans-serif",
         direction: 'ltr',
+        containerType: 'inline-size'
       }}>
 
 
         {/* CONTENT */}
         <div style={{
           position: 'relative', zIndex: 2,
-          padding: '6rem 4rem 4rem 4rem',
+          padding: '12cqw 8cqw 8cqw 8cqw',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -93,15 +94,15 @@ export default async function VerifyCertificatePage({
         }}>
 
           {/* === HEADER === */}
-          <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '10cqw' }}>
             {/* Logo area */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '2.5rem' }}>
-              <svg width="34" height="38" viewBox="0 0 32 36" fill="none">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5cqw', marginBottom: '5cqw' }}>
+              <svg style={{ width: '4.5cqw', height: '5cqw' }} viewBox="0 0 32 36" fill="none">
                 <path d="M16 2L2 8V18C2 26 9 32.5 16 35C23 32.5 30 26 30 18V8L16 2Z" fill="rgba(203,161,83,0.05)" stroke="#cba153" strokeWidth="1"/>
                 <text x="16" y="23" textAnchor="middle" fill="#cba153" fontSize="11" fontWeight="bold" fontFamily="Cinzel, serif">KQ</text>
               </svg>
               <div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 'bold', letterSpacing: '0.3em', color: '#cba153', lineHeight: 1, fontFamily: "'Montserrat', sans-serif" }}>
+                <div style={{ fontSize: '3.6cqw', fontWeight: 'bold', letterSpacing: '0.3em', color: '#cba153', lineHeight: 1, fontFamily: "'Montserrat', sans-serif" }}>
                   KQ ACADEMY
                 </div>
               </div>
@@ -109,45 +110,45 @@ export default async function VerifyCertificatePage({
 
             {/* Certificate Title */}
             <div style={{ 
-              fontSize: '3.6rem', 
+              fontSize: '7.2cqw', 
               color: '#cba153', 
               letterSpacing: '0.05em', 
               fontWeight: '400', 
               fontFamily: "'Cinzel', serif",
               lineHeight: 1.2,
-              marginBottom: '1.5rem'
+              marginBottom: '3cqw'
             }}>
               Certificate<br/>of Completion
             </div>
             
             {/* Ultra minimal divider */}
-            <div style={{ width: '60px', height: '2px', background: '#cba153', margin: '0 auto' }} />
+            <div style={{ width: '8cqw', height: '2px', background: '#cba153', margin: '0 auto' }} />
           </div>
 
           {/* === BODY === */}
-          <div style={{ textAlign: 'center', marginBottom: '5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '2rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '10cqw', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <p style={{ fontSize: '2cqw', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '4cqw' }}>
               This is to certify that
             </p>
             
             <h2 style={{
-              fontSize: '2.8rem',
+              fontSize: '5.6cqw',
               fontWeight: '300',
               color: '#ffffff',
               letterSpacing: '0.08em',
-              margin: '0 0 2rem 0',
+              margin: '0 0 4cqw 0',
               lineHeight: 1.2,
               fontFamily: "'Cinzel', serif",
             }}>
               {certificate.user.name?.toUpperCase()}
             </h2>
             
-            <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', marginBottom: '1.5rem', textTransform: 'uppercase' }}>
+            <p style={{ fontSize: '1.9cqw', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', marginBottom: '3cqw', textTransform: 'uppercase' }}>
               Has successfully achieved the standards required for
             </p>
             
             <h3 style={{
-              fontSize: '1.6rem',
+              fontSize: '3.2cqw',
               color: '#cba153', 
               fontWeight: '400',
               margin: '0',
@@ -164,14 +165,14 @@ export default async function VerifyCertificatePage({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '3rem',
+            gap: '6cqw',
             borderTop: '1px solid rgba(203,161,83,0.2)',
-            paddingTop: '3rem'
+            paddingTop: '6cqw'
           }}>
 
             {/* CENTER: Modern Minimal Seal (Now top in footer) */}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ position: 'relative', width: '120px', height: '120px' }}>
+              <div style={{ position: 'relative', width: '15cqw', height: '15cqw' }}>
                 <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
                   <circle cx="50" cy="50" r="48" fill="none" stroke="#cba153" strokeWidth="0.5" />
                   <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(203,161,83,0.3)" strokeWidth="1" strokeDasharray="4,4" />
@@ -187,30 +188,30 @@ export default async function VerifyCertificatePage({
             <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               
               {/* LEFT: QR Code (Minimal) */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1cqw' }}>
                 <QRCodeSVG 
                   value={verifyUrl} 
-                  size={80} 
+                  style={{ width: '10cqw', height: '10cqw' }}
                   bgColor="#050505" 
                   fgColor="#cba153" 
                   level="L" 
                   includeMargin={false} 
                 />
-                <div style={{ fontSize: '0.65rem', fontFamily: 'monospace', color: 'rgba(203,161,83,0.7)', letterSpacing: '0.1em' }}>
+                <div style={{ fontSize: '1.3cqw', fontFamily: 'monospace', color: 'rgba(203,161,83,0.7)', letterSpacing: '0.1em' }}>
                   ID: {shortId}
                 </div>
               </div>
 
               {/* RIGHT: Signature */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                <svg width="140" height="40" viewBox="0 0 140 40" fill="none" style={{ marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1cqw' }}>
+                <svg viewBox="0 0 140 40" fill="none" style={{ width: '17.5cqw', height: '5cqw', marginBottom: '1cqw' }}>
                   <path d="M10,25 C30,10 40,35 60,20 C70,10 80,30 100,15 C110,5 120,25 130,20" stroke="rgba(203,161,83,0.9)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
                 </svg>
-                <div style={{ width: '140px', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
-                <div style={{ fontSize: '0.85rem', color: '#fff', letterSpacing: '0.05em' }}>
+                <div style={{ width: '17.5cqw', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
+                <div style={{ fontSize: '1.7cqw', color: '#fff', letterSpacing: '0.05em' }}>
                   KHALED REFAI
                 </div>
-                <div style={{ fontSize: '0.65rem', color: 'rgba(203,161,83,0.6)', textAlign: 'right', letterSpacing: '0.1em' }}>
+                <div style={{ fontSize: '1.3cqw', color: 'rgba(203,161,83,0.6)', textAlign: 'right', letterSpacing: '0.1em' }}>
                   EXECUTIVE DIRECTOR
                 </div>
               </div>
@@ -219,8 +220,8 @@ export default async function VerifyCertificatePage({
           </div>
           
           {/* Issue Date - Absolute bottom center */}
-          <div style={{ position: 'absolute', bottom: '2rem', left: '0', right: '0', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          <div style={{ position: 'absolute', bottom: '4cqw', left: '0', right: '0', textAlign: 'center' }}>
+            <span style={{ fontSize: '1.3cqw', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
               Issued on {issuedDate} • kqacademy.com
             </span>
           </div>
