@@ -146,7 +146,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
           </div>
           <div>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', marginBottom: '0.2rem' }}>إجمالي الأرباح من الكورسات</p>
-            <h3 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fbbf24' }}>{stats.totalRevenue.toLocaleString()} <span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.5)' }}>ل.س</span></h3>
+            <h3 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fbbf24' }}>${stats.totalRevenue.toLocaleString()}</h3>
           </div>
         </motion.div>
 

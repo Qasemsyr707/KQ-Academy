@@ -64,7 +64,7 @@ export default async function AdminPaymentsPage() {
                       {payment.paymentMethod}
                     </span>
                   </td>
-                  <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--primary)' }}>{payment.amount} ل.س</td>
+                  <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--primary)' }}>${payment.amount}</td>
                   <td style={{ padding: '1rem' }}>
                     {payment.receiptImage ? (
                       <ReceiptViewer base64String={payment.receiptImage} />

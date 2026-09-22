@@ -34,3 +34,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || ((session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'OWNER')) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'معرف مفقود' }, { status: 400 });
+    }
+
+    await prisma.courseQuestion.delete({ where: { id } });
+
+    return NextResponse.json({ message: 'تم الحذف بنجاح' }, { status: 200 });
+  } catch (error) {
+    console.error('Delete Question API Error:', error);
+    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
+  }
+}
