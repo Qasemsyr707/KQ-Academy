@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import '@livekit/components-styles';
 import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/components-react';
 
-export default function CoursePlayerClient({ course, chapters, hasAccess = false, initialLessonId }: { course: any, chapters: any[], hasAccess?: boolean, initialLessonId?: string }) {
+export default function CoursePlayerClient({ course, chapters, hasAccess = false, initialLessonId, currentUserRole }: { course: any, chapters: any[], hasAccess?: boolean, initialLessonId?: string, currentUserRole?: string }) {
   // Find first accessible item
   const firstAccessibleChapter = chapters.find(c => hasAccess || c.isFree);
   
@@ -260,6 +260,39 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
       }
     } catch (e) {
       alert('Error posting reply');
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا السؤال؟')) return;
+    try {
+      const res = await fetch(`/api/qa/questions?id=${questionId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setQuestions(questions.filter(q => q.id !== questionId));
+      } else {
+        alert('حدث خطأ أثناء الحذف');
+      }
+    } catch (e) {
+      alert('حدث خطأ');
+    }
+  };
+
+  const handleDeleteAnswer = async (questionId: string, answerId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الرد؟')) return;
+    try {
+      const res = await fetch(`/api/qa/answers?id=${answerId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setQuestions(questions.map(q => {
+          if (q.id === questionId) {
+            return { ...q, answers: q.answers.filter((a: any) => a.id !== answerId) };
+          }
+          return q;
+        }));
+      } else {
+        alert('حدث خطأ أثناء الحذف');
+      }
+    } catch (e) {
+      alert('حدث خطأ');
     }
   };
 
@@ -521,11 +554,18 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                       ) : (
                         questions.map(q => (
                           <div key={q.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
-                              <div style={{ width: '30px', height: '30px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                                {q.user.name.charAt(0)}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                <div style={{ width: '30px', height: '30px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                                  {q.user.name.charAt(0)}
+                                </div>
+                                <span style={{ fontWeight: 'bold' }}>{q.user.name}</span>
                               </div>
-                              <span style={{ fontWeight: 'bold' }}>{q.user.name}</span>
+                              {(currentUserRole === 'ADMIN' || currentUserRole === 'OWNER') && (
+                                <button onClick={() => handleDeleteQuestion(q.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                  <X size={14} /> حذف
+                                </button>
+                              )}
                             </div>
                             <p style={{ color: 'rgba(255,255,255,0.9)', marginBottom: '1rem', lineHeight: 1.6 }}>{q.text}</p>
                             
@@ -534,9 +574,16 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                               <div className="replies-indent" style={{ marginRight: '1rem', paddingRight: '0.75rem', borderRight: '2px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
                                 {q.answers.map((ans: any) => (
                                   <div key={ans.id}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
-                                      <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: ans.user.role === 'INSTRUCTOR' || ans.user.role === 'ADMIN' ? 'var(--primary)' : '#fff' }}>{ans.user.name}</span>
-                                      {ans.user.role === 'INSTRUCTOR' && <span style={{ background: 'var(--primary)', color: '#000', fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'bold' }}>المدرب</span>}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: ans.user.role === 'INSTRUCTOR' || ans.user.role === 'ADMIN' || ans.user.role === 'OWNER' ? 'var(--primary)' : '#fff' }}>{ans.user.name}</span>
+                                        {ans.user.role === 'INSTRUCTOR' && <span style={{ background: 'var(--primary)', color: '#000', fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'bold' }}>المدرب</span>}
+                                      </div>
+                                      {(currentUserRole === 'ADMIN' || currentUserRole === 'OWNER') && (
+                                        <button onClick={() => handleDeleteAnswer(q.id, ans.id)} style={{ background: 'none', color: '#ef4444', border: 'none', padding: '0.2rem', cursor: 'pointer', opacity: 0.7 }} title="حذف الرد">
+                                          <X size={14} />
+                                        </button>
+                                      )}
                                     </div>
                                     <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>{ans.text}</p>
                                   </div>

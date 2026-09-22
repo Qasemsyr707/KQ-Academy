@@ -83,5 +83,6 @@ export default async function CourseLearnPage(props: { params: Promise<{ courseI
     chapters={displayChapters} 
     hasAccess={!!enrollment || course.instructorId === (session.user as any).id || (session.user as any).role === 'ADMIN'} 
     initialLessonId={resolvedSearchParams?.lessonId}
+    currentUserRole={(session.user as any).role}
   />;
 }
