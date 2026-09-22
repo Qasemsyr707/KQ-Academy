@@ -88,6 +88,7 @@ model Course {
   careerPaths  CareerPathCourse[]
   bundles      BundleCourse[]
   attachments  Attachment[]
+  liveClasses  LiveClass[]
 }
 
 model Chapter {
@@ -430,7 +431,10 @@ model LiveClass {
   id            String   @id @default(cuid())
   title         String
   description   String?
+  thumbnail     String?
   instructorId  String
+  courseId      String
+  isImmediate   Boolean  @default(false)
   scheduledAt   DateTime
   status        String   @default("upcoming") // upcoming, live, ended
   streamUrl     String?
@@ -438,6 +442,7 @@ model LiveClass {
   updatedAt     DateTime @updatedAt
 
   instructor    User     @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
 model StudyRoom {

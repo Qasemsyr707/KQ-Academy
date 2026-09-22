@@ -1,44 +1,71 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { AccessToken } from 'livekit-server-sdk';
-import { checkRole } from '@/lib/rbac';
 
 export async function GET(req: Request) {
   try {
-    const { authorized, email, session, isOwner } = await checkRole(['ADMIN', 'INSTRUCTOR']);
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
-    const room = searchParams.get('room');
-    
-    // Default username if not logged in
-    const username = session?.user?.name || `Student_${Math.floor(Math.random() * 1000)}`;
-    const canPublish = authorized; // Only INSTRUCTOR, ADMIN, or OWNER can publish
+    const liveClassId = searchParams.get('id');
 
-    if (!room) {
-      return NextResponse.json({ error: 'Missing room name' }, { status: 400 });
+    if (!liveClassId) {
+      return NextResponse.json({ error: 'Live class ID is required' }, { status: 400 });
     }
 
-    const apiKey = process.env.LIVEKIT_API_KEY;
-    const apiSecret = process.env.LIVEKIT_API_SECRET;
+    const liveClass = await prisma.liveClass.findUnique({
+      where: { id: liveClassId }
+    });
 
-    if (!apiKey || !apiSecret) {
-      // Return a simulated demo state if keys are missing
-      return NextResponse.json({ 
-        demoMode: true, 
-        message: 'LiveKit keys are missing. Running in UI Demo mode.' 
-      }, { status: 200 });
+    if (!liveClass) {
+      return NextResponse.json({ error: 'Live class not found' }, { status: 404 });
     }
 
-    const at = new AccessToken(apiKey, apiSecret, {
-      identity: username,
+    const isInstructor = liveClass.instructorId === session.user.id;
+
+    // If not instructor, check if enrolled
+    if (!isInstructor) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId: session.user.id,
+            courseId: liveClass.courseId
+          }
+        }
+      });
+
+      if (!enrollment) {
+        return NextResponse.json({ error: 'Not enrolled in this course' }, { status: 403 });
+      }
+    }
+
+    const roomName = `live_${liveClass.id}`;
+    const participantName = session.user.name || 'Anonymous';
+
+    const at = new AccessToken(
+      process.env.LIVEKIT_API_KEY,
+      process.env.LIVEKIT_API_SECRET,
+      {
+        identity: session.user.id,
+        name: participantName,
+      }
+    );
+
+    at.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: isInstructor,
+      canSubscribe: true,
     });
 
-    at.addGrant({ 
-      room, 
-      roomJoin: true, 
-      canPublish, // Only instructors/admin/owner can publish
-      canSubscribe: true 
-    });
+    const token = await at.toJwt();
 
-    return NextResponse.json({ token: await at.toJwt() }, { status: 200 });
+    return NextResponse.json({ token });
   } catch (error) {
     console.error('LiveKit Token Error:', error);
     return NextResponse.json({ error: 'Failed to generate token' }, { status: 500 });

@@ -32,6 +32,23 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
     }
   };
 
+  const handleViewReceipt = (base64String: string) => {
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(`
+        <html>
+          <head><title>صورة إيصال الدفع</title></head>
+          <body style="margin: 0; background: #0a0a0a; display: flex; justify-content: center; align-items: center; height: 100vh;">
+            <img src="${base64String}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+    } else {
+      alert("الرجاء السماح بالنوافذ المنبثقة (Pop-ups) لعرض الصورة");
+    }
+  };
+
   const handleCreateCoupon = async () => {
     if (!code || !discount) return;
     setIsCreatingCoupon(true);
@@ -157,7 +174,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
                     تاريخ الطلب: {new Date(payment.createdAt).toLocaleDateString('ar-SA')} - {new Date(payment.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                     {payment.receiptImage && (
                       <div style={{ marginTop: '0.5rem' }}>
-                        <button onClick={() => window.open(payment.receiptImage, '_blank')} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#3EEDC4', textDecoration: 'none', background: 'rgba(62, 237, 196, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.85rem', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <button onClick={() => handleViewReceipt(payment.receiptImage)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#3EEDC4', textDecoration: 'none', background: 'rgba(62, 237, 196, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.85rem', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                           عرض صورة الإيصال / الحوالة
                         </button>
