@@ -65,6 +65,43 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
   const [isFetchingToken, setIsFetchingToken] = useState(false);
 
   const router = useRouter();
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCompleted = localStorage.getItem(`course_${course.id}_completed`);
+      const savedActiveId = localStorage.getItem(`course_${course.id}_active`);
+      
+      if (savedCompleted) {
+        try { setCompletedItems(JSON.parse(savedCompleted)); } catch (e) {}
+      }
+      
+      if (savedActiveId && !initialLessonId) {
+        let foundItem = null;
+        for (const c of chapters) {
+          foundItem = c.lessons?.find((l: any) => l.id === savedActiveId) || c.quizzes?.find((q: any) => q.id === savedActiveId);
+          if (foundItem) {
+            setActiveItem(foundItem);
+            setOpenChapters(prev => prev.includes(c.id) ? prev : [...prev, c.id]);
+            break;
+          }
+        }
+      }
+    }
+    setIsLoaded(true);
+  }, [course.id, chapters, initialLessonId]);
+
+  useEffect(() => {
+    if (isLoaded && typeof window !== 'undefined') {
+      localStorage.setItem(`course_${course.id}_completed`, JSON.stringify(completedItems));
+    }
+  }, [completedItems, course.id, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded && activeItem && typeof window !== 'undefined') {
+      localStorage.setItem(`course_${course.id}_active`, activeItem.id);
+    }
+  }, [activeItem, course.id, isLoaded]);
 
   useEffect(() => {
     const fetchLiveToken = async () => {

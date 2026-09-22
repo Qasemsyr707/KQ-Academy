@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/db';
 import { requireRolePage } from '@/lib/rbac';
 import ApproveButton from './ApproveButton';
-import { CheckCircle, Clock, XCircle, Image as ImageIcon } from 'lucide-react';
+import ReceiptViewer from './ReceiptViewer';
+import { CheckCircle, Clock, XCircle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,9 +66,11 @@ export default async function AdminPaymentsPage() {
                   </td>
                   <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--primary)' }}>{payment.amount} ل.س</td>
                   <td style={{ padding: '1rem' }}>
-                    <a href={payment.receiptImage || '#'} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: '#60a5fa', textDecoration: 'none' }}>
-                      <ImageIcon size={16} /> عرض الصورة
-                    </a>
+                    {payment.receiptImage ? (
+                      <ReceiptViewer base64String={payment.receiptImage} />
+                    ) : (
+                      <span style={{ opacity: 0.5 }}>لا يوجد إيصال</span>
+                    )}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {payment.status === 'PENDING' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#eab308', background: 'rgba(234, 179, 8, 0.1)', padding: '0.3rem 0.6rem', borderRadius: '24px', fontSize: '0.8rem' }}><Clock size={14} /> قيد المراجعة</span>}

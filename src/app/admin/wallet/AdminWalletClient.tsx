@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { CheckCircle, XCircle, Settings } from 'lucide-react';
+import ReceiptViewer from '../payments/ReceiptViewer';
 
 export default function AdminWalletClient({ initialTransactions, initialRate }: { initialTransactions: any[], initialRate: string }) {
   const [transactions, setTransactions] = useState(initialTransactions);
@@ -103,9 +103,7 @@ export default function AdminWalletClient({ initialTransactions, initialRate }: 
 
                 {tx.type !== 'WITHDRAW' && tx.receiptImage && (
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <a href={tx.receiptImage} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline' }}>
-                      عرض صورة الإيصال المرفقة
-                    </a>
+                    <ReceiptViewer base64String={tx.receiptImage} />
                   </div>
                 )}
                 

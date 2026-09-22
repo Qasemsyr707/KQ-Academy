@@ -13,6 +13,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
   const [code, setCode] = useState('');
   const [discount, setDiscount] = useState('');
   const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
 
   const handleUpdatePayment = async (paymentId: string, status: 'APPROVED' | 'REJECTED') => {
     try {
@@ -33,20 +34,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
   };
 
   const handleViewReceipt = (base64String: string) => {
-    const newWindow = window.open();
-    if (newWindow) {
-      newWindow.document.write(`
-        <html>
-          <head><title>صورة إيصال الدفع</title></head>
-          <body style="margin: 0; background: #0a0a0a; display: flex; justify-content: center; align-items: center; height: 100vh;">
-            <img src="${base64String}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-          </body>
-        </html>
-      `);
-      newWindow.document.close();
-    } else {
-      alert("الرجاء السماح بالنوافذ المنبثقة (Pop-ups) لعرض الصورة");
-    }
+    setViewingReceipt(base64String);
   };
 
   const handleCreateCoupon = async () => {
@@ -80,6 +68,16 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      
+      {/* Receipt Modal */}
+      {viewingReceipt && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.95)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }} onClick={() => setViewingReceipt(null)}>
+          <img src={viewingReceipt} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 0 50px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} />
+          <button onClick={() => setViewingReceipt(null)} style={{ position: 'absolute', top: '30px', right: '30px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '50px', height: '50px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+            <XCircle size={30} />
+          </button>
+        </div>
+      )}
       
       {/* Quick Links Bento Grid */}
       <motion.div 
