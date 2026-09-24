@@ -33,12 +33,15 @@ export default async function CertificatesPage() {
 
   // Format them for the client
   const formattedCerts = certificates.map(cert => ({
-    id: cert.id,
-    course: cert.course.title,
-    instructor: cert.course.instructor.name,
+    id: cert.id, // For fallback URL
+    certificateNumber: cert.certificateNumber,
+    course: cert.courseName,
+    instructor: cert.manager1, // Or we can use cert.course.instructor.name, but user wanted manager
     date: cert.issuedAt.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }),
     grade: 'امتياز', // Grade could be calculated from quizAttempts if needed
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=600&auto=format&fit=crop'
+    image: cert.pngUrl || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=600&auto=format&fit=crop',
+    pdfUrl: cert.pdfUrl,
+    pngUrl: cert.pngUrl
   }));
 
   return <CertificatesClient initialCerts={formattedCerts} />;

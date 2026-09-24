@@ -12,16 +12,12 @@ export async function GET(
       return NextResponse.json({ error: 'يرجى تزويد كود الشهادة' }, { status: 400 });
     }
 
-    const certificate = await prisma.certificate.findUnique({
-      where: { id: certId },
-      include: {
-        user: { select: { name: true } },
-        course: { 
-          select: { 
-            title: true,
-            instructor: { select: { name: true } }
-          } 
-        }
+    const certificate = await prisma.certificate.findFirst({
+      where: {
+        OR: [
+          { id: certId },
+          { certificateNumber: certId }
+        ]
       }
     });
 
@@ -30,10 +26,14 @@ export async function GET(
     }
 
     return NextResponse.json({
-      studentName: certificate.user.name,
-      courseName: certificate.course.title,
-      issueDate: certificate.issuedAt.toISOString().split('T')[0],
-      instructor: certificate.course.instructor?.name || 'مدرب معتمد',
+      certificateNumber: certificate.certificateNumber || certificate.id,
+      studentName: certificate.studentName,
+      courseName: certificate.courseName,
+      courseDuration: certificate.courseDuration,
+      issueDate: new Date(certificate.issuedAt).toISOString().split('T')[0],
+      manager: certificate.manager1,
+      pngUrl: certificate.pngUrl,
+      pdfUrl: certificate.pdfUrl,
       status: 'موثقة'
     });
 

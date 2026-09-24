@@ -7,11 +7,14 @@ import Link from 'next/link';
 
 interface CertProps {
   id: string;
+  certificateNumber?: string;
   course: string;
   instructor: string;
   date: string;
   grade: string;
   image: string;
+  pdfUrl?: string | null;
+  pngUrl?: string | null;
 }
 
 export default function CertificatesClient({ initialCerts }: { initialCerts: CertProps[] }) {
@@ -22,9 +25,21 @@ export default function CertificatesClient({ initialCerts }: { initialCerts: Cer
     cert.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDownloadPdf = (certId: string) => {
-    // Navigate to verify page with a print parameter which auto-triggers window.print()
-    window.open(`/verify/${certId}?print=true`, '_blank');
+  const handleDownloadPdf = (cert: CertProps) => {
+    if (cert.pdfUrl) {
+      window.open(cert.pdfUrl, '_blank');
+    } else {
+      window.open(`/verify/${cert.id}?print=true`, '_blank');
+    }
+  };
+
+  const handleDownloadPng = (cert: CertProps) => {
+    if (cert.pngUrl) {
+      const a = document.createElement('a');
+      a.href = cert.pngUrl;
+      a.download = `KQ-Certificate-${cert.certificateNumber || cert.id}.png`;
+      a.click();
+    }
   };
 
   const handleShare = async (certId: string) => {
@@ -123,7 +138,7 @@ export default function CertificatesClient({ initialCerts }: { initialCerts: Cer
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
                     <div>
                       <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.2rem' }}>رقم الاعتماد</div>
-                      <div style={{ fontSize: '0.9rem', fontFamily: 'monospace', color: 'var(--primary)' }}>{cert.id}</div>
+                      <div style={{ fontSize: '0.9rem', fontFamily: 'monospace', color: 'var(--primary)' }}>{cert.certificateNumber || cert.id}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.2rem' }}>تاريخ الإصدار</div>
@@ -139,14 +154,19 @@ export default function CertificatesClient({ initialCerts }: { initialCerts: Cer
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 'auto', display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => handleDownloadPdf(cert.id)} style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: '#000', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <div style={{ marginTop: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button onClick={() => handleDownloadPdf(cert)} style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: '#000', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', minWidth: '120px' }}>
                       <Download size={18} /> تحميل PDF
                     </button>
-                    <button onClick={() => handleShare(cert.id)} style={{ width: '45px', padding: '0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    {cert.pngUrl && (
+                      <button onClick={() => handleDownloadPng(cert)} style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', minWidth: '120px' }}>
+                        <Download size={18} /> تحميل PNG
+                      </button>
+                    )}
+                    <button onClick={() => handleShare(cert.certificateNumber || cert.id)} style={{ width: '45px', padding: '0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                       <Share2 size={18} />
                     </button>
-                    <Link href={`/verify/${cert.id}`} style={{ width: '45px', padding: '0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+                    <Link href={`/verify/${cert.certificateNumber || cert.id}`} style={{ width: '45px', padding: '0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
                       <ExternalLink size={18} />
                     </Link>
                   </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { generateCertificateFiles } from '@/lib/certificate';
 
 export async function POST(req: Request) {
   try {
@@ -70,10 +71,45 @@ export async function POST(req: Request) {
       }
     }
 
+    // Get student details
+    const student = await prisma.user.findUnique({ where: { id: userId } });
+    if (!student || !student.name) {
+      return NextResponse.json({ error: 'بيانات الطالب غير مكتملة' }, { status: 400 });
+    }
+
+    // Generate certificate number
+    const currentYear = new Date().getFullYear();
+    const count = await prisma.certificate.count({
+      where: { certificateNumber: { startsWith: `KQ${currentYear}-` } }
+    });
+    const nextNum = (count + 1).toString().padStart(4, '0');
+    const certificateNumber = `KQ${currentYear}-${nextNum}`;
+
+    const startDate = new Date(course.createdAt).toLocaleDateString('en-GB'); // Just a fallback, ideal is enrollment date
+    const endDate = new Date().toLocaleDateString('en-GB');
+    const issueDate = new Date().toLocaleDateString('en-GB');
+
+    // Render the certificate files
+    const { pngUrl, pdfUrl } = await generateCertificateFiles({
+      studentName: student.name,
+      courseName: course.title,
+      startDate: startDate,
+      endDate: endDate,
+      durationHours: 16, // Fallback duration
+      issueDate: issueDate,
+      certificateNumber: certificateNumber
+    });
+
     const certificate = await prisma.certificate.create({
       data: {
         userId,
-        courseId
+        courseId,
+        certificateNumber,
+        studentName: student.name,
+        courseName: course.title,
+        courseDuration: 16,
+        pdfUrl,
+        pngUrl
       }
     });
 

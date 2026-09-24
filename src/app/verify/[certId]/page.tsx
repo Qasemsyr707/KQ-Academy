@@ -1,32 +1,23 @@
 import { prisma } from '@/lib/db';
-import { XCircle, ArrowRight } from 'lucide-react';
+import { XCircle, CheckCircle, ArrowRight, Download, FileText } from 'lucide-react';
 import Link from 'next/link';
-import PrintTrigger from '../PrintTrigger';
-import { QRCodeSVG } from 'qrcode.react';
-import PrintButton from '../PrintButton';
+import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 
 export default async function VerifyCertificatePage({
-  params,
-  searchParams
+  params
 }: {
-  params: Promise<{ certId: string }>,
-  searchParams: Promise<{ print?: string }>
+  params: Promise<{ certId: string }>
 }) {
   const resolvedParams = await params;
-  const resolvedSearchParams = await searchParams;
 
-  const certificate = await prisma.certificate.findUnique({
-    where: { id: resolvedParams.certId },
-    include: {
-      user: { select: { name: true } },
-      course: {
-        select: {
-          title: true,
-          instructor: { select: { name: true } }
-        }
-      }
+  const certificate = await prisma.certificate.findFirst({
+    where: {
+      OR: [
+        { id: resolvedParams.certId },
+        { certificateNumber: resolvedParams.certId }
+      ]
     }
   });
 
@@ -35,219 +26,88 @@ export default async function VerifyCertificatePage({
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff' }}>
         <div style={{ padding: '3rem', textAlign: 'center', maxWidth: '500px', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '20px', background: 'rgba(239,68,68,0.05)' }}>
           <XCircle size={64} color="#ef4444" style={{ margin: '0 auto 1.5rem auto' }} />
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>Invalid Certificate</h1>
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>شهادة غير صالحة</h1>
           <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '2rem' }}>
-            The certificate ID you entered was not found in our records. Please verify the ID and try again.
+            رقم الشهادة الذي أدخلته غير موجود في سجلاتنا. يرجى التحقق من الرقم والمحاولة مرة أخرى.
           </p>
           <Link href="/verify" style={{ padding: '0.8rem 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.1)', color: '#fff', borderRadius: '10px', textDecoration: 'none' }}>
-            <ArrowRight size={18} /> Back to Search
+            <ArrowRight size={18} /> العودة للبحث
           </Link>
         </div>
       </div>
     );
   }
 
-  const verifyUrl = `https://kqacademy.com/verify/${certificate.id}`;
-
-  const issuedDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  });
-
-  const shortId = `KQA-${certificate.id.substring(0, 8).toUpperCase()}`;
+  const issuedDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB');
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '3rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
-      {resolvedSearchParams.print === 'true' && <PrintTrigger />}
-
-      {/* Back button - hidden on print */}
-      <div className="no-print" style={{ width: '100%', maxWidth: '800px', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/verify" style={{ color: 'rgba(203,161,83,0.8)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', fontFamily: "'Montserrat', sans-serif" }}>
-          <ArrowRight size={16} /> Back to Verification
+    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '3rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', direction: 'ltr' }}>
+      
+      <div style={{ width: '100%', maxWidth: '800px', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Link href="/verify" style={{ color: 'rgba(203,161,83,0.8)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
+          <ArrowRight size={16} style={{ transform: 'rotate(180deg)' }} /> Back to Verification
         </Link>
-        <PrintButton />
       </div>
 
-      {/* ====== ADVANCED VERTICAL CERTIFICATE ====== */}
-      <div id="certificate-container" style={{
-        width: '100%',
-        maxWidth: '794px', // Standard A4 width pixel ratio
-        aspectRatio: '1 / 1.414', // Portrait A4 ratio
-        background: '#000000', // Pure black
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: '0 40px 100px rgba(203,161,83,0.15)', // Gold ambient shadow
-        fontFamily: "'Montserrat', sans-serif",
-        direction: 'ltr',
-        containerType: 'inline-size'
-      }}>
-
-
-        {/* CONTENT */}
-        <div style={{
-          position: 'relative', zIndex: 2,
-          padding: '12cqw 8cqw 8cqw 8cqw',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-start'
-        }}>
-
-          {/* === HEADER === */}
-          <div style={{ textAlign: 'center', marginBottom: '10cqw' }}>
-            {/* Logo area */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5cqw', marginBottom: '5cqw' }}>
-              <svg style={{ width: '4.5cqw', height: '5cqw' }} viewBox="0 0 32 36" fill="none">
-                <path d="M16 2L2 8V18C2 26 9 32.5 16 35C23 32.5 30 26 30 18V8L16 2Z" fill="rgba(203,161,83,0.05)" stroke="#cba153" strokeWidth="1"/>
-                <text x="16" y="23" textAnchor="middle" fill="#cba153" fontSize="11" fontWeight="bold" fontFamily="Cinzel, serif">KQ</text>
-              </svg>
-              <div>
-                <div style={{ fontSize: '3.6cqw', fontWeight: 'bold', letterSpacing: '0.3em', color: '#cba153', lineHeight: 1, fontFamily: "'Montserrat', sans-serif" }}>
-                  KQ ACADEMY
-                </div>
-              </div>
-            </div>
-
-            {/* Certificate Title */}
-            <div style={{ 
-              fontSize: '7.2cqw', 
-              color: '#cba153', 
-              letterSpacing: '0.05em', 
-              fontWeight: '400', 
-              fontFamily: "'Cinzel', serif",
-              lineHeight: 1.2,
-              marginBottom: '3cqw'
-            }}>
-              Certificate<br/>of Completion
-            </div>
-            
-            {/* Ultra minimal divider */}
-            <div style={{ width: '8cqw', height: '2px', background: '#cba153', margin: '0 auto' }} />
-          </div>
-
-          {/* === BODY === */}
-          <div style={{ textAlign: 'center', marginBottom: '10cqw', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: '2cqw', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '4cqw' }}>
-              This is to certify that
-            </p>
-            
-            <h2 style={{
-              fontSize: '5.6cqw',
-              fontWeight: '300',
-              color: '#ffffff',
-              letterSpacing: '0.08em',
-              margin: '0 0 4cqw 0',
-              lineHeight: 1.2,
-              fontFamily: "'Cinzel', serif",
-            }}>
-              {certificate.user.name?.toUpperCase()}
-            </h2>
-            
-            <p style={{ fontSize: '1.9cqw', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', marginBottom: '3cqw', textTransform: 'uppercase' }}>
-              Has successfully achieved the standards required for
-            </p>
-            
-            <h3 style={{
-              fontSize: '3.2cqw',
-              color: '#cba153', 
-              fontWeight: '400',
-              margin: '0',
-              fontFamily: "'Cinzel', serif",
-              letterSpacing: '0.05em',
-              lineHeight: 1.4
-            }}>
-              {certificate.course.title.toUpperCase()}
-            </h3>
-          </div>
-
-          {/* === FOOTER: Vertical Layout suited for Portrait === */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '6cqw',
-            borderTop: '1px solid rgba(203,161,83,0.2)',
-            paddingTop: '6cqw'
-          }}>
-
-            {/* CENTER: Modern Minimal Seal (Now top in footer) */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ position: 'relative', width: '15cqw', height: '15cqw' }}>
-                <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
-                  <circle cx="50" cy="50" r="48" fill="none" stroke="#cba153" strokeWidth="0.5" />
-                  <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(203,161,83,0.3)" strokeWidth="1" strokeDasharray="4,4" />
-                  <text x="50" y="45" textAnchor="middle" fill="#cba153" fontSize="22" fontFamily="Cinzel, serif">KQ</text>
-                  <text x="50" y="58" textAnchor="middle" fill="rgba(203,161,83,0.7)" fontSize="6" letterSpacing="2" fontFamily="Montserrat, sans-serif">VERIFIED</text>
-                  <path d="M30 65 L70 65" stroke="rgba(203,161,83,0.3)" strokeWidth="0.5" />
-                  <text x="50" y="72" textAnchor="middle" fill="rgba(203,161,83,0.5)" fontSize="5" letterSpacing="1" fontFamily="Montserrat, sans-serif">{new Date(certificate.issuedAt).getFullYear()}</text>
-                </svg>
-              </div>
-            </div>
-
-            {/* Bottom Row: QR and Signature */}
-            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              
-              {/* LEFT: QR Code (Minimal) */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1cqw' }}>
-                <QRCodeSVG 
-                  value={verifyUrl} 
-                  style={{ width: '10cqw', height: '10cqw' }}
-                  bgColor="#050505" 
-                  fgColor="#cba153" 
-                  level="L" 
-                  includeMargin={false} 
-                />
-                <div style={{ fontSize: '1.3cqw', fontFamily: 'monospace', color: 'rgba(203,161,83,0.7)', letterSpacing: '0.1em' }}>
-                  ID: {shortId}
-                </div>
-              </div>
-
-              {/* RIGHT: Signature */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1cqw' }}>
-                <svg viewBox="0 0 140 40" fill="none" style={{ width: '17.5cqw', height: '5cqw', marginBottom: '1cqw' }}>
-                  <path d="M10,25 C30,10 40,35 60,20 C70,10 80,30 100,15 C110,5 120,25 130,20" stroke="rgba(203,161,83,0.9)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-                </svg>
-                <div style={{ width: '17.5cqw', height: '1px', background: 'rgba(255,255,255,0.2)' }} />
-                <div style={{ fontSize: '1.7cqw', color: '#fff', letterSpacing: '0.05em' }}>
-                  KHALED REFAI
-                </div>
-                <div style={{ fontSize: '1.3cqw', color: 'rgba(203,161,83,0.6)', textAlign: 'right', letterSpacing: '0.1em' }}>
-                  EXECUTIVE DIRECTOR
-                </div>
-              </div>
-
-            </div>
-          </div>
-          
-          {/* Issue Date - Absolute bottom center */}
-          <div style={{ position: 'absolute', bottom: '4cqw', left: '0', right: '0', textAlign: 'center' }}>
-            <span style={{ fontSize: '1.3cqw', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-              Issued on {issuedDate} • kqacademy.com
-            </span>
-          </div>
-
+      <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', width: '100%', maxWidth: '800px', overflow: 'hidden' }}>
+        <div style={{ background: 'rgba(34, 197, 94, 0.1)', padding: '2rem', borderBottom: '1px solid rgba(34, 197, 94, 0.2)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CheckCircle size={56} color="#22c55e" style={{ marginBottom: '1rem' }} />
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#22c55e', margin: 0 }}>VALID CERTIFICATE</h1>
+          <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>This certificate is officially issued by KQ Academy</p>
         </div>
 
+        <div style={{ padding: '3rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>Certificate No.</div>
+            <div style={{ fontSize: '1.2rem', fontFamily: 'monospace', color: 'var(--primary)' }}>{certificate.certificateNumber || certificate.id}</div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>Student Name</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{certificate.studentName}</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>Course Name</div>
+            <div style={{ fontSize: '1.2rem', color: '#e0e0e0' }}>{certificate.courseName}</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>Duration</div>
+            <div style={{ fontSize: '1.1rem' }}>{certificate.courseDuration} Hours</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>Issue Date</div>
+            <div style={{ fontSize: '1.1rem' }}>{issuedDate}</div>
+          </div>
+        </div>
+
+        {certificate.pngUrl && (
+          <div style={{ background: '#1a1a1a', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Original Certificate Document</div>
+            
+            <a href={certificate.pngUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', maxWidth: '500px', border: '1px solid rgba(203,161,83,0.3)', borderRadius: '12px', overflow: 'hidden', cursor: 'zoom-in', transition: 'all 0.3s', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} className="cert-preview">
+              <img src={certificate.pngUrl} alt="Certificate Preview" style={{ width: '100%', display: 'block' }} />
+            </a>
+
+            <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '500px', marginTop: '1rem' }}>
+              {certificate.pdfUrl && (
+                <a href={certificate.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '1rem', background: 'var(--primary)', color: '#000', textDecoration: 'none', borderRadius: '12px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                  <FileText size={20} /> Download PDF
+                </a>
+              )}
+              <a href={certificate.pngUrl} download={`KQ-Certificate-${certificate.certificateNumber}.png`} style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.1)', color: '#fff', textDecoration: 'none', borderRadius: '12px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                <Download size={20} /> Download PNG
+              </a>
+            </div>
+          </div>
+        )}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600;700&display=swap');
-        
-        @media print {
-          @page { size: A4 portrait; margin: 0; }
-          body { background: #000 !important; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-          .no-print { display: none !important; }
-          #certificate-container {
-            width: 210mm !important;
-            height: 297mm !important;
-            max-width: none !important;
-            box-shadow: none !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            border-radius: 0 !important;
-          }
-        }
-      ` }} />
+        .cert-preview:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 15px 40px rgba(203,161,83,0.2); }
+      `}} />
     </div>
   );
 }

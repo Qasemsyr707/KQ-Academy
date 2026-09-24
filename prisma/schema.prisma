@@ -243,10 +243,19 @@ model Review {
 }
 
 model Certificate {
-  id        String   @id @default(cuid()) // Will be used as verification ID
-  userId    String
-  courseId  String
-  issuedAt  DateTime @default(now())
+  id                String   @id @default(cuid()) // verification ID fallback
+  certificateNumber String   @unique // KQ2026-0543
+  userId            String
+  courseId          String
+  studentName       String
+  courseName        String
+  courseDuration    Int      @default(16) // Hours
+  manager1          String   @default("Qasem Alsokhny")
+  manager2          String   @default("Khaled Alrefay")
+  templateVersion   String   @default("1.0")
+  pdfUrl            String?
+  pngUrl            String?
+  issuedAt          DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id])
   course    Course   @relation(fields: [courseId], references: [id])
