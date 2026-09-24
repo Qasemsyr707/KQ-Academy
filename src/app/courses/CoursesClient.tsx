@@ -253,7 +253,18 @@ export default function CoursesClient({ initialCourses, categories, instructors 
                       </div>
                       
                       <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1, background: 'rgba(25,25,25,0.3)' }}>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.8rem', lineHeight: 1.4, color: '#fff' }}>
+                        <h3 style={{ 
+                          fontSize: '1.2rem', 
+                          fontWeight: 'bold', 
+                          marginBottom: '0.8rem', 
+                          lineHeight: 1.4, 
+                          color: '#fff',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          height: '5.04rem' /* Exactly 3 lines */
+                        }}>
                           {course.title}
                         </h3>
                         

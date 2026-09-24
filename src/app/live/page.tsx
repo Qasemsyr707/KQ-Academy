@@ -25,14 +25,14 @@ export default function LiveStreamsPage() {
       <Navbar />
       <style>{`
         .live-page { max-width: 1200px; margin: 0 auto; padding: 120px 24px 80px; }
-        .stream-card { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; overflow: hidden; transition: all 0.3s; position: relative; }
+        .stream-card { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; overflow: hidden; transition: all 0.3s; position: relative; display: flex; flex-direction: column; height: 100%; }
         .stream-card:hover { transform: translateY(-4px); border-color: rgba(203,161,83,0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .stream-thumb { width: 100%; height: 200px; background: #111; position: relative; }
+        .stream-thumb { width: 100%; height: 200px; background: #111; position: relative; flex-shrink: 0; }
         .stream-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .status-badge { position: absolute; top: 16px; right: 16px; padding: 6px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(10px); }
         .status-live { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); }
         .status-scheduled { background: rgba(203,161,83,0.2); color: var(--primary); border: 1px solid rgba(203,161,83,0.4); }
-        .stream-content { padding: 24px; }
+        .stream-content { padding: 24px; flex: 1; display: flex; flex-direction: column; }
         .instructor-info { display: flex; alignItems: center; gap: 12px; margin-bottom: 16px; }
         .instructor-img { width: 40px; height: 40px; borderRadius: 50%; object-fit: cover; }
         .btn-join { width: 100%; padding: 14px; border-radius: 12px; border: none; font-family: inherit; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 24px; }
@@ -95,7 +95,19 @@ export default function LiveStreamsPage() {
                     </div>
                   </div>
 
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '8px', lineHeight: 1.4 }}>{stream.title}</h3>
+                  <h3 style={{ 
+                    fontSize: '1.25rem', 
+                    fontWeight: 'bold', 
+                    marginBottom: '8px', 
+                    lineHeight: 1.4,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    height: '5.25rem' /* Exactly 3 lines (1.25 * 1.4 * 3 = 5.25) */
+                  }}>
+                    {stream.title}
+                  </h3>
                   {stream.description && <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{stream.description}</p>}
 
                   {stream.status === 'upcoming' && (
@@ -105,15 +117,17 @@ export default function LiveStreamsPage() {
                     </div>
                   )}
 
-                  {stream.status === 'live' ? (
-                    <button className="btn-join btn-join-live" onClick={() => router.push(`/live/room/${stream.id}`)}>
-                      <Video size={18} /> انضم للبث الآن
-                    </button>
-                  ) : (
-                    <button className="btn-join btn-join-scheduled" disabled>
-                      بانتظار بدء البث <ChevronRight size={18} />
-                    </button>
-                  )}
+                  <div style={{ marginTop: 'auto' }}>
+                    {stream.status === 'live' ? (
+                      <button className="btn-join btn-join-live" onClick={() => router.push(`/live/room/${stream.id}`)}>
+                        <Video size={18} /> انضم للبث الآن
+                      </button>
+                    ) : (
+                      <button className="btn-join btn-join-scheduled" disabled>
+                        بانتظار بدء البث <ChevronRight size={18} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

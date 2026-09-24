@@ -191,10 +191,10 @@ export default async function HomePage() {
               gap: '1.5rem' 
             }}>
               {courses.map((course) => (
-                <Link 
+                  <Link 
                   key={course.id} 
                   href={`/courses/${course.id}`}
-                  style={{ textDecoration: 'none' }}
+                  style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', height: '100%' }}
                 >
                   <div style={{
                     background: 'rgba(15,15,15,0.8)',
@@ -236,7 +236,17 @@ export default async function HomePage() {
                       </div>
                     </div>
                     <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', lineHeight: 1.4 }}>
+                      <h3 style={{ 
+                        color: '#fff', 
+                        fontWeight: 700, 
+                        fontSize: '1rem', 
+                        lineHeight: 1.4,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        height: '4.2rem' /* Exactly 3 lines (1rem * 1.4 * 3) */
+                      }}>
                         {course.title}
                       </h3>
                       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
