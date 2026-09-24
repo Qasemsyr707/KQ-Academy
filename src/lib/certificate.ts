@@ -6,15 +6,23 @@ import fs from 'fs';
 import { mkdir } from 'fs/promises';
 
 // Configuration for Certificate Layout (adjust these according to the actual clean template image)
+// Assuming template resolution is approximately 911x985 based on the provided image
 const CERTIFICATE_LAYOUT = {
-  width: 1600,
-  height: 1200,
-  studentName: { x: 800, y: 555, fontSize: 52, fill: '#D9A441', fontFamily: 'Georgia, serif' },
-  courseName:  { x: 800, y: 745, fontSize: 42, fill: '#D9A441', fontFamily: 'Georgia, serif' },
-  courseDate:  { x: 800, y: 805, fontSize: 24, fill: '#FFFFFF', fontFamily: 'Georgia, serif' },
-  issueDate:   { x: 100, y: 1030, fontSize: 18, fill: '#FFFFFF', fontFamily: 'Georgia, serif' },
-  certNumber:  { x: 100, y: 1070, fontSize: 18, fill: '#FFFFFF', fontFamily: 'Georgia, serif' },
-  qrCode:      { x: 1350, y: 950, size: 150 } // Position for the QR code
+  width: 911,
+  height: 985,
+  // Name box is around y: 440
+  studentName: { x: 455, y: 445, fontSize: 32, fill: '#D9A441', fontFamily: 'Georgia, serif' },
+  // Course box is around y: 560
+  courseName:  { x: 455, y: 560, fontSize: 26, fill: '#D9A441', fontFamily: 'Georgia, serif' },
+  // Course Date line is around y: 615
+  // Note: the template has "Course Date: ________ (  )" we will overlay our own text or fill the gaps
+  courseDate:  { x: 455, y: 610, fontSize: 16, fill: '#FFFFFF', fontFamily: 'Georgia, serif' },
+  // Issue date line is around y: 765
+  issueDate:   { x: 180, y: 765, fontSize: 12, fill: '#FFFFFF', fontFamily: 'Georgia, serif' },
+  // Cert No line is around y: 785
+  certNumber:  { x: 180, y: 785, fontSize: 12, fill: '#FFFFFF', fontFamily: 'Georgia, serif' },
+  // QR code bottom left
+  qrCode:      { x: 50, y: 830, size: 80 } 
 };
 
 const escapeXml = (unsafe: string) => {
@@ -61,19 +69,19 @@ export async function generateCertificateFiles(data: {
           ${escapeXml(data.courseName.toUpperCase())}
         </text>
 
-        <!-- Course Date -->
+        <!-- Course Date (Positioned exactly on the line) -->
         <text x="${courseDate.x}" y="${courseDate.y}" text-anchor="middle" font-family="${courseDate.fontFamily}" font-size="${courseDate.fontSize}" fill="${courseDate.fill}">
-          Course Date: ${escapeXml(data.startDate)} - ${escapeXml(data.endDate)} (${data.durationHours} Hours)
+          ${escapeXml(data.startDate)} - ${escapeXml(data.endDate)} (${data.durationHours} Hours)
         </text>
 
         <!-- Issue Date -->
         <text x="${issueDate.x}" y="${issueDate.y}" font-family="${issueDate.fontFamily}" font-size="${issueDate.fontSize}" fill="${issueDate.fill}">
-          Date of Issued: ${escapeXml(data.issueDate)}
+          ${escapeXml(data.issueDate)}
         </text>
 
         <!-- Certificate Number -->
         <text x="${certNumber.x}" y="${certNumber.y}" font-family="${certNumber.fontFamily}" font-size="${certNumber.fontSize}" fill="${certNumber.fill}">
-          Certificate No. ${escapeXml(data.certificateNumber)}
+          ${escapeXml(data.certificateNumber)}
         </text>
       </svg>
     `;
