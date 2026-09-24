@@ -98,16 +98,8 @@ export async function POST(req: Request) {
     const endDate = new Date().toLocaleDateString('en-GB');
     const issueDate = new Date().toLocaleDateString('en-GB');
 
-    // Render the certificate files
-    const { pngUrl, pdfUrl } = await generateCertificateFiles({
-      studentName: student.name,
-      courseName: course.title,
-      startDate: startDate,
-      endDate: endDate,
-      durationHours: 16, // Fallback duration
-      issueDate: issueDate,
-      certificateNumber: certificateNumber
-    });
+    const pngUrl = `/api/certificates/${certificateNumber}/png`;
+    const pdfUrl = `/api/certificates/${certificateNumber}/pdf`;
 
     const certificate = await prisma.certificate.create({
       data: {
@@ -117,6 +109,8 @@ export async function POST(req: Request) {
         studentName: student.name,
         courseName: course.title,
         courseDuration: 16,
+        manager1: "Qasem Alsokhny",
+        manager2: "Khaled Alrefay",
         pdfUrl,
         pngUrl
       }

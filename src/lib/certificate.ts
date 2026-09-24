@@ -1,9 +1,7 @@
 import sharp from 'sharp';
 import QRCode from 'qrcode';
-import { PDFDocument } from 'pdf-lib';
 import path from 'path';
 import fs from 'fs';
-import { mkdir } from 'fs/promises';
 
 // Configuration for Certificate Layout (adjust these according to the actual clean template image)
 // Assuming template resolution is approximately 911x985 based on the provided image
@@ -38,7 +36,7 @@ const escapeXml = (unsafe: string) => {
   });
 };
 
-export async function generateCertificateFiles(data: {
+export async function generateCertificateBuffer(data: {
   studentName: string;
   courseName: string;
   startDate: string;
@@ -46,7 +44,7 @@ export async function generateCertificateFiles(data: {
   durationHours: number;
   issueDate: string;
   certificateNumber: string;
-}) {
+}): Promise<Buffer> {
   try {
     const templatePath = path.join(process.cwd(), 'public', 'templates', 'kq-academy-certificate.png');
     
@@ -98,16 +96,7 @@ export async function generateCertificateFiles(data: {
       }
     });
 
-    // Create directories
-    const year = data.certificateNumber.substring(2, 6);
-    const relativeDir = path.join('certificates', year, data.certificateNumber);
-    const outputDir = path.join(process.cwd(), 'public', relativeDir);
-    await mkdir(outputDir, { recursive: true });
-
-    const pngPath = path.join(outputDir, 'certificate.png');
-    const pdfPath = path.join(outputDir, 'certificate.pdf');
-
-    // 1. Generate PNG using Sharp
+    // Generate PNG using Sharp and return Buffer
     const pngBuffer = await sharp(templatePath)
       .composite([
         { input: Buffer.from(svg), top: 0, left: 0 },
@@ -116,28 +105,7 @@ export async function generateCertificateFiles(data: {
       .png()
       .toBuffer();
 
-    fs.writeFileSync(pngPath, pngBuffer);
-
-    // 2. Generate PDF using pdf-lib
-    const pdfDoc = await PDFDocument.create();
-    const image = await pdfDoc.embedPng(pngBuffer);
-    
-    // Create a page with the same dimensions as the image
-    const page = pdfDoc.addPage([image.width, image.height]);
-    page.drawImage(image, {
-      x: 0,
-      y: 0,
-      width: image.width,
-      height: image.height,
-    });
-
-    const pdfBytes = await pdfDoc.save();
-    fs.writeFileSync(pdfPath, pdfBytes);
-
-    return {
-      pngUrl: \`/\${relativeDir.replace(/\\\\/g, '/')}/certificate.png\`,
-      pdfUrl: \`/\${relativeDir.replace(/\\\\/g, '/')}/certificate.pdf\`
-    };
+    return pngBuffer;
 
   } catch (error) {
     console.error("Certificate Generation Error:", error);
