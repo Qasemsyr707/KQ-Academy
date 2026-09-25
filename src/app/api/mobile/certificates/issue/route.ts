@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import jwt from 'jsonwebtoken';
-import { generateCertificateFiles } from '@/lib/certificate';
 
 export async function POST(req: Request) {
   try {
