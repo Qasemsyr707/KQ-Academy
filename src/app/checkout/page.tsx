@@ -39,6 +39,9 @@ function CheckoutContent() {
           setCourse(data.course);
           setWalletData(data.wallet);
           setPaymentSettings(data.paymentSettings || {});
+          if (typeof window !== 'undefined' && (window as any).fbq) {
+            (window as any).fbq('track', 'InitiateCheckout', { value: data.course?.price, currency: 'USD' });
+          }
         } else {
           setError(data.error);
         }
@@ -90,6 +93,9 @@ function CheckoutContent() {
         const data = await res.json();
         if (res.ok) {
           setSuccess(true);
+          if (typeof window !== 'undefined' && (window as any).fbq) {
+            (window as any).fbq('track', 'Purchase', { value: finalPrice, currency: 'USD' });
+          }
           setTimeout(() => {
             window.location.href = `/courses/${courseId}/learn`;
           }, 2000);
@@ -115,6 +121,9 @@ function CheckoutContent() {
             window.location.href = data.redirectUrl;
           } else {
             setSuccess(true); // Manual receipt uploaded or similar
+            if (typeof window !== 'undefined' && (window as any).fbq) {
+              (window as any).fbq('track', 'Purchase', { value: finalPrice, currency: 'USD' });
+            }
           }
         } else {
           setError(data.error || 'حدث خطأ في تجهيز بوابة الدفع');
