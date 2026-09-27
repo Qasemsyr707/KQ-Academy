@@ -296,7 +296,7 @@ export default function CoursesClient({ initialCourses, categories, instructors 
                                 <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{course.priceSYP.toLocaleString()} ل.س</span>
                               </div>
                             ) : (
-                              <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>مجاني بالكامل</span>
+                              <span></span>
                             )}
                           </div>
                           <div style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
