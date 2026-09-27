@@ -85,7 +85,7 @@ export async function generateCertificateBuffer(data: {
     `;
 
     // Generate QR Code
-    const verificationUrl = \`https://kqacademy.com/verify/\${data.certificateNumber}\`;
+    const verificationUrl = `https://kqacademy.com/verify/${data.certificateNumber}`;
     const qrCodeBuffer = await QRCode.toBuffer(verificationUrl, {
       errorCorrectionLevel: 'H',
       margin: 1,
