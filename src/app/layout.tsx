@@ -71,8 +71,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
         />
-        <Script id="facebook-pixel" strategy="afterInteractive">
-          {`
+        {/* Meta Pixel Code */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -83,8 +84,9 @@ export default function RootLayout({
             'https://connect.facebook.net/en_US/fbevents.js');
             fbq('init', '2107140299886975');
             fbq('track', 'PageView');
-          `}
-        </Script>
+          `
+        }} />
+        {/* End Meta Pixel Code */}
       </head>
       <body>
         <noscript>
