@@ -22,7 +22,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
 
   // Generate consistent pseudo-random metrics based on course ID so it doesn't look static
   const studentsCount = useMemo(() => generateRandomNumber(course.id || 'default', 850, 25000), [course.id]);
-  const ratingCount = useMemo(() => generateRandomNumber(course.id || 'default', 150, Math.floor(studentsCount * 0.3)), [course.id, studentsCount]);
+  const actualReviewsCount = course.reviews?.length || 0;
 
   const whatYouWillLearn = course.learningObjectives || [
     'احتراف كتابة الأكواد البرمجية بأفضل الممارسات العالمية',
@@ -81,7 +81,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
                   ))}
                 </div>
                 <a href="#reviews" style={{ color: '#c0c4fc', textDecoration: 'underline', fontSize: '0.95rem', marginLight: '0.2rem' }}>
-                  ({ratingCount.toLocaleString()} التقييمات)
+                  ({actualReviewsCount.toLocaleString()} التقييمات)
                 </a>
               </div>
               <div style={{ fontSize: '0.95rem', color: '#fff' }}>
@@ -216,7 +216,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
                 </div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#d1d7dc', fontSize: '0.95rem' }}>
                   <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Star size={16} color="#d1d7dc" /> {course.rating.toFixed(1)} تقييم المحاضر</li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Award size={16} color="#d1d7dc" /> {Math.floor(ratingCount * 3.5).toLocaleString()} من التقييمات</li>
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Award size={16} color="#d1d7dc" /> {actualReviewsCount.toLocaleString()} من التقييمات</li>
                   <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><User size={16} color="#d1d7dc" /> {(studentsCount * 5).toLocaleString()} من الطلاب</li>
                   <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><PlayCircle size={16} color="#d1d7dc" /> 12 من الدورات</li>
                 </ul>
