@@ -24,11 +24,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
   const studentsCount = useMemo(() => generateRandomNumber(course.id || 'default', 850, 25000), [course.id]);
   const actualReviewsCount = course.reviews?.length || 0;
 
-  const requirements = course.requirements || [
-    'جهاز كمبيوتر (ويندوز، ماك، أو لينكس) مع اتصال بالإنترنت.',
-    'شغف ورغبة حقيقية في تعلم البرمجة.',
-    'لا يشترط وجود أي خبرة مسبقة في البرمجة، سنبدأ من الصفر!'
-  ];
+  const requirements = course.requirements || [];
 
   const totalLectures = course.chapters?.reduce((acc: number, chap: any) => acc + (chap.lessons?.length || 0), 0) || 0;
   const totalSections = course.chapters?.length || 0;
@@ -161,14 +157,16 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
             </div>
 
             {/* Requirements (متطلبات) */}
-            <div style={{ marginBottom: '3rem' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>المتطلبات</h2>
-              <ul style={{ listStyleType: 'disc', paddingRight: '1.5rem', color: '#d1d7dc', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {requirements.map((req: string, idx: number) => (
-                  <li key={idx} style={{ fontSize: '0.95rem', lineHeight: 1.6 }}>{req}</li>
-                ))}
-              </ul>
-            </div>
+            {requirements.length > 0 && (
+              <div style={{ marginBottom: '3rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>المتطلبات</h2>
+                <ul style={{ listStyleType: 'disc', paddingRight: '1.5rem', color: '#d1d7dc', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {requirements.map((req: string, idx: number) => (
+                    <li key={idx} style={{ fontSize: '0.95rem', lineHeight: 1.6 }}>{req}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Description (الوصف) */}
             <div style={{ marginBottom: '3rem' }}>
