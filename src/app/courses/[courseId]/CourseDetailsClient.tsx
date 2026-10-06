@@ -24,15 +24,6 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
   const studentsCount = useMemo(() => generateRandomNumber(course.id || 'default', 850, 25000), [course.id]);
   const actualReviewsCount = course.reviews?.length || 0;
 
-  const whatYouWillLearn = course.learningObjectives || [
-    'احتراف كتابة الأكواد البرمجية بأفضل الممارسات العالمية',
-    'بناء مشاريع عملية حقيقية خطوة بخطوة',
-    'فهم الخوارزميات المتقدمة وهيكلة البيانات',
-    'التعامل مع قواعد البيانات وربطها بالتطبيق',
-    'تحليل المشاكل البرمجية وإيجاد حلول فعالة لها',
-    'تطوير الواجهات الأمامية والخلفية باحترافية'
-  ];
-
   const requirements = course.requirements || [
     'جهاز كمبيوتر (ويندوز، ماك، أو لينكس) مع اتصال بالإنترنت.',
     'شغف ورغبة حقيقية في تعلم البرمجة.',
@@ -109,19 +100,6 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
           {/* Body Content */}
           <div style={{ paddingTop: '2rem' }}>
             
-            {/* What you'll learn (ما ستتعلمه) */}
-            <div style={{ border: '1px solid rgba(255,255,255,0.2)', padding: '1.5rem', borderRadius: '4px', marginBottom: '3rem' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>ما ستتعلمه</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-                {whatYouWillLearn.map((item: string, idx: number) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
-                    <Check size={18} color="#fff" style={{ flexShrink: 0, marginTop: '0.2rem' }} />
-                    <span style={{ fontSize: '0.95rem', color: '#d1d7dc', lineHeight: 1.5 }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Course Content */}
             <div style={{ marginBottom: '3rem' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>محتوى الدورة</h2>
@@ -334,27 +312,33 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
                 <h4 style={{ fontWeight: 'bold', marginBottom: '1rem', fontSize: '1rem' }}>تتضمن هذه الدورة ما يأتي:</h4>
                 <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.9rem', color: '#d1d7dc' }}>
                   {course.includes && Array.isArray(course.includes) && course.includes.length > 0 ? (
-                    course.includes.map((feature: string, idx: number) => (
-                      <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Check size={16} color="#d1d7dc" /> {feature}
+                    course.includes.flatMap((f: string) => f.split(/◾|▪|•/)).map((f: string) => f.trim()).filter(Boolean).map((feature: string, idx: number) => (
+                      <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
+                        <Check size={16} color="#a435f0" style={{ flexShrink: 0, marginTop: '0.2rem' }} /> 
+                        <span style={{ lineHeight: 1.5 }}>{feature}</span>
                       </li>
                     ))
                   ) : (
                     <>
-                      <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <MonitorSmartphone size={16} /> فيديو متوفر عند الطلب مدته 40.5 من الساعات
+                      <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
+                        <MonitorSmartphone size={16} color="#a435f0" style={{ flexShrink: 0, marginTop: '0.2rem' }} /> 
+                        <span style={{ lineHeight: 1.5 }}>فيديو متوفر عند الطلب مدته 40.5 من الساعات</span>
                       </li>
-                      <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <FileText size={16} /> 22 تمارين برمجة
+                      <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
+                        <FileText size={16} color="#a435f0" style={{ flexShrink: 0, marginTop: '0.2rem' }} /> 
+                        <span style={{ lineHeight: 1.5 }}>22 تمارين برمجة</span>
                       </li>
-                      <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Infinity size={16} /> الوصول الكامل مدى الحياة
+                      <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
+                        <Infinity size={16} color="#a435f0" style={{ flexShrink: 0, marginTop: '0.2rem' }} /> 
+                        <span style={{ lineHeight: 1.5 }}>الوصول الكامل مدى الحياة</span>
                       </li>
-                      <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <MonitorSmartphone size={16} /> إمكانية وصول عبر الهاتف المحمول والتلفزيون
+                      <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
+                        <MonitorSmartphone size={16} color="#a435f0" style={{ flexShrink: 0, marginTop: '0.2rem' }} /> 
+                        <span style={{ lineHeight: 1.5 }}>إمكانية وصول عبر الهاتف المحمول والتلفزيون</span>
                       </li>
-                      <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Award size={16} /> شهادة إكمال
+                      <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
+                        <Award size={16} color="#a435f0" style={{ flexShrink: 0, marginTop: '0.2rem' }} /> 
+                        <span style={{ lineHeight: 1.5 }}>شهادة إكمال</span>
                       </li>
                     </>
                   )}
