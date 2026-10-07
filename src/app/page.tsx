@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, Briefcase, ArrowLeft, Users, Award, Zap, Search } from 'lucide-react';
+import { BookOpen, Briefcase, ArrowLeft, Users, Award, Zap, Search, User } from 'lucide-react';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
