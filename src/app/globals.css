@@ -320,3 +320,9 @@ input:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
+
+.featured-course-card:hover {
+  transform: translateY(-10px) scale(1.02) !important;
+  box-shadow: 0 20px 50px -10px rgba(203,161,83,0.3) !important;
+  border: 1px solid rgba(203,161,83,0.6) !important;
+}

@@ -189,7 +189,9 @@ export default async function HomePage() {
             }}>
               {featuredCourses.map(course => (
                 <Link href={`/courses/${course.id}`} key={course.id} style={{ textDecoration: 'none' }}>
-                  <div style={{
+                  <div 
+                    className="featured-course-card"
+                    style={{
                     background: 'linear-gradient(145deg, rgba(203,161,83,0.08) 0%, rgba(20,20,20,1) 100%)',
                     border: '1px solid rgba(203,161,83,0.3)',
                     borderRadius: '24px',
@@ -200,16 +202,6 @@ export default async function HomePage() {
                     position: 'relative',
                     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     boxShadow: '0 10px 40px -10px rgba(203,161,83,0.15)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-                    e.currentTarget.style.boxShadow = '0 20px 50px -10px rgba(203,161,83,0.3)';
-                    e.currentTarget.style.border = '1px solid rgba(203,161,83,0.6)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 10px 40px -10px rgba(203,161,83,0.15)';
-                    e.currentTarget.style.border = '1px solid rgba(203,161,83,0.3)';
                   }}
                   >
                     <div style={{
