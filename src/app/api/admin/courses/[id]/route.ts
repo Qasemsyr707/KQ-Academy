@@ -8,7 +8,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     if (!authorized) return errorResponse;
 
     const params = await props.params;
-    const { status, title, price, priceSYP, instructorId, type } = await req.json();
+    const { status, title, price, priceSYP, instructorId, type, isFeatured } = await req.json();
 
     const course = await prisma.course.update({
       where: { id: params.id },
@@ -18,7 +18,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         ...(price !== undefined && { price: parseFloat(price) || 0 }),
         ...(priceSYP !== undefined && { priceSYP: parseFloat(priceSYP) || 0 }),
         ...(instructorId && { instructorId }),
-        ...(type && { type })
+        ...(type && { type }),
+        ...(isFeatured !== undefined && { isFeatured })
       },
       include: {
         instructor: { select: { id: true, name: true, email: true } },

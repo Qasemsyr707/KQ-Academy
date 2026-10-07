@@ -6,7 +6,7 @@ import { Search, Filter, BookOpen, Star, User, Clock, X, SlidersHorizontal, Arro
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
-export default function CoursesClient({ initialCourses, categories, instructors }: { initialCourses: any[], categories: string[], instructors: string[] }) {
+export default function CoursesClient({ initialCourses, featuredCourses = [], categories, instructors }: { initialCourses: any[], featuredCourses?: any[], categories: string[], instructors: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -171,6 +171,102 @@ export default function CoursesClient({ initialCourses, categories, instructors 
           />
         </div>
       </div>
+
+      {/* Featured Courses Section */}
+      {featuredCourses.length > 0 && !q && category === 'الكل' && type === 'الكل' && (
+        <section style={{ padding: '0 5% 4rem', maxWidth: '1400px', margin: '2rem auto 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+            <div style={{ padding: '0.6rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '10px' }}>
+              <Star size={24} color="#f59e0b" fill="#f59e0b" />
+            </div>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff' }}>دورات مميزة ننصح بها</h2>
+          </div>
+
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+            gap: '2rem' 
+          }}>
+            {featuredCourses.map(course => (
+              <Link href={`/courses/${course.id}`} key={course.id} style={{ textDecoration: 'none' }}>
+                <div style={{
+                  background: 'linear-gradient(145deg, rgba(203,161,83,0.08) 0%, rgba(20,20,20,1) 100%)',
+                  border: '1px solid rgba(203,161,83,0.3)',
+                  borderRadius: '24px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  position: 'relative',
+                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  boxShadow: '0 10px 40px -10px rgba(203,161,83,0.15)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 20px 50px -10px rgba(203,161,83,0.3)';
+                  e.currentTarget.style.border = '1px solid rgba(203,161,83,0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 10px 40px -10px rgba(203,161,83,0.15)';
+                  e.currentTarget.style.border = '1px solid rgba(203,161,83,0.3)';
+                }}
+                >
+                  <div style={{
+                    position: 'absolute', top: '15px', right: '15px', zIndex: 10,
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    color: '#fff', fontSize: '0.8rem', fontWeight: 'bold',
+                    padding: '0.4rem 1rem', borderRadius: '20px',
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
+                  }}>
+                    <Star size={14} fill="#fff" /> موصى به
+                  </div>
+                  <div style={{ position: 'relative', paddingTop: '56.25%', background: '#1a1a1a', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    {course.thumbnail ? (
+                      <img 
+                        src={course.thumbnail} 
+                        alt={course.title} 
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <BookOpen size={40} color="rgba(255,255,255,0.1)" />
+                      </div>
+                    )}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '50%', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
+                  </div>
+                  
+                  <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)', display: 'inline-block' }}></span>
+                      {course.category}
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.75rem', lineHeight: 1.4 }}>
+                      {course.title}
+                    </h3>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '1.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {course.description || 'دورة احترافية شاملة تأخذك خطوة بخطوة.'}
+                    </p>
+                    
+                    <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(203,161,83,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <User size={14} color="var(--primary)" />
+                        </div>
+                        <span style={{ fontSize: '0.85rem', color: '#fff', opacity: 0.8 }}>{(course.instructor as any)?.name}</span>
+                      </div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>
+                        ${course.price.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div style={{ maxWidth: '1400px', margin: '2rem auto', padding: '0 5%', display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         

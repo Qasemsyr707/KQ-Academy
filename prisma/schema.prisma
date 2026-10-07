@@ -67,12 +67,13 @@ model Course {
   price       Float    @default(0) // USD
   priceSYP    Float    @default(0) // SYP
   category    String
-  thumbnail   String?
+  thumbnail       String?
   previewVideoUrl String?
-  includes    Json?    // Stores array of strings or objects for course features
-  rating      Float    @default(0.0)
-  status      String   @default("PUBLISHED") // PENDING, PUBLISHED, REJECTED
-  createdAt   DateTime @default(now())
+  includes        Json?    // Stores array of strings or objects for course features
+  rating          Float    @default(0.0)
+  isFeatured      Boolean  @default(false) // Admin can pin this course to the top
+  status          String   @default("PUBLISHED") // PENDING, PUBLISHED, REJECTED
+  createdAt       DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   instructorId String

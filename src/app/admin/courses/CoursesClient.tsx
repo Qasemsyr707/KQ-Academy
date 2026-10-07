@@ -16,6 +16,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
   const [editPriceSYP, setEditPriceSYP] = useState('');
   const [editInstructorId, setEditInstructorId] = useState('');
   const [editType, setEditType] = useState('SKILL');
+  const [editIsFeatured, setEditIsFeatured] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
@@ -35,6 +36,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
     setEditPriceSYP(course.priceSYP.toString());
     setEditInstructorId(course.instructor?.id || course.instructorId);
     setEditType(course.type || 'SKILL');
+    setEditIsFeatured(course.isFeatured || false);
     setMsg({ type: '', text: '' });
   };
 
@@ -53,7 +55,8 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
           price: editPrice,
           priceSYP: editPriceSYP,
           instructorId: editInstructorId,
-          type: editType
+          type: editType,
+          isFeatured: editIsFeatured
         }),
       });
 
@@ -146,7 +149,10 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                       )}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 'bold', color: '#fff', marginBottom: '0.3rem' }}>{course.title}</div>
+                      <div style={{ fontWeight: 'bold', color: '#fff', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {course.title}
+                        {course.isFeatured && <span style={{ background: '#f59e0b', color: '#fff', fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 'bold' }}>مثبت 📌</span>}
+                      </div>
                       <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{course.category} • {course._count.lessons} درس</div>
                     </div>
                   </div>
@@ -238,6 +244,18 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   <option value="SKILL" style={{ background: '#111' }}>كورس مهاري عام (برمجة، لغات، أعمال...)</option>
                   <option value="CURRICULUM" style={{ background: '#111' }}>منهاج دراسي (بكالوريا، تاسع...)</option>
                 </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#fff', fontWeight: 'bold', background: 'rgba(245, 158, 11, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={editIsFeatured}
+                    onChange={e => setEditIsFeatured(e.target.checked)}
+                    style={{ width: '20px', height: '20px', accentColor: '#f59e0b' }}
+                  />
+                  📌 تثبيت هذا الكورس في أعلى الصفحة الرئيسية وصفحة الكورسات (موصى به)
+                </label>
               </div>
 
               <div>

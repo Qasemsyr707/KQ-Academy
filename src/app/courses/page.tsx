@@ -34,5 +34,14 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
     take: 20
   });
 
-  return <CoursesClient initialCourses={initialCourses} categories={categories} instructors={instructors} />;
+  const featuredCourses = await prisma.course.findMany({
+    where: { status: 'PUBLISHED', isFeatured: true },
+    include: {
+      instructor: { select: { name: true, image: true } },
+      _count: { select: { enrollments: true, reviews: true } }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return <CoursesClient initialCourses={initialCourses} featuredCourses={featuredCourses} categories={categories} instructors={instructors} />;
 }
