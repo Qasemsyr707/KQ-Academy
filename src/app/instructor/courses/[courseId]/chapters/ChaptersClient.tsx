@@ -134,11 +134,13 @@ export default function ChaptersClient({ course }: { course: any }) {
         const bunnyData = await bunnyRes.json();
         const { videoId, libraryId, signature, expireTime } = bunnyData;
         
-        // 2. Upload via TUS
+        // 2. Upload via TUS with 5MB chunks (Bunny Stream requirement)
         await new Promise((resolve, reject) => {
           const upload = new tus.Upload(videoFile, {
             endpoint: "https://video.bunnycdn.com/tusupload",
             retryDelays: [0, 3000, 5000, 10000, 20000],
+            chunkSize: 5 * 1024 * 1024, // 5MB chunks for stable resumable uploads
+            parallelUploads: 1,
             headers: {
               AuthorizationSignature: signature,
               AuthorizationExpire: expireTime.toString(),
@@ -149,7 +151,10 @@ export default function ChaptersClient({ course }: { course: any }) {
               filetype: videoFile.type,
               title: lessonTitle,
             },
-            onError: (error) => reject(error),
+            onError: (error) => {
+              console.error("TUS upload error:", error);
+              reject(error);
+            },
             onProgress: (bytesUploaded, bytesTotal) => {
               const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
               setUploadProgress(Number(percentage));
@@ -248,6 +253,7 @@ export default function ChaptersClient({ course }: { course: any }) {
     try {
       const formData = new FormData();
       formData.append('file', attachmentFile);
+      formData.append('type', 'document');
       
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
@@ -641,6 +647,8 @@ export default function ChaptersClient({ course }: { course: any }) {
                     const upload = new tus.Upload(videoFile, {
                       endpoint: "https://video.bunnycdn.com/tusupload",
                       retryDelays: [0, 3000, 5000, 10000, 20000],
+                      chunkSize: 5 * 1024 * 1024, // 5MB chunks for reliable resumable upload
+                      parallelUploads: 1,
                       headers: {
                         AuthorizationSignature: signature,
                         AuthorizationExpire: expireTime.toString(),
@@ -648,7 +656,10 @@ export default function ChaptersClient({ course }: { course: any }) {
                         LibraryId: libraryId,
                       },
                       metadata: { filetype: videoFile.type, title: 'Intro: ' + course.title },
-                      onError: (error) => reject(error),
+                      onError: (error) => {
+                        console.error("Intro video TUS upload error:", error);
+                        reject(error);
+                      },
                       onProgress: (bytesUploaded, bytesTotal) => {
                         const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
                         setIntroUploadProgress(Number(percentage));

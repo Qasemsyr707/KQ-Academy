@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { prisma } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +12,7 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
+    const requestedType = formData.get('type') as string | null;
     
     if (!file) {
       return NextResponse.json({ error: 'لم يتم العثور على ملف' }, { status: 400 });
@@ -20,13 +20,35 @@ export async function POST(req: Request) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64Data = buffer.toString('base64');
     
-    const base64Image = buffer.toString('base64');
+    const fileName = file.name || 'file';
+    const isPdf = file.type === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+    const isDoc = requestedType === 'document' || isPdf || /\.(doc|docx|ppt|pptx|xls|xlsx|txt|zip|rar)$/i.test(fileName);
+
+    // If PDF or document, store directly in StoredFile table so it serves authentically as a PDF
+    if (isPdf || isDoc) {
+      const mimeType = isPdf ? 'application/pdf' : (file.type || 'application/octet-stream');
+      
+      const stored = await prisma.storedFile.create({
+        data: {
+          name: fileName,
+          mimeType,
+          size: buffer.length,
+          data: base64Data,
+        }
+      });
+
+      const fileUrl = `/api/files/${stored.id}`;
+      return NextResponse.json({ url: fileUrl, filename: fileName }, { status: 201 });
+    }
+
+    // Otherwise, upload images to ImgBB
     const imgbbKey = process.env.IMGBB_API_KEY || '1f5ef4eb09ba47797cfb3d6f169c31b2';
     
     const imgbbFormData = new URLSearchParams();
     imgbbFormData.append('key', imgbbKey);
-    imgbbFormData.append('image', base64Image);
+    imgbbFormData.append('image', base64Data);
     if (file.name) {
       imgbbFormData.append('name', file.name.split('.')[0]);
     }
@@ -42,13 +64,31 @@ export async function POST(req: Request) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('ImgBB Error:', errorText);
-      throw new Error('فشل الرفع إلى خدمة الصور السحابية');
+      // Fallback to storing in StoredFile if ImgBB fails
+      const stored = await prisma.storedFile.create({
+        data: {
+          name: fileName,
+          mimeType: file.type || 'image/jpeg',
+          size: buffer.length,
+          data: base64Data,
+        }
+      });
+      return NextResponse.json({ url: `/api/files/${stored.id}`, filename: fileName }, { status: 201 });
     }
 
     const data = await response.json();
     
     if (!data.success) {
-      throw new Error(data.error?.message || 'فشل الرفع إلى خدمة الصور السحابية');
+      // Fallback to storing in StoredFile
+      const stored = await prisma.storedFile.create({
+        data: {
+          name: fileName,
+          mimeType: file.type || 'image/jpeg',
+          size: buffer.length,
+          data: base64Data,
+        }
+      });
+      return NextResponse.json({ url: `/api/files/${stored.id}`, filename: fileName }, { status: 201 });
     }
 
     return NextResponse.json({ url: data.data.url, filename: data.data.title }, { status: 201 });

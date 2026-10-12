@@ -456,7 +456,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         const url = activeItem.videoUrl || '';
                         const isAudio = /\.(mp3|wav|ogg|aac|m4a)(\?.*)?$/i.test(url);
                         const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url);
-                        const isPdf = /\.pdf(\?.*)?$/i.test(url);
+                        const isPdf = /\.pdf(\?.*)?$/i.test(url) || url.includes('/api/files/');
                         
                         if (isAudio) {
                           return (
@@ -475,7 +475,24 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         }
                         if (isPdf) {
                           return (
-                            <iframe src={url} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: '#fff' }}></iframe>
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#111' }}>
+                              <iframe 
+                                src={url} 
+                                style={{ flex: 1, width: '100%', height: '100%', border: 'none', background: '#fff' }}
+                                title={activeItem.title}
+                              />
+                              <div style={{ padding: '0.6rem 1rem', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>📄 مستند PDF تفاعلي</span>
+                                <a 
+                                  href={url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 'bold', textDecoration: 'none' }}
+                                >
+                                  <Download size={14} /> فتح الملف بنافذة كاملة
+                                </a>
+                              </div>
+                            </div>
                           );
                         }
                         // Default fallback (Video/Other)
@@ -490,6 +507,13 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         );
                       })()
                     )}
+                  </div>
+                )}
+
+                {/* Syrian Network Speed / Quality Notice for Video */}
+                {activeItem.videoUrl?.includes('iframe.mediadelivery.net') && (
+                  <div style={{ marginTop: '0.75rem', padding: '0.6rem 1rem', background: 'rgba(203,161,83,0.08)', border: '1px solid rgba(203,161,83,0.2)', borderRadius: '8px', fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>💡 <strong>نصيحة لسرعة التشغيل:</strong> إذا كان الاتصال ضعيفاً، اضغط على أيقونة الترس ⚙️ داخل مشغل الفيديو واختر دقة <strong>360p</strong> أو <strong>480p</strong> ليعمل الفيديو فوراً وبدون أي تقطيع.</span>
                   </div>
                 )}
 
@@ -512,17 +536,32 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         <Paperclip size={20} color="var(--primary)" /> المرفقات والملفات الخاصة بالدرس
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                        {activeItem.attachments.map((att: any) => (
-                          <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', textDecoration: 'none', color: '#fff' }} className="hover:bg-white/10 transition-colors">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                              <div style={{ width: '40px', height: '40px', background: 'rgba(203, 161, 83, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Paperclip size={20} color="var(--primary)" />
+                        {activeItem.attachments.map((att: any) => {
+                          const isAttPdf = att.name?.toLowerCase().endsWith('.pdf') || att.url?.includes('/api/files/') || att.url?.toLowerCase().endsWith('.pdf');
+                          return (
+                            <a 
+                              key={att.id} 
+                              href={att.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', textDecoration: 'none', color: '#fff', border: '1px solid rgba(255,255,255,0.03)' }} 
+                              className="hover:bg-white/10 transition-colors"
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                <div style={{ width: '40px', height: '40px', background: isAttPdf ? 'rgba(239, 68, 68, 0.2)' : 'rgba(203, 161, 83, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {isAttPdf ? <FileText size={20} color="#ef4444" /> : <Paperclip size={20} color="var(--primary)" />}
+                                </div>
+                                <div>
+                                  <span style={{ fontWeight: 'bold', display: 'block' }}>{att.name}</span>
+                                  {isAttPdf && <span style={{ fontSize: '0.75rem', color: '#ef4444' }}>ملف PDF أصلي (عرض / تحميل)</span>}
+                                </div>
                               </div>
-                              <span style={{ fontWeight: 'bold' }}>{att.name}</span>
-                            </div>
-                            <span style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>تحميل</span>
-                          </a>
-                        ))}
+                              <span style={{ fontSize: '0.9rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 'bold' }}>
+                                <Download size={16} /> فتح الملف
+                              </span>
+                            </a>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

@@ -46,8 +46,8 @@ export async function POST(req: Request) {
     const data = await response.json();
     const videoId = data.guid;
 
-    // Generate secure signature for frontend TUS upload
-    const expirationTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour valid
+    // Generate secure signature for frontend TUS upload (valid for 24 hours to accommodate slow connections)
+    const expirationTime = Math.floor(Date.now() / 1000) + 86400; // 24 hours valid
     // For Node.js crypto
     const crypto = require('crypto');
     const signatureString = `${libraryId}${apiKey}${expirationTime}${videoId}`;

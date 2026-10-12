@@ -76,7 +76,7 @@ export default function CurriculumClient({ course }: { course: any }) {
             throw new Error('فشل في تهيئة الفيديو على الخادم');
           }
 
-          const { videoId, libraryId } = await createRes.json();
+          const { videoId, libraryId, signature, expireTime } = await createRes.json();
 
           // 2. Upload using Tus
           await new Promise<void>((resolve, reject) => {
@@ -85,9 +85,11 @@ export default function CurriculumClient({ course }: { course: any }) {
               const upload = new tus.Upload(newLessonVideoFile, {
                 endpoint: 'https://video.bunnycdn.com/tusupload',
                 retryDelays: [0, 3000, 5000, 10000, 20000],
+                chunkSize: 5 * 1024 * 1024, // 5MB chunks for reliable resumable upload
+                parallelUploads: 1,
                 headers: {
-                  AuthorizationSignature: videoId,
-                  AuthorizationExpire: (Math.floor(Date.now() / 1000) + 3600).toString(), // 1 hour
+                  AuthorizationSignature: signature,
+                  AuthorizationExpire: (expireTime || Math.floor(Date.now() / 1000) + 86400).toString(),
                   VideoId: videoId,
                   LibraryId: libraryId,
                 },
@@ -96,6 +98,7 @@ export default function CurriculumClient({ course }: { course: any }) {
                   filetype: newLessonVideoFile.type
                 },
                 onError: (error) => {
+                  console.error('TUS upload error:', error);
                   reject(error);
                 },
                 onProgress: (bytesUploaded, bytesTotal) => {
@@ -112,18 +115,19 @@ export default function CurriculumClient({ course }: { course: any }) {
             }).catch(reject);
           });
         } else {
-          // Non-video file (audio, pdf, images, etc.) -> Local Upload
+          // Non-video file (audio, pdf, images, etc.) -> Cloud Upload
           setUploadProgress(10);
           const formData = new FormData();
           formData.append('file', newLessonVideoFile);
+          formData.append('type', 'document');
           
-          const uploadRes = await fetch('/api/upload-local', {
+          const uploadRes = await fetch('/api/upload', {
             method: 'POST',
             body: formData
           });
           
           if (!uploadRes.ok) {
-            throw new Error('فشل رفع الملف المحلي');
+            throw new Error('فشل رفع الملف');
           }
           
           const { url } = await uploadRes.json();
@@ -186,8 +190,9 @@ export default function CurriculumClient({ course }: { course: any }) {
     setIsUploadingAttachment(true);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('type', 'document');
     try {
-      const res = await fetch('/api/upload-local', {
+      const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });

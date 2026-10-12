@@ -41,6 +41,8 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
       const upload = new tus.Upload(file, {
         endpoint: "https://video.bunnycdn.com/tusupload",
         retryDelays: [0, 3000, 5000, 10000, 20000],
+        chunkSize: 5 * 1024 * 1024,
+        parallelUploads: 1,
         headers: {
           AuthorizationSignature: signature,
           AuthorizationExpire: expireTime.toString(),

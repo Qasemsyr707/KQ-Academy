@@ -6,7 +6,7 @@ import { Search, Filter, BookOpen, Star, User, Clock, X, SlidersHorizontal, Arro
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
-export default function CoursesClient({ initialCourses, featuredCourses = [], categories, instructors }: { initialCourses: any[], featuredCourses?: any[], categories: string[], instructors: string[] }) {
+export default function CoursesClient({ initialCourses, featuredCourses = [], categories = [], instructors = [] }: { initialCourses: any[], featuredCourses?: any[], categories?: string[], instructors?: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

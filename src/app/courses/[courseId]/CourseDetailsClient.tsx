@@ -67,7 +67,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
                     <Star key={i} size={14} fill={i < Math.round(course.rating) ? '#f69c08' : 'transparent'} color={i < Math.round(course.rating) ? '#f69c08' : 'rgba(255,255,255,0.3)'} />
                   ))}
                 </div>
-                <a href="#reviews" style={{ color: '#c0c4fc', textDecoration: 'underline', fontSize: '0.95rem', marginLight: '0.2rem' }}>
+                <a href="#reviews" style={{ color: '#c0c4fc', textDecoration: 'underline', fontSize: '0.95rem', marginRight: '0.2rem' }}>
                   ({actualReviewsCount.toLocaleString()} التقييمات)
                 </a>
               </div>

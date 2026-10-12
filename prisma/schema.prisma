@@ -590,3 +590,13 @@ model Notification {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model StoredFile {
+  id        String   @id @default(cuid())
+  name      String
+  mimeType  String   @default("application/pdf")
+  size      Int      @default(0)
+  data      String   @db.Text // Base64 encoded file data
+  createdAt DateTime @default(now())
+}
+
