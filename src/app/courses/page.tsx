@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/db';
 import CoursesClient from './CoursesClient';
 
-export const dynamic = 'force-dynamic';
+// يُحدَّث كل 5 دقائق بدلاً من force-dynamic الذي يستهلك bandwidth لكل زيارة
+export const revalidate = 300;
 
 export default async function CoursesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const resolvedParams = await searchParams;

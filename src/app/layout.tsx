@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
 import './globals.css';
 import Script from 'next/script';
 import AuthProvider from '@/components/AuthProvider';

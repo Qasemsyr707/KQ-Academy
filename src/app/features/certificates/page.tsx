@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import CertificatesClient from './CertificatesClient';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300; // cache 5 min instead of force-dynamic
 
 export default async function CertificatesPage() {
   const session = await getServerSession(authOptions);
