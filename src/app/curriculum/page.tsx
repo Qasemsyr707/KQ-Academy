@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import CoursesClient from '../courses/CoursesClient';
+import { Suspense } from 'react';
 
 export const revalidate = 300; // cache 5 min instead of force-dynamic
 
@@ -25,7 +26,8 @@ export default async function CurriculumPage() {
           تصفح المناهج الدراسية المتاحة (بكالوريا، تاسع، وغيرها) والمقدمة من نخبة من المدرسين
         </p>
       </div>
-      <CoursesClient initialCourses={courses} />
-    </div>
+<Suspense fallback={<div>جارٍ تحميل الكورسات...</div>}>
+  <CoursesClient initialCourses={courses} />
+</Suspense>    </div>
   );
 }
