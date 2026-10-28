@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db';
 import CoursesClient from './CoursesClient';
+import { Suspense } from 'react';
+
 
 // يُحدَّث كل 5 دقائق بدلاً من force-dynamic الذي يستهلك bandwidth لكل زيارة
 export const revalidate = 300;
@@ -50,5 +52,14 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
     console.error('[CoursesPage] DB error:', error);
   }
 
-  return <CoursesClient initialCourses={initialCourses} featuredCourses={featuredCourses} categories={categories} instructors={instructors} />;
+return (
+  <Suspense fallback={<div>جارٍ تحميل الكورسات...</div>}>
+    <CoursesClient
+      initialCourses={initialCourses}
+      featuredCourses={featuredCourses}
+      categories={categories}
+      instructors={instructors}
+    />
+  </Suspense>
+);
 }
