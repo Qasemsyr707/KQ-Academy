@@ -5,6 +5,7 @@ import Script from 'next/script';
 import AuthProvider from '@/components/AuthProvider';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import WhatsAppButton from '@/components/WhatsAppButton';
 import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
@@ -114,6 +115,7 @@ export default function RootLayout({
           <Footer />
           <Analytics />
         </AuthProvider>
+        <WhatsAppButton />
       </body>
     </html>
   );
