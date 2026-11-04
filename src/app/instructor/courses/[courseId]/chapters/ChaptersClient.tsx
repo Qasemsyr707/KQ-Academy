@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { Video, PlusCircle, ArrowRight, Settings, Trash2, X, LockOpen, Lock, FileText, Download, Paperclip } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import * as tus from 'tus-js-client';
+import { BunnyUploadPaused, useBunnyUpload } from '@/hooks/use-bunny-upload';
+import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
 
 export default function ChaptersClient({ course }: { course: any }) {
   const router = useRouter();
@@ -22,7 +23,9 @@ export default function ChaptersClient({ course }: { course: any }) {
   // Intro Video State
   const [isAddingIntroVideo, setIsAddingIntroVideo] = useState(false);
   const [isIntroUploading, setIsIntroUploading] = useState(false);
-  const [introUploadProgress, setIntroUploadProgress] = useState(0);
+  const [introVideoFile, setIntroVideoFile] = useState<File | null>(null);
+  const introUpload = useBunnyUpload({ courseId: course.id, purpose: 'preview' });
+  const introSaving = useRef(false);
 
   // Lesson State
   const [isAddingLesson, setIsAddingLesson] = useState<string | null>(null); // holds chapterId
@@ -31,7 +34,8 @@ export default function ChaptersClient({ course }: { course: any }) {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadMode, setUploadMode] = useState<'url' | 'file'>('file');
   const [isAddingLessonLoading, setIsAddingLessonLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const lessonUpload = useBunnyUpload({ courseId: course.id, purpose: 'lesson' });
+  const lessonSaving = useRef(false);
 
   // Attachment State
   const [isAddingAttachment, setIsAddingAttachment] = useState<{ type: 'course' | 'chapter' | 'lesson', id: string } | null>(null);
@@ -109,63 +113,19 @@ export default function ChaptersClient({ course }: { course: any }) {
 
   const handleAddLesson = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lessonTitle.trim() || !isAddingLesson) return;
+    if (lessonSaving.current || !lessonTitle.trim() || !isAddingLesson) return;
     if (uploadMode === 'url' && !videoUrl.trim()) return;
     if (uploadMode === 'file' && !videoFile) return;
 
+    lessonSaving.current = true;
     setIsAddingLessonLoading(true);
-    setUploadProgress(0);
     try {
       let finalVideoUrl = videoUrl;
 
       // Handle Bunny Stream Video Upload
       if (uploadMode === 'file' && videoFile) {
-        // 1. Create Video on Bunny to get ID & Signature
-        const bunnyRes = await fetch('/api/bunny/create-video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: lessonTitle })
-        });
-        
-        if (!bunnyRes.ok) {
-          throw new Error('فشل في تهيئة مساحة الفيديو على الخادم');
-        }
-        
-        const bunnyData = await bunnyRes.json();
-        const { videoId, libraryId, signature, expireTime } = bunnyData;
-        
-        // 2. Upload via TUS with 5MB chunks (Bunny Stream requirement)
-        await new Promise((resolve, reject) => {
-          const upload = new tus.Upload(videoFile, {
-            endpoint: "https://video.bunnycdn.com/tusupload",
-            retryDelays: [0, 3000, 5000, 10000, 20000],
-            chunkSize: 5 * 1024 * 1024, // 5MB chunks for stable resumable uploads
-            parallelUploads: 1,
-            headers: {
-              AuthorizationSignature: signature,
-              AuthorizationExpire: expireTime.toString(),
-              VideoId: videoId,
-              LibraryId: libraryId,
-            },
-            metadata: {
-              filetype: videoFile.type,
-              title: lessonTitle,
-            },
-            onError: (error) => {
-              console.error("TUS upload error:", error);
-              reject(error);
-            },
-            onProgress: (bytesUploaded, bytesTotal) => {
-              const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
-              setUploadProgress(Number(percentage));
-            },
-            onSuccess: () => resolve(true),
-          });
-          upload.start();
-        });
-
-        // 3. Set Final URL (Bunny Embed iframe URL)
-        finalVideoUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
+        const uploaded = await lessonUpload.upload(videoFile, lessonTitle);
+        finalVideoUrl = uploaded.embedUrl;
       }
 
       // Save Lesson to Database
@@ -184,18 +144,21 @@ export default function ChaptersClient({ course }: { course: any }) {
         setLessonTitle('');
         setVideoUrl('');
         setVideoFile(null);
-        setUploadProgress(0);
+        lessonUpload.complete();
         setIsAddingLesson(null);
         router.refresh(); // Reload to show new lesson
       } else {
         const data = await res.json();
         alert(data.error || 'حدث خطأ أثناء إضافة الدرس');
       }
-    } catch (error: any) {
-      console.error(error);
-      alert(error.message || 'خطأ في الاتصال بالخادم أثناء الرفع');
+    } catch (error: unknown) {
+      if (!(error instanceof BunnyUploadPaused)) {
+        alert(error instanceof Error ? error.message : 'خطأ في الاتصال بالخادم أثناء الرفع');
+      }
+    } finally {
+      lessonSaving.current = false;
+      setIsAddingLessonLoading(false);
     }
-    setIsAddingLessonLoading(false);
   };
 
   const handleEditChapter = async (e: React.FormEvent) => {
@@ -563,7 +526,7 @@ export default function ChaptersClient({ course }: { course: any }) {
             <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>إضافة درس جديد</h2>
-                <button onClick={() => setIsAddingLesson(null)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
+                <button disabled={isAddingLessonLoading || lessonUpload.locked} onClick={() => setIsAddingLesson(null)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
               </div>
               
               <form onSubmit={handleAddLesson} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -572,6 +535,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                   <input
                     type="text"
                     required
+                    disabled={isAddingLessonLoading || lessonUpload.locked}
                     value={lessonTitle}
                     onChange={(e) => setLessonTitle(e.target.value)}
                     className="input-field"
@@ -583,6 +547,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف الفيديو أو الصوت</label>
                   <input
+                    disabled={isAddingLessonLoading || lessonUpload.locked}
                     type="file"
                     accept="video/*,audio/*"
                     required
@@ -590,17 +555,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                     className="input-field"
                     style={{ padding: '0.8rem' }}
                   />
-                  {isAddingLessonLoading && uploadProgress > 0 && (
-                    <div style={{ marginTop: '1rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                        <span>جاري الرفع...</span>
-                        <span>{uploadProgress}%</span>
-                      </div>
-                      <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.2s' }} />
-                      </div>
-                    </div>
-                  )}
+                  <BunnyUploadStatus state={lessonUpload.state} progress={lessonUpload.progress} onPause={lessonUpload.pause} busy={isAddingLessonLoading} />
                   <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
                     سيتم رفع الملف وتشفيره تلقائياً لضمان حمايته.
                   </p>
@@ -610,7 +565,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                   <button type="submit" disabled={isAddingLessonLoading} className="btn btn-solid" style={{ flex: 1 }}>
                     {isAddingLessonLoading ? 'جاري الإضافة...' : 'حفظ الدرس'}
                   </button>
-                  <button type="button" onClick={() => setIsAddingLesson(null)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
+                  <button type="button" disabled={isAddingLessonLoading || lessonUpload.locked} onClick={() => setIsAddingLesson(null)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
                     إلغاء
                   </button>
                 </div>
@@ -625,51 +580,17 @@ export default function ChaptersClient({ course }: { course: any }) {
             <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>رفع فيديو مقدمة الكورس</h2>
-                <button onClick={() => setIsAddingIntroVideo(false)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
+                <button disabled={isIntroUploading || introUpload.locked} onClick={() => setIsAddingIntroVideo(false)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
               </div>
               
               <form onSubmit={async (e) => {
                 e.preventDefault();
-                if (!videoFile) return;
+                if (introSaving.current || !introVideoFile) return;
+                introSaving.current = true;
                 setIsIntroUploading(true);
-                setIntroUploadProgress(0);
                 try {
-                  const bunnyRes = await fetch('/api/bunny/create-video', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: 'Intro: ' + course.title })
-                  });
-                  if (!bunnyRes.ok) throw new Error('فشل تهيئة الفيديو');
-                  const bunnyData = await bunnyRes.json();
-                  const { videoId, libraryId, signature, expireTime } = bunnyData;
-                  
-                  await new Promise((resolve, reject) => {
-                    const upload = new tus.Upload(videoFile, {
-                      endpoint: "https://video.bunnycdn.com/tusupload",
-                      retryDelays: [0, 3000, 5000, 10000, 20000],
-                      chunkSize: 5 * 1024 * 1024, // 5MB chunks for reliable resumable upload
-                      parallelUploads: 1,
-                      headers: {
-                        AuthorizationSignature: signature,
-                        AuthorizationExpire: expireTime.toString(),
-                        VideoId: videoId,
-                        LibraryId: libraryId,
-                      },
-                      metadata: { filetype: videoFile.type, title: 'Intro: ' + course.title },
-                      onError: (error) => {
-                        console.error("Intro video TUS upload error:", error);
-                        reject(error);
-                      },
-                      onProgress: (bytesUploaded, bytesTotal) => {
-                        const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
-                        setIntroUploadProgress(Number(percentage));
-                      },
-                      onSuccess: () => resolve(true),
-                    });
-                    upload.start();
-                  });
-
-                  const finalVideoUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
+                  const uploaded = await introUpload.upload(introVideoFile, 'Intro: ' + course.title);
+                  const finalVideoUrl = uploaded.embedUrl;
                   
                   // Update Course in DB
                   const res = await fetch(`/api/courses/${course.id}`, {
@@ -679,38 +600,32 @@ export default function ChaptersClient({ course }: { course: any }) {
                   });
 
                   if (res.ok) {
+                    introUpload.complete();
                     setIsAddingIntroVideo(false);
-                    setVideoFile(null);
+                    setIntroVideoFile(null);
                     router.refresh();
                   } else {
                     alert('فشل حفظ الفيديو');
                   }
                 } catch(err) {
-                  alert('خطأ أثناء رفع الفيديو');
+                  if (!(err instanceof BunnyUploadPaused)) alert(err instanceof Error ? err.message : 'خطأ أثناء رفع الفيديو');
+                } finally {
+                  introSaving.current = false;
+                  setIsIntroUploading(false);
                 }
-                setIsIntroUploading(false);
               }} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف فيديو المقدمة</label>
                   <input
+                    disabled={isIntroUploading || introUpload.locked}
                     type="file"
                     accept="video/*"
                     required
-                    onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
+                    onChange={(e) => setIntroVideoFile(e.target.files ? e.target.files[0] : null)}
                     className="input-field"
                     style={{ padding: '0.8rem' }}
                   />
-                  {isIntroUploading && introUploadProgress > 0 && (
-                    <div style={{ marginTop: '1rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                        <span>جاري الرفع...</span>
-                        <span>{introUploadProgress}%</span>
-                      </div>
-                      <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${introUploadProgress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.2s' }} />
-                      </div>
-                    </div>
-                  )}
+                  <BunnyUploadStatus state={introUpload.state} progress={introUpload.progress} onPause={introUpload.pause} busy={isIntroUploading} />
                   <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
                     هذا الفيديو سيظهر لجميع الزوار في صفحة تفاصيل الكورس (مجاناً) لتشجيعهم على الاشتراك.
                   </p>
@@ -720,7 +635,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                   <button type="submit" disabled={isIntroUploading} className="btn btn-solid" style={{ flex: 1 }}>
                     {isIntroUploading ? 'جاري الرفع...' : 'رفع وحفظ'}
                   </button>
-                  <button type="button" onClick={() => setIsAddingIntroVideo(false)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
+                  <button type="button" disabled={isIntroUploading || introUpload.locked} onClick={() => setIsAddingIntroVideo(false)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
                     إلغاء
                   </button>
                 </div>

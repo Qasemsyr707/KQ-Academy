@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
+import { assertBunnyVideoReady, BunnyServerError } from '@/lib/bunny-upload-server';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -25,6 +26,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'غير مصرح لك بتعديل هذا الكورس' }, { status: 403 });
     }
 
+    if (body.previewVideoUrl) await assertBunnyVideoReady(body.previewVideoUrl);
+
     // Update the course
     const updatedCourse = await prisma.course.update({
       where: { id: id },
@@ -33,6 +36,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     return NextResponse.json(updatedCourse);
   } catch (error) {
+    if (error instanceof BunnyServerError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
+    }
     console.error('Update Course API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
   }

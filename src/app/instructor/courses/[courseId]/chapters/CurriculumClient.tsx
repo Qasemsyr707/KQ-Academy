@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlusCircle, Video, GripVertical, Trash2, Edit2, ArrowRight, Paperclip, CheckSquare, Radio } from 'lucide-react';
 import Link from 'next/link';
+import { BunnyUploadPaused, useBunnyUpload } from '@/hooks/use-bunny-upload';
+import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
 
 export default function CurriculumClient({ course }: { course: any }) {
   const [chapters, setChapters] = useState(course.chapters || []);
@@ -17,6 +19,8 @@ export default function CurriculumClient({ course }: { course: any }) {
   const [liveLessonStartTime, setLiveLessonStartTime] = useState('');
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const lessonUpload = useBunnyUpload({ courseId: course.id, purpose: 'lesson' });
+  const lessonSaving = useRef(false);
 
   // Attachment State
   const [addingAttachmentTo, setAddingAttachmentTo] = useState<string | null>(null);
@@ -53,67 +57,22 @@ export default function CurriculumClient({ course }: { course: any }) {
   };
 
   const handleAddLesson = async (chapterId: string) => {
+    if (lessonSaving.current) return;
     if (!newLessonTitle || (!newLessonVideoFile && !isLiveLesson)) {
       alert('يرجى إدخال عنوان الدرس واختيار ملف الفيديو');
       return;
     }
 
+    lessonSaving.current = true;
     setIsUploading(true);
     let finalVideoUrl = null;
 
     try {
       if (!isLiveLesson && newLessonVideoFile) {
         if (newLessonVideoFile.type.startsWith('video/')) {
-          // 1. Create Video Object in Bunny
           setUploadProgress(0);
-          const createRes = await fetch('/api/bunny/create-video', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: newLessonTitle })
-          });
-
-          if (!createRes.ok) {
-            throw new Error('فشل في تهيئة الفيديو على الخادم');
-          }
-
-          const { videoId, libraryId, signature, expireTime } = await createRes.json();
-
-          // 2. Upload using Tus
-          await new Promise<void>((resolve, reject) => {
-            // Dynamic import of tus-js-client to avoid SSR issues if any
-            import('tus-js-client').then((tus) => {
-              const upload = new tus.Upload(newLessonVideoFile, {
-                endpoint: 'https://video.bunnycdn.com/tusupload',
-                retryDelays: [0, 3000, 5000, 10000, 20000],
-                chunkSize: 5 * 1024 * 1024, // 5MB chunks for reliable resumable upload
-                parallelUploads: 1,
-                headers: {
-                  AuthorizationSignature: signature,
-                  AuthorizationExpire: (expireTime || Math.floor(Date.now() / 1000) + 86400).toString(),
-                  VideoId: videoId,
-                  LibraryId: libraryId,
-                },
-                metadata: {
-                  filename: newLessonVideoFile.name,
-                  filetype: newLessonVideoFile.type
-                },
-                onError: (error) => {
-                  console.error('TUS upload error:', error);
-                  reject(error);
-                },
-                onProgress: (bytesUploaded, bytesTotal) => {
-                  const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(0);
-                  setUploadProgress(Number(percentage));
-                },
-                onSuccess: () => {
-                  finalVideoUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
-                  resolve();
-                }
-              });
-
-              upload.start();
-            }).catch(reject);
-          });
+          const uploaded = await lessonUpload.upload(newLessonVideoFile, newLessonTitle);
+          finalVideoUrl = uploaded.embedUrl;
         } else {
           // Non-video file (audio, pdf, images, etc.) -> Cloud Upload
           setUploadProgress(10);
@@ -158,6 +117,7 @@ export default function CurriculumClient({ course }: { course: any }) {
           }
           return ch;
         }));
+        lessonUpload.complete();
         setNewLessonTitle('');
         setNewLessonVideoFile(null);
         setIsLiveLesson(false);
@@ -169,10 +129,10 @@ export default function CurriculumClient({ course }: { course: any }) {
         const data = await res.json();
         alert(data.error || 'حدث خطأ');
       }
-    } catch (e: any) {
-      console.error(e);
-      alert(e.message || 'حدث خطأ أثناء رفع الفيديو');
+    } catch (e: unknown) {
+      if (!(e instanceof BunnyUploadPaused)) alert(e instanceof Error ? e.message : 'حدث خطأ أثناء رفع الفيديو');
     } finally {
+      lessonSaving.current = false;
       setIsUploading(false);
       setUploadProgress(null);
     }
@@ -386,6 +346,7 @@ export default function CurriculumClient({ course }: { course: any }) {
                   <input 
                     type="text" 
                     placeholder="عنوان الدرس (مثال: مقدمة في React)"
+                    disabled={isUploading || lessonUpload.locked}
                     value={newLessonTitle}
                     onChange={(e) => setNewLessonTitle(e.target.value)}
                     style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', marginBottom: '0.8rem' }}
@@ -394,6 +355,7 @@ export default function CurriculumClient({ course }: { course: any }) {
                     <input 
                       type="checkbox" 
                       id={`isLive-${chapter.id}`}
+                      disabled={isUploading || lessonUpload.locked}
                       checked={isLiveLesson}
                       onChange={(e) => setIsLiveLesson(e.target.checked)}
                       style={{ cursor: 'pointer' }}
@@ -407,6 +369,7 @@ export default function CurriculumClient({ course }: { course: any }) {
                       <input 
                         type="file" 
                         accept="video/*,audio/*,image/*,.pdf,.doc,.docx,.zip,.rar"
+                        disabled={isUploading || lessonUpload.locked}
                         onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {
                             setNewLessonVideoFile(e.target.files[0]);
@@ -414,7 +377,8 @@ export default function CurriculumClient({ course }: { course: any }) {
                         }}
                         style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
                       />
-                      {uploadProgress !== null && (
+                      <BunnyUploadStatus state={lessonUpload.state} progress={lessonUpload.progress} onPause={lessonUpload.pause} onResume={() => { void handleAddLesson(chapter.id); }} busy={isUploading} />
+                      {!lessonUpload.state && uploadProgress !== null && (
                         <div style={{ marginTop: '0.5rem', width: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
                           <div style={{ height: '8px', width: `${uploadProgress}%`, background: 'var(--success)', transition: 'width 0.3s' }}></div>
                           <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: 'var(--success)', textAlign: 'right' }}>{uploadProgress}%</div>
@@ -436,12 +400,13 @@ export default function CurriculumClient({ course }: { course: any }) {
                     <button disabled={isUploading} onClick={() => handleAddLesson(chapter.id)} style={{ padding: '0.5rem 1rem', background: 'var(--primary)', color: '#000', borderRadius: '4px', fontWeight: 'bold', border: 'none', cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1 }}>
                       {isUploading ? 'جاري الرفع والحفظ...' : 'حفظ الدرس'}
                     </button>
-                    <button disabled={isUploading} onClick={() => setAddingLessonTo(null)} style={{ padding: '0.5rem 1rem', background: 'transparent', color: '#fff', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1 }}>إلغاء</button>
+                    <button disabled={isUploading || lessonUpload.locked} onClick={() => setAddingLessonTo(null)} style={{ padding: '0.5rem 1rem', background: 'transparent', color: '#fff', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1 }}>إلغاء</button>
                   </div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button 
+                    disabled={isUploading || lessonUpload.locked}
                     onClick={() => setAddingLessonTo(chapter.id)}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', color: 'var(--primary)', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
                   >

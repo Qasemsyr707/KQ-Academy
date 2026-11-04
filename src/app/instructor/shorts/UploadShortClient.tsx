@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import * as tus from 'tus-js-client';
+import { useRef, useState } from 'react';
+import { BunnyUploadPaused, useBunnyUpload } from '@/hooks/use-bunny-upload';
+import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
 import { UploadCloud, PlaySquare, Link as LinkIcon, Save, Trash2, CheckCircle, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -12,7 +13,9 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
   const [courseId, setCourseId] = useState('');
   
   const [isUploading, setIsUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const videoUpload = useBunnyUpload({ courseId: courseId || undefined, purpose: 'short' });
+  const { progress } = videoUpload;
+  const saving = useRef(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -21,76 +24,33 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
   };
 
   const handleUpload = async () => {
+    if (saving.current) return;
     if (!file || !title) return alert('الرجاء اختيار فيديو وكتابة عنوان');
 
+    saving.current = true;
     setIsUploading(true);
-    setProgress(0);
 
     try {
-      // 1. Create Video on Bunny
-      const bunnyRes = await fetch('/api/bunny/create-video', {
+      const uploaded = await videoUpload.upload(file, title);
+
+      const dbRes = await fetch('/api/instructor/shorts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title })
+        body: JSON.stringify({ title, videoUrl: uploaded.embedUrl, courseId })
       });
-      
-      if (!bunnyRes.ok) throw new Error('فشل إنشاء الفيديو في Bunny');
-      const { videoId, libraryId, signature, expireTime } = await bunnyRes.json();
+      if (!dbRes.ok) throw new Error('فشل الحفظ في قاعدة البيانات');
 
-      // 2. Upload via TUS
-      const upload = new tus.Upload(file, {
-        endpoint: "https://video.bunnycdn.com/tusupload",
-        retryDelays: [0, 3000, 5000, 10000, 20000],
-        chunkSize: 5 * 1024 * 1024,
-        parallelUploads: 1,
-        headers: {
-          AuthorizationSignature: signature,
-          AuthorizationExpire: expireTime.toString(),
-          VideoId: videoId,
-          LibraryId: libraryId,
-        },
-        metadata: {
-          filetype: file.type,
-          title: title,
-        },
-        onError: (error) => {
-          console.error("Failed because: " + error);
-          alert('فشل الرفع');
-          setIsUploading(false);
-        },
-        onProgress: (bytesUploaded, bytesTotal) => {
-          const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
-          setProgress(Number(percentage));
-        },
-        onSuccess: async () => {
-          const finalUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
-          
-          // 3. Save to our database
-          const dbRes = await fetch('/api/instructor/shorts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, videoUrl: finalUrl, courseId })
-          });
-
-          if (dbRes.ok) {
-            const data = await dbRes.json();
-            setShorts([data.short, ...shorts]);
-            setFile(null);
-            setTitle('');
-            setCourseId('');
-            alert('تم نشر الفيديو بنجاح!');
-          } else {
-            alert('فشل الحفظ في قاعدة البيانات');
-          }
-          setIsUploading(false);
-        }
-      });
-
-      upload.start();
-
+      const data = await dbRes.json();
+      videoUpload.complete();
+      setShorts([data.short, ...shorts]);
+      setFile(null);
+      setTitle('');
+      setCourseId('');
+      alert('تم نشر الفيديو بنجاح!');
     } catch (e) {
-      console.error(e);
-      alert('حدث خطأ');
+      if (!(e instanceof BunnyUploadPaused)) alert(e instanceof Error ? e.message : 'حدث خطأ');
+    } finally {
+      saving.current = false;
       setIsUploading(false);
     }
   };
@@ -110,6 +70,7 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)' }}>عنوان الفيديو المثير للانتباه</label>
             <input 
               type="text" 
+              disabled={isUploading || videoUpload.locked}
               value={title} 
               onChange={e => setTitle(e.target.value)} 
               placeholder="مثال: أهم 3 نصائح لاجتياز المقابلة الشخصية!"
@@ -122,6 +83,7 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
             <div style={{ position: 'relative' }}>
               <LinkIcon size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
               <select 
+                disabled={isUploading || videoUpload.locked}
                 value={courseId} 
                 onChange={e => setCourseId(e.target.value)}
                 style={{ width: '100%', padding: '1rem 3rem 1rem 1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', outline: 'none', appearance: 'none' }}
@@ -144,18 +106,14 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
             onMouseOver={e => e.currentTarget.style.borderColor = 'var(--primary)'}
             onMouseOut={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
             >
-              <input type="file" accept="video/*" onChange={handleFileChange} style={{ display: 'none' }} />
+              <input disabled={isUploading || videoUpload.locked} type="file" accept="video/*" onChange={handleFileChange} style={{ display: 'none' }} />
               <UploadCloud size={40} color={file ? 'var(--success)' : 'rgba(255,255,255,0.3)'} style={{ marginBottom: '1rem' }} />
               <span style={{ fontWeight: 'bold' }}>{file ? file.name : 'اضغط لاختيار الفيديو'}</span>
               <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.5rem' }}>MP4, WebM (حد أقصى 50MB)</span>
             </label>
           </div>
 
-          {isUploading && (
-            <div style={{ width: '100%', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', height: '10px', overflow: 'hidden' }}>
-              <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s' }} />
-            </div>
-          )}
+          <BunnyUploadStatus state={videoUpload.state} progress={videoUpload.progress} onPause={videoUpload.pause} onResume={() => { void handleUpload(); }} busy={isUploading} />
 
           <button 
             onClick={handleUpload} 
