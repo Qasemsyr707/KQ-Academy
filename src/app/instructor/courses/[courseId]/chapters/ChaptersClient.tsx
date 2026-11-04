@@ -2,10 +2,11 @@
 
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
-import { Video, PlusCircle, ArrowRight, Settings, Trash2, X, LockOpen, Lock, FileText, Download, Paperclip } from 'lucide-react';
+import { Video, PlusCircle, ArrowRight, Settings, Trash2, X, LockOpen, Lock, Paperclip } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BunnyUploadPaused, useBunnyUpload } from '@/hooks/use-bunny-upload';
 import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
+import { AttachmentLinks } from '@/components/AttachmentLinks';
 
 export default function ChaptersClient({ course }: { course: any }) {
   const router = useRouter();
@@ -42,6 +43,8 @@ export default function ChaptersClient({ course }: { course: any }) {
   const [attachmentName, setAttachmentName] = useState('');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [attachmentError, setAttachmentError] = useState('');
+  const attachmentSaving = useRef(false);
 
   // Course Includes State
   const [isEditingIncludes, setIsEditingIncludes] = useState(false);
@@ -210,22 +213,26 @@ export default function ChaptersClient({ course }: { course: any }) {
 
   const handleAddAttachment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!attachmentName.trim() || !attachmentFile || !isAddingAttachment) return;
+    if (attachmentSaving.current || !attachmentName.trim() || !attachmentFile || !isAddingAttachment) return;
 
+    attachmentSaving.current = true;
+    setAttachmentError('');
     setIsUploadingAttachment(true);
     try {
       const formData = new FormData();
       formData.append('file', attachmentFile);
       formData.append('type', 'document');
+      formData.append('courseId', course.id);
       
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
       
-      if (!uploadRes.ok) throw new Error('فشل رفع الملف');
-      
-      const { url } = await uploadRes.json();
+      const uploaded = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploaded.error || 'فشل رفع الملف الأصلي');
+      const { url } = uploaded;
+      if (typeof url !== 'string' || !url.startsWith('/api/files/')) throw new Error('لم يتم حفظ رابط صالح للملف الأصلي');
 
       const payload: any = { name: attachmentName, url };
       if (isAddingAttachment.type === 'course') payload.courseId = isAddingAttachment.id;
@@ -244,13 +251,15 @@ export default function ChaptersClient({ course }: { course: any }) {
         setIsAddingAttachment(null);
         router.refresh();
       } else {
-        alert('حدث خطأ أثناء حفظ المرفق');
+        const data = await res.json();
+        throw new Error(data.error || 'حدث خطأ أثناء حفظ المرفق');
       }
     } catch (error) {
-      console.error(error);
-      alert('خطأ أثناء رفع المرفق');
+      setAttachmentError(error instanceof Error ? error.message : 'خطأ أثناء رفع المرفق');
+    } finally {
+      attachmentSaving.current = false;
+      setIsUploadingAttachment(false);
     }
-    setIsUploadingAttachment(false);
   };
 
   const handleDeleteAttachment = async (id: string) => {
@@ -271,9 +280,7 @@ export default function ChaptersClient({ course }: { course: any }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem', padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
         {attachments.map((att: any) => (
           <div key={att.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-            <a href={att.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#60a5fa', textDecoration: 'none' }}>
-              <FileText size={16} /> {att.name}
-            </a>
+            <AttachmentLinks attachment={att} />
             <button onClick={() => handleDeleteAttachment(att.id)} style={{ color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.2rem' }}>
               <Trash2 size={16} />
             </button>
@@ -650,7 +657,7 @@ export default function ChaptersClient({ course }: { course: any }) {
             <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>إضافة مرفق جديد</h2>
-                <button onClick={() => setIsAddingAttachment(null)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
+                <button disabled={isUploadingAttachment} onClick={() => setIsAddingAttachment(null)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
               </div>
               
               <form onSubmit={handleAddAttachment} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -659,6 +666,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                   <input
                     type="text"
                     required
+                    disabled={isUploadingAttachment}
                     value={attachmentName}
                     onChange={(e) => setAttachmentName(e.target.value)}
                     className="input-field"
@@ -671,18 +679,26 @@ export default function ChaptersClient({ course }: { course: any }) {
                   <input
                     type="file"
                     required
-                    accept=".pdf,.doc,.docx,.zip,.rar,image/*,audio/*,video/*"
-                    onChange={(e) => setAttachmentFile(e.target.files ? e.target.files[0] : null)}
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.zip,.rar,image/*,audio/*"
+                    disabled={isUploadingAttachment}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setAttachmentFile(file);
+                      setAttachmentError('');
+                      if (file && !attachmentName.trim()) setAttachmentName(file.name);
+                    }}
                     className="input-field"
                     style={{ padding: '0.8rem' }}
                   />
+                  <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)', marginTop: '0.5rem' }}>اختر الملف الأصلي من جهازك؛ سيُحفظ كما هو مع صفحاته، بحد أقصى 20MiB.</p>
                 </div>
+                {attachmentError && <p role="alert" style={{ color: '#f87171' }}>{attachmentError}</p>}
                 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                   <button type="submit" disabled={isUploadingAttachment} className="btn btn-solid" style={{ flex: 1 }}>
                     {isUploadingAttachment ? 'جاري الرفع...' : 'رفع المرفق'}
                   </button>
-                  <button type="button" onClick={() => setIsAddingAttachment(null)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
+                  <button type="button" disabled={isUploadingAttachment} onClick={() => setIsAddingAttachment(null)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
                     إلغاء
                   </button>
                 </div>

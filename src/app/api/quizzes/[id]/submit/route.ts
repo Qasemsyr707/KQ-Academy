@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { assertOwnedDocumentReference } from '@/lib/owned-document';
+import { PrivateFileError } from '@/lib/private-file-storage';
 
 export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -24,6 +26,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         return NextResponse.json({ error: 'يجب إرفاق ملف الإجابة' }, { status: 400 });
       }
 
+      await assertOwnedDocumentReference(session.user as { id: string; role?: string }, answerFileUrl);
       await prisma.quizAttempt.create({
         data: {
           userId: session.user.id,
@@ -81,6 +84,9 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     }, { status: 200 });
 
   } catch (error) {
+    if (error instanceof PrivateFileError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
+    }
     return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500 });
   }
 }

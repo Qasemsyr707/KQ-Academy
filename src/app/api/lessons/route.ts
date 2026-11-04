@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { assertBunnyVideoReady, BunnyServerError } from '@/lib/bunny-upload-server';
+import { assertOwnedDocumentReference } from '@/lib/owned-document';
+import { PrivateFileError } from '@/lib/private-file-storage';
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +33,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'غير مصرح بإضافة دروس لهذا الكورس' }, { status: 403 });
     }
     // A completed TUS transfer is not proof that Bunny has encoded the video.
-    if (!isLive) await assertBunnyVideoReady(videoUrl);
+    if (!isLive) {
+      await assertOwnedDocumentReference({ id: user.id, role: user.role }, videoUrl);
+      await assertBunnyVideoReady(videoUrl);
+    }
 
     // Determine order
     const existingCount = await prisma.lesson.count({ where: { chapterId } });
@@ -56,7 +61,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ lesson, message: 'تم الإضافة بنجاح' }, { status: 201 });
 
   } catch (error) {
-    if (error instanceof BunnyServerError) {
+    if (error instanceof BunnyServerError || error instanceof PrivateFileError) {
       return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
     }
     console.error('Create Lesson API Error:', error);

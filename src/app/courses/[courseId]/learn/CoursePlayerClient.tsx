@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { AttachmentLinks } from '@/components/AttachmentLinks';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Lock, ArrowRight, Menu, X, Award, Star, Paperclip, CheckSquare, MessageCircle, Send, Radio, FileText, Download } from 'lucide-react';
+import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Lock, ArrowRight, Menu, X, Award, Star, Paperclip, CheckSquare, MessageCircle, Send, Radio, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -456,7 +457,8 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         const url = activeItem.videoUrl || '';
                         const isAudio = /\.(mp3|wav|ogg|aac|m4a)(\?.*)?$/i.test(url);
                         const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url);
-                        const isPdf = /\.pdf(\?.*)?$/i.test(url) || url.includes('/api/files/');
+                        const isOwnFile = /^\/api\/files\/[^/?#]+(?:\?[^#]*)?$/.test(url);
+                        const isPdf = /\.pdf(\?.*)?$/i.test(url) || isOwnFile;
                         
                         if (isAudio) {
                           return (
@@ -474,6 +476,9 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                           );
                         }
                         if (isPdf) {
+                          if (!isOwnFile) {
+                            return <p role="status" style={{ padding: '1.5rem' }}>ملف الدرس الأصلي غير متوفر في التخزين المحمي. يجب على المدرّب إعادة رفع ملف PDF الأصلي؛ لا يمكن استعادة صفحاته من رابط صورة.</p>;
+                          }
                           return (
                             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#111' }}>
                               <iframe 
@@ -481,8 +486,8 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                                 style={{ flex: 1, width: '100%', height: '100%', border: 'none', background: '#fff' }}
                                 title={activeItem.title}
                               />
-                              <div style={{ padding: '0.6rem 1rem', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>📄 مستند PDF تفاعلي</span>
+                              <div style={{ padding: '0.6rem 1rem', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>إذا لم يظهر المستند كاملاً، افتحه في نافذة جديدة أو حمّله.</span>
                                 <a 
                                   href={url} 
                                   target="_blank" 
@@ -491,6 +496,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                                 >
                                   <Download size={14} /> فتح الملف بنافذة كاملة
                                 </a>
+                                <a href={`${url}${url.includes('?') ? '&' : '?'}download=1`} download style={{ color: 'var(--primary)', fontSize: '0.85rem' }}>تحميل الملف</a>
                               </div>
                             </div>
                           );
@@ -536,32 +542,9 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         <Paperclip size={20} color="var(--primary)" /> المرفقات والملفات الخاصة بالدرس
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                        {activeItem.attachments.map((att: any) => {
-                          const isAttPdf = att.name?.toLowerCase().endsWith('.pdf') || att.url?.includes('/api/files/') || att.url?.toLowerCase().endsWith('.pdf');
-                          return (
-                            <a 
-                              key={att.id} 
-                              href={att.url} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', textDecoration: 'none', color: '#fff', border: '1px solid rgba(255,255,255,0.03)' }} 
-                              className="hover:bg-white/10 transition-colors"
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                <div style={{ width: '40px', height: '40px', background: isAttPdf ? 'rgba(239, 68, 68, 0.2)' : 'rgba(203, 161, 83, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  {isAttPdf ? <FileText size={20} color="#ef4444" /> : <Paperclip size={20} color="var(--primary)" />}
-                                </div>
-                                <div>
-                                  <span style={{ fontWeight: 'bold', display: 'block' }}>{att.name}</span>
-                                  {isAttPdf && <span style={{ fontSize: '0.75rem', color: '#ef4444' }}>ملف PDF أصلي (عرض / تحميل)</span>}
-                                </div>
-                              </div>
-                              <span style={{ fontSize: '0.9rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 'bold' }}>
-                                <Download size={16} /> فتح الملف
-                              </span>
-                            </a>
-                          );
-                        })}
+                        {activeItem.attachments.map((att: any) => (
+                          <AttachmentLinks key={att.id} attachment={att} />
+                        ))}
                       </div>
                     </div>
                   )}
@@ -906,9 +889,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {course.attachments.map((att: any) => (
-                      <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem', background: 'rgba(255,255,255,0.02)', padding: '0.5rem', borderRadius: '8px' }}>
-                        <FileText size={16} /> {att.name}
-                      </a>
+                      <AttachmentLinks key={att.id} attachment={att} />
                     ))}
                   </div>
                 </div>
@@ -950,9 +931,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                               </h5>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                 {chapter.attachments.map((att: any) => (
-                                  <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', textDecoration: 'none', fontSize: '0.8rem' }}>
-                                    <FileText size={14} /> {att.name}
-                                  </a>
+                                  <AttachmentLinks key={att.id} attachment={att} />
                                 ))}
                               </div>
                             </div>

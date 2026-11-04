@@ -9,6 +9,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (!authorized) return errorResponse;
 
     const body = await req.json();
+    // Documents must be linked through their ownership-checked endpoints. Raw
+    // nested Prisma writes would otherwise bypass attachment/lesson guards.
+    const relations = ['instructor', 'enrollments', 'chapters', 'payments', 'reviews', 'certificates', 'shorts',
+      'coupons', 'questions', 'careerPaths', 'bundles', 'attachments', 'liveClasses'];
+    if (!body || typeof body !== 'object' || Array.isArray(body) || relations.some(key => Object.hasOwn(body, key))) {
+      return NextResponse.json({ error: 'أضف الدروس والمرفقات عبر واجهاتها المخصصة للتحقق من ملكية الملفات' }, { status: 400 });
+    }
     const resolvedParams = await params;
     const { id } = resolvedParams;
 

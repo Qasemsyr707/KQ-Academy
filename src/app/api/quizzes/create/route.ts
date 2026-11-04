@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { assertOwnedDocumentReference } from '@/lib/owned-document';
+import { PrivateFileError } from '@/lib/private-file-storage';
 
 export async function POST(request: Request) {
   try {
@@ -35,6 +37,8 @@ export async function POST(request: Request) {
     if (!chapter || (chapter.course.instructorId !== user.id && user.role !== 'ADMIN' && user.role !== 'OWNER')) {
       return NextResponse.json({ error: 'الفصل غير موجود أو أنك لا تملك صلاحية إدارته' }, { status: 403 });
     }
+
+    if (type === 'MANUAL_FILE') await assertOwnedDocumentReference(user, fileUrl);
 
     // Create the Quiz and its Questions in a transaction
     const newQuiz = await prisma.$transaction(async (tx) => {
@@ -77,6 +81,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: 'تم إنشاء الاختبار بنجاح', quiz: newQuiz });
   } catch (error) {
+    if (error instanceof PrivateFileError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
+    }
     console.error('Error creating quiz:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
   }

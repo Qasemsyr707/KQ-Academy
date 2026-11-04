@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import CoursePlayerClient from './CoursePlayerClient';
+import { protectCourseAttachmentLinks } from '@/lib/attachment-links';
 
 export default async function CourseLearnPage(props: { params: Promise<{ courseId: string }>, searchParams: Promise<{ lessonId?: string }> }) {
   const session = await getServerSession(authOptions);
@@ -79,8 +80,8 @@ export default async function CourseLearnPage(props: { params: Promise<{ courseI
   ];
 
   return <CoursePlayerClient 
-    course={course} 
-    chapters={displayChapters} 
+    course={protectCourseAttachmentLinks(course)}
+    chapters={displayChapters.map(protectCourseAttachmentLinks)}
     hasAccess={!!enrollment || course.instructorId === (session.user as any).id || (session.user as any).role === 'ADMIN'} 
     initialLessonId={resolvedSearchParams?.lessonId}
     currentUserRole={(session.user as any).role}

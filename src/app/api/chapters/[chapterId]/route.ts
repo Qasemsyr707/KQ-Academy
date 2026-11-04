@@ -4,18 +4,21 @@ import { requireRoleApi } from '@/lib/rbac';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ chapterId: string }> }) {
   try {
-    const { authorized, errorResponse } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
     const body = await req.json();
     const resolvedParams = await params;
     const { chapterId } = resolvedParams;
 
-    const chapter = await prisma.chapter.findUnique({ where: { id: chapterId } });
+    const chapter = await prisma.chapter.findUnique({ where: { id: chapterId }, include: { course: { select: { instructorId: true } } } });
     if (!chapter) {
       return NextResponse.json({ error: 'الفصل غير موجود' }, { status: 404 });
     }
 
+    if (chapter.course.instructorId !== session.user.id && !['ADMIN', 'OWNER'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'غير مصرح بتغيير الفصل أو صلاحية الوصول إلى مرفقاته' }, { status: 403 });
+    }
     const updatedChapter = await prisma.chapter.update({
       where: { id: chapterId },
       data: {
@@ -34,17 +37,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ chapterI
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ chapterId: string }> }) {
   try {
-    const { authorized, errorResponse } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
     const resolvedParams = await params;
     const { chapterId } = resolvedParams;
 
-    const chapter = await prisma.chapter.findUnique({ where: { id: chapterId } });
+    const chapter = await prisma.chapter.findUnique({ where: { id: chapterId }, include: { course: { select: { instructorId: true } } } });
     if (!chapter) {
       return NextResponse.json({ error: 'الفصل غير موجود' }, { status: 404 });
     }
 
+    if (chapter.course.instructorId !== session.user.id && !['ADMIN', 'OWNER'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'غير مصرح بحذف هذا الفصل ومرفقاته' }, { status: 403 });
+    }
     // Prisma relation will handle cascading if configured, or we delete lessons manually first
     // It's safer to delete lessons first, but let's check schema. We might need to delete lessons manually.
     await prisma.lesson.deleteMany({

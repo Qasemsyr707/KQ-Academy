@@ -6,6 +6,7 @@ import { PlusCircle, Video, GripVertical, Trash2, Edit2, ArrowRight, Paperclip, 
 import Link from 'next/link';
 import { BunnyUploadPaused, useBunnyUpload } from '@/hooks/use-bunny-upload';
 import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
+import { AttachmentLinks } from '@/components/AttachmentLinks';
 
 export default function CurriculumClient({ course }: { course: any }) {
   const [chapters, setChapters] = useState(course.chapters || []);
@@ -27,6 +28,10 @@ export default function CurriculumClient({ course }: { course: any }) {
   const [attachmentName, setAttachmentName] = useState('');
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [isSavingAttachment, setIsSavingAttachment] = useState(false);
+  const [attachmentOriginalName, setAttachmentOriginalName] = useState('');
+  const [attachmentError, setAttachmentError] = useState('');
+  const attachmentBusy = useRef(false);
 
   // Quiz State
   const [addingQuizTo, setAddingQuizTo] = useState<string | null>(null);
@@ -79,17 +84,16 @@ export default function CurriculumClient({ course }: { course: any }) {
           const formData = new FormData();
           formData.append('file', newLessonVideoFile);
           formData.append('type', 'document');
+          formData.append('courseId', course.id);
           
           const uploadRes = await fetch('/api/upload', {
             method: 'POST',
             body: formData
           });
           
-          if (!uploadRes.ok) {
-            throw new Error('فشل رفع الملف');
-          }
-          
-          const { url } = await uploadRes.json();
+          const uploaded = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploaded.error || 'فشل رفع الملف الأصلي');
+          const { url } = uploaded;
           finalVideoUrl = url;
           setUploadProgress(100);
         }
@@ -140,39 +144,49 @@ export default function CurriculumClient({ course }: { course: any }) {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || attachmentBusy.current) return;
+    e.target.value = '';
     
     // Set file name automatically if not set
     if (!attachmentName) {
       setAttachmentName(file.name);
     }
 
+    attachmentBusy.current = true;
     setIsUploadingAttachment(true);
+    setAttachmentError('');
+    setAttachmentUrl('');
+    setAttachmentOriginalName(file.name);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', 'document');
+    formData.append('courseId', course.id);
     try {
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
-      if (res.ok) {
-        const { url } = await res.json();
-        setAttachmentUrl(url);
-      } else {
-        alert('فشل رفع الملف');
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل رفع الملف الأصلي');
+      if (typeof data.url !== 'string' || !data.url.startsWith('/api/files/')) throw new Error('لم يتم حفظ رابط صالح للملف الأصلي');
+      setAttachmentUrl(data.url);
     } catch (err) {
-      alert('خطأ أثناء الرفع');
+      setAttachmentError(err instanceof Error ? err.message : 'خطأ أثناء رفع الملف الأصلي');
+    } finally {
+      attachmentBusy.current = false;
+      setIsUploadingAttachment(false);
     }
-    setIsUploadingAttachment(false);
   };
 
   const handleAddAttachment = async (lessonId: string) => {
+    if (attachmentBusy.current) return;
     if (!attachmentName || !attachmentUrl) {
-      alert('الرجاء كتابة اسم المرفق واختيار الملف أو وضع رابطه');
+      setAttachmentError('الرجاء كتابة اسم المرفق ورفع ملفه الأصلي');
       return;
     }
+    attachmentBusy.current = true;
+    setIsSavingAttachment(true);
+    setAttachmentError('');
     try {
       const res = await fetch('/api/attachments', {
         method: 'POST',
@@ -180,14 +194,30 @@ export default function CurriculumClient({ course }: { course: any }) {
         body: JSON.stringify({ name: attachmentName, url: attachmentUrl, lessonId })
       });
       if (res.ok) {
+        const data = await res.json();
+        if (data.attachment) {
+          setChapters((current: any[]) => current.map(chapter => ({
+            ...chapter,
+            lessons: chapter.lessons?.map((lesson: any) => lesson.id === lessonId
+              ? { ...lesson, attachments: [...(lesson.attachments || []), data.attachment] }
+              : lesson),
+          })));
+        }
         setAttachmentName('');
         setAttachmentUrl('');
+        setAttachmentOriginalName('');
         setAddingAttachmentTo(null);
         alert('تم إضافة المرفق بنجاح');
         router.refresh();
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || 'تعذر حفظ المرفق');
       }
     } catch (e) {
-      alert('Error adding attachment');
+      setAttachmentError(e instanceof Error ? e.message : 'تعذر حفظ المرفق');
+    } finally {
+      attachmentBusy.current = false;
+      setIsSavingAttachment(false);
     }
   };
 
@@ -244,6 +274,7 @@ export default function CurriculumClient({ course }: { course: any }) {
 
       <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>منهج الكورس: {course.title}</h1>
       <p style={{ opacity: 0.7, marginBottom: '2rem' }}>قم بتقسيم كورس الخاص بك إلى فصول، وأضف الدروس والمرفقات والاختبارات.</p>
+      {course.attachments?.map((att: any) => <AttachmentLinks key={att.id} attachment={att} />)}
 
       {/* Chapters List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -263,6 +294,7 @@ export default function CurriculumClient({ course }: { course: any }) {
 
             {/* Lessons List */}
             <div style={{ padding: '1.5rem' }}>
+              {chapter.attachments?.map((att: any) => <AttachmentLinks key={att.id} attachment={att} />)}
               {chapter.lessons?.length === 0 ? (
                 <p style={{ opacity: 0.5, textAlign: 'center', marginBottom: '1rem' }}>لا يوجد دروس في هذا الفصل بعد.</p>
               ) : (
@@ -287,13 +319,14 @@ export default function CurriculumClient({ course }: { course: any }) {
                                <Radio size={14} /> استوديو البث
                              </Link>
                            )}
-                           <button onClick={() => setAddingAttachmentTo(lesson.id)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem' }}>
+                           <button disabled={isUploadingAttachment || isSavingAttachment} onClick={() => { setAddingAttachmentTo(lesson.id); setAttachmentError(''); setAttachmentUrl(''); setAttachmentOriginalName(''); setAttachmentName(''); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem' }}>
                              <Paperclip size={14} /> أضف مرفق
                            </button>
                            <button style={{ background: 'none', border: 'none', color: 'var(--danger, #ef4444)', cursor: 'pointer' }}><Trash2 size={16} /></button>
                         </div>
                       </div>
 
+                      {lesson.attachments?.map((att: any) => <AttachmentLinks key={att.id} attachment={att} />)}
                       {/* Add Attachment Form inside Lesson */}
                       {addingAttachmentTo === lesson.id && (
                         <div style={{ marginTop: '1rem', background: 'rgba(0,0,0,0.3)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(203,161,83,0.2)' }}>
@@ -301,37 +334,30 @@ export default function CurriculumClient({ course }: { course: any }) {
                            <input 
                             type="text" 
                             placeholder="اسم الملف (مثال: ملخص الدرس PDF)"
+                            disabled={isUploadingAttachment || isSavingAttachment}
                             value={attachmentName}
                             onChange={(e) => setAttachmentName(e.target.value)}
                             style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', marginBottom: '1rem' }}
                           />
                           
-                          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'rgba(203,161,83,0.1)', border: '1px dashed #cba153', borderRadius: '8px', padding: '1rem', textAlign: 'center', cursor: 'pointer' }}>
-                              <span style={{ fontSize: '0.85rem', color: '#cba153' }}>{attachmentUrl && attachmentUrl.startsWith('data:') ? 'تم اختيار الملف بنجاح ✅' : '📥 اضغط هنا لرفع ملف من جهازك'}</span>
-                              <input 
-                                type="file" 
-                                onChange={handleFileUpload}
-                                style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, opacity: 0, cursor: 'pointer', width: '100%' }}
-                              />
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>أو</div>
-                            <input 
-                              type="url" 
-                              placeholder="رابط خارجي للملف (إن وُجد)"
-                              value={attachmentUrl && !attachmentUrl.startsWith('data:') ? attachmentUrl : ''}
-                              onChange={(e) => {
-                                if(!attachmentUrl.startsWith('data:')) {
-                                  setAttachmentUrl(e.target.value);
-                                }
-                              }}
-                              style={{ flex: 1, padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }}
+                          <div style={{ marginBottom: '1rem' }}>
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.zip,.rar,image/*,audio/*"
+                              aria-label="اختر الملف الأصلي للمرفق"
+                              disabled={isUploadingAttachment || isSavingAttachment}
+                              onChange={handleFileUpload}
+                              style={{ width: '100%' }}
                             />
+                            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)' }}>ارفع الملف الأصلي من جهازك؛ يُحفظ دون تحويله إلى صورة، بحد أقصى 20MiB.</p>
+                            {isUploadingAttachment && <p role="status">جاري رفع الملف الأصلي...</p>}
+                            {attachmentUrl && <p style={{ color: 'var(--success)', fontSize: '0.85rem' }}>تم رفع الملف الأصلي: {attachmentOriginalName}</p>}
+                            {attachmentError && <p role="alert" style={{ color: '#f87171', fontSize: '0.85rem' }}>{attachmentError}</p>}
                           </div>
 
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button onClick={() => handleAddAttachment(lesson.id)} style={{ padding: '0.6rem 1.2rem', background: 'var(--primary)', color: '#000', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>حفظ المرفق</button>
-                            <button onClick={() => { setAddingAttachmentTo(null); setAttachmentUrl(''); setAttachmentName(''); }} style={{ padding: '0.6rem 1.2rem', background: 'transparent', color: '#fff', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.9rem' }}>إلغاء</button>
+                            <button disabled={isUploadingAttachment || isSavingAttachment || !attachmentUrl} onClick={() => handleAddAttachment(lesson.id)} style={{ padding: '0.6rem 1.2rem', background: 'var(--primary)', color: '#000', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>حفظ المرفق</button>
+                            <button disabled={isUploadingAttachment || isSavingAttachment} onClick={() => { setAddingAttachmentTo(null); setAttachmentUrl(''); setAttachmentOriginalName(''); setAttachmentName(''); setAttachmentError(''); }} style={{ padding: '0.6rem 1.2rem', background: 'transparent', color: '#fff', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.9rem' }}>إلغاء</button>
                           </div>
                         </div>
                       )}
