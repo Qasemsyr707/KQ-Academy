@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import CourseDetailsClient from './CourseDetailsClient';
 import { Metadata } from 'next';
+import { protectCourseLessonSources } from '@/lib/lesson-links';
+import { getBunnyPlaybackUrl } from '@/lib/bunny-playback';
 
 export async function generateMetadata({ params }: { params: Promise<{ courseId: string }> }): Promise<Metadata> {
   try {
@@ -108,6 +110,14 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
       ]
     };
 
+    let previewVideoUrl: string | null = null;
+    try {
+      if (course?.previewVideoUrl) previewVideoUrl = getBunnyPlaybackUrl(course.previewVideoUrl);
+    } catch {
+      // A missing signing configuration must not expose an unsigned fallback.
+    }
+    const playerCourse = protectCourseLessonSources({ ...displayCourse, previewVideoUrl });
+
     const courseSchema = {
       "@context": "https://schema.org",
       "@type": "Course",
@@ -140,7 +150,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }}
         />
-        <CourseDetailsClient course={displayCourse} isEnrolled={isEnrolled} />
+        <CourseDetailsClient course={playerCourse} isEnrolled={isEnrolled} />
       </>
     );
   } catch (error) {

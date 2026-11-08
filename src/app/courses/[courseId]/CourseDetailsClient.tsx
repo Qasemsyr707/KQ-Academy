@@ -5,6 +5,7 @@ import { Star, Clock, User, CheckCircle, PlayCircle, ShieldCheck, ChevronDown, A
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReviewButton from './ReviewButton';
+import { LessonMediaPlayer } from '@/components/LessonMediaPlayer';
 
 // Utility to generate a consistent random number based on a string (course id)
 function generateRandomNumber(id: string, min: number, max: number) {
@@ -18,7 +19,7 @@ function generateRandomNumber(id: string, min: number, max: number) {
 
 export default function CourseDetailsClient({ course, isEnrolled }: { course: any, isEnrolled: boolean }) {
   const [activeChapter, setActiveChapter] = useState<string | null>(course.chapters[0]?.id || null);
-  const [previewLessonVideo, setPreviewLessonVideo] = useState<string | null>(null);
+  const [previewLesson, setPreviewLesson] = useState<{ id: string; title: string } | null>(null);
 
   // Generate consistent pseudo-random metrics based on course ID so it doesn't look static
   const studentsCount = useMemo(() => generateRandomNumber(course.id || 'default', 850, 25000), [course.id]);
@@ -137,8 +138,8 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
                                 >
                                   <PlayCircle size={16} color={chapter.isFree ? "#a435f0" : "#d1d7dc"} />
                                   <span style={{ flex: 1, color: chapter.isFree ? '#a435f0' : '#d1d7dc', fontSize: '0.95rem', cursor: chapter.isFree ? 'pointer' : 'default', textDecoration: chapter.isFree ? 'underline' : 'none' }} onClick={() => {
-                                    if (chapter.isFree && lesson.videoUrl) {
-                                      setPreviewLessonVideo(lesson.videoUrl);
+                                    if (chapter.isFree && lesson.hasVideo && !lesson.isLive) {
+                                      setPreviewLesson({ id: lesson.id, title: lesson.title });
                                     }
                                   }}>
                                     {lesson.title}
@@ -255,21 +256,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
             {/* Box Video Preview */}
             {course.previewVideoUrl ? (
               <div style={{ width: '100%', paddingTop: '56.25%', background: '#000', position: 'relative' }}>
-                {course.previewVideoUrl.includes('iframe.mediadelivery.net') ? (
-                  <iframe
-                    src={course.previewVideoUrl}
-                    loading="lazy"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                    allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
-                    allowFullScreen={true}
-                  ></iframe>
-                ) : (
-                  <video 
-                    src={course.previewVideoUrl} 
-                    controls 
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                  />
-                )}
+                <LessonMediaPlayer directUrl={course.previewVideoUrl} title={course.title} />
               </div>
             ) : (
               <div style={{ width: '100%', paddingTop: '56.25%', background: '#000', position: 'relative', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.1)' }} className="group">
@@ -356,31 +343,16 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: an
       </div>
 
       {/* Free Lesson Preview Modal */}
-      {previewLessonVideo && (
+      {previewLesson && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: '100%', maxWidth: '900px', padding: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-              <button onClick={() => setPreviewLessonVideo(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
+              <button onClick={() => setPreviewLesson(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
                 إغلاق (X)
               </button>
             </div>
             <div style={{ width: '100%', paddingTop: '56.25%', position: 'relative', background: '#000', overflow: 'hidden' }}>
-              {previewLessonVideo.includes('iframe.mediadelivery.net') ? (
-                <iframe
-                  src={previewLessonVideo}
-                  loading="lazy"
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                  allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
-                  allowFullScreen={true}
-                ></iframe>
-              ) : (
-                <video 
-                  src={previewLessonVideo} 
-                  controls 
-                  autoPlay
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                />
-              )}
+              <LessonMediaPlayer lessonId={previewLesson.id} title={previewLesson.title} />
             </div>
           </div>
         </div>

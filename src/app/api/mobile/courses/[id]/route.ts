@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { protectCourseLessonSources } from '@/lib/lesson-links';
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -18,7 +19,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
     }
 
-    return NextResponse.json({ course }, { status: 200 });
+    return NextResponse.json({ course: protectCourseLessonSources(course) }, { status: 200 });
   } catch (error) {
     console.error('Mobile Course Detail API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });

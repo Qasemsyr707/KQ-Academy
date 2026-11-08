@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AttachmentLinks } from '@/components/AttachmentLinks';
+import { LessonMediaPlayer } from '@/components/LessonMediaPlayer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayCircle, CheckCircle, ChevronDown, ChevronUp, Lock, ArrowRight, Menu, X, Award, Star, Paperclip, CheckSquare, MessageCircle, Send, Radio, Download } from 'lucide-react';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
   let specificChapterId = null;
   if (initialLessonId) {
     for (const c of chapters) {
-      if (c.lessons) {
+      if ((hasAccess || c.isFree) && c.lessons) {
         const found = c.lessons.find((l: any) => l.id === initialLessonId);
         if (found) {
           specificLesson = found;
@@ -80,6 +81,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
       if (savedActiveId && !initialLessonId) {
         let foundItem = null;
         for (const c of chapters) {
+          if (!hasAccess && !c.isFree) continue;
           foundItem = c.lessons?.find((l: any) => l.id === savedActiveId) || c.quizzes?.find((q: any) => q.id === savedActiveId);
           if (foundItem) {
             setActiveItem(foundItem);
@@ -90,7 +92,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
       }
     }
     setIsLoaded(true);
-  }, [course.id, chapters, initialLessonId]);
+  }, [course.id, chapters, initialLessonId, hasAccess]);
 
   useEffect(() => {
     if (isLoaded && typeof window !== 'undefined') {
@@ -444,80 +446,12 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                   </div>
                 ) : (
                   <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    {activeItem.videoUrl?.includes('iframe.mediadelivery.net') ? (
-                      <iframe
-                        src={activeItem.videoUrl}
-                        loading="lazy"
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
-                        allowFullScreen={true}
-                      ></iframe>
-                    ) : (
-                      (() => {
-                        const url = activeItem.videoUrl || '';
-                        const isAudio = /\.(mp3|wav|ogg|aac|m4a)(\?.*)?$/i.test(url);
-                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url);
-                        const isOwnFile = /^\/api\/files\/[^/?#]+(?:\?[^#]*)?$/.test(url);
-                        const isPdf = /\.pdf(\?.*)?$/i.test(url) || isOwnFile;
-                        
-                        if (isAudio) {
-                          return (
-                            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', flexDirection: 'column', gap: '1rem' }}>
-                              <div style={{ width: '80px', height: '80px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Radio size={40} color="var(--primary)" />
-                              </div>
-                              <audio controls src={url} style={{ width: '80%', maxWidth: '500px' }} onEnded={() => markCompleted(activeItem.id)} />
-                            </div>
-                          );
-                        }
-                        if (isImage) {
-                          return (
-                            <img src={url} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#0a0a0a' }} alt={activeItem.title} />
-                          );
-                        }
-                        if (isPdf) {
-                          if (!isOwnFile) {
-                            return <p role="status" style={{ padding: '1.5rem' }}>ملف الدرس الأصلي غير متوفر في التخزين المحمي. يجب على المدرّب إعادة رفع ملف PDF الأصلي؛ لا يمكن استعادة صفحاته من رابط صورة.</p>;
-                          }
-                          return (
-                            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#111' }}>
-                              <iframe 
-                                src={url} 
-                                style={{ flex: 1, width: '100%', height: '100%', border: 'none', background: '#fff' }}
-                                title={activeItem.title}
-                              />
-                              <div style={{ padding: '0.6rem 1rem', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>إذا لم يظهر المستند كاملاً، افتحه في نافذة جديدة أو حمّله.</span>
-                                <a 
-                                  href={url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 'bold', textDecoration: 'none' }}
-                                >
-                                  <Download size={14} /> فتح الملف بنافذة كاملة
-                                </a>
-                                <a href={`${url}${url.includes('?') ? '&' : '?'}download=1`} download style={{ color: 'var(--primary)', fontSize: '0.85rem' }}>تحميل الملف</a>
-                              </div>
-                            </div>
-                          );
-                        }
-                        // Default fallback (Video/Other)
-                        return (
-                          <video 
-                            src={url} 
-                            controls 
-                            autoPlay 
-                            onEnded={() => markCompleted(activeItem.id)}
-                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                          />
-                        );
-                      })()
-                    )}
+                    <LessonMediaPlayer lessonId={activeItem.id} title={activeItem.title} onEnded={() => markCompleted(activeItem.id)} />
                   </div>
                 )}
 
                 {/* Syrian Network Speed / Quality Notice for Video */}
-                {activeItem.videoUrl?.includes('iframe.mediadelivery.net') && (
+                {activeItem.isBunnyVideo && (
                   <div style={{ marginTop: '0.75rem', padding: '0.6rem 1rem', background: 'rgba(203,161,83,0.08)', border: '1px solid rgba(203,161,83,0.2)', borderRadius: '8px', fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span>💡 <strong>نصيحة لسرعة التشغيل:</strong> إذا كان الاتصال ضعيفاً، اضغط على أيقونة الترس ⚙️ داخل مشغل الفيديو واختر دقة <strong>360p</strong> أو <strong>480p</strong> ليعمل الفيديو فوراً وبدون أي تقطيع.</span>
                   </div>
@@ -946,7 +880,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                           return (
                             <button
                               key={lesson.id}
-                              onClick={() => setActiveItem(lesson)}
+                              onClick={() => { if (!isLocked) setActiveItem(lesson); }}
                               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', background: isActive ? 'rgba(203, 161, 83, 0.1)' : 'transparent', border: 'none', borderRight: isActive ? '3px solid var(--primary)' : '3px solid transparent', color: isActive ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', textAlign: 'right', transition: 'all 0.2s' }}
                               className="hover:bg-white/5"
                             >
@@ -978,7 +912,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                           return (
                             <button
                               key={quiz.id}
-                              onClick={() => setActiveItem(quiz)}
+                              onClick={() => { if (!isLocked) setActiveItem(quiz); }}
                               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem', background: isActive ? 'rgba(203, 161, 83, 0.1)' : 'transparent', border: 'none', borderRight: isActive ? '3px solid var(--warning)' : '3px solid transparent', color: isActive ? '#fff' : 'rgba(255,255,255,0.6)', cursor: 'pointer', textAlign: 'right', transition: 'all 0.2s' }}
                               className="hover:bg-white/5"
                             >

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { BunnyOperationError, createOrGetBunnyOperation } from '@/lib/bunny-upload-operations';
+import { parseBunnyEmbed } from '@/lib/bunny-embed';
 
 const RESUME_SCOPE = 'kq-academy:bunny-resume:v2:';
 const RESUME_TTL = 7 * 24 * 60 * 60;
@@ -23,7 +24,7 @@ export function isBunnyVideoId(value: unknown): value is string {
 function configuration() {
   const libraryId = process.env.BUNNY_LIBRARY_ID;
   const apiKey = process.env.BUNNY_API_KEY;
-  if (!libraryId || !/^\d+$/.test(libraryId) || !apiKey) throw new BunnyServerError(500, 'إعدادات Bunny غير متوفرة');
+  if (!libraryId || !/^\d+$/.test(libraryId) || !apiKey) throw new BunnyServerError(503, 'خدمة الفيديو غير متاحة حالياً، يرجى التواصل مع إدارة المنصة');
   return { libraryId, apiKey };
 }
 
@@ -66,13 +67,21 @@ export async function authorizeCourseUpload(user: UploadUser, scope: UploadScope
 export async function getBunnyVideo(videoId: string): Promise<{ videoId: string; libraryId: string; state: BunnyVideoState; embedUrl?: string }> {
   const { libraryId, apiKey } = configuration();
   if (!isBunnyVideoId(videoId)) throw new BunnyServerError(400, 'معرّف الفيديو غير صالح');
-  const response = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`, {
-    headers: { accept: 'application/json', AccessKey: apiKey }, cache: 'no-store', signal: AbortSignal.timeout(20000),
-  });
-  if (response.status === 404) throw new BunnyServerError(404, 'الفيديو لم يعد موجوداً على Bunny؛ لا يمكن استكماله');
-  if (!response.ok) throw new BunnyServerError(502, 'تعذر التحقق من حالة الفيديو على Bunny');
-  const video = await response.json();
-  if (video?.guid !== videoId || String(video.videoLibraryId) !== libraryId || !Number.isInteger(video.status)) throw new BunnyServerError(502, 'استجابة Bunny لا تطابق الفيديو والمكتبة');
+  let response: Response;
+  let video;
+  try {
+    response = await fetch(`https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`, {
+      headers: { accept: 'application/json', AccessKey: apiKey }, cache: 'no-store', signal: AbortSignal.timeout(20000),
+    });
+    if (response.status === 404) throw new BunnyServerError(404, 'الفيديو غير موجود، يرجى التحقق من الرابط');
+    if (!response.ok) throw new BunnyServerError(502, 'تعذّر التحقق من الفيديو، يرجى المحاولة مجدداً');
+    video = await response.json();
+  } catch (error) {
+    if (error instanceof BunnyServerError) throw error;
+    throw new BunnyServerError(502, 'تعذّر الاتصال بخدمة الفيديو، يرجى المحاولة مجدداً');
+  }
+  if (typeof video?.guid !== 'string' || video.guid.toLowerCase() !== videoId.toLowerCase()
+    || String(video.videoLibraryId) !== libraryId || !Number.isInteger(video.status)) throw new BunnyServerError(502, 'تعذّر التحقق من الفيديو، يرجى المحاولة مجدداً');
   const state: BunnyVideoState = video.status === 0 ? 'uploading' : video.status === 4 ? 'ready'
     : [1, 2, 3, 7, 8].includes(video.status) ? 'processing' : 'failed';
   return { videoId, libraryId, state,
@@ -84,14 +93,12 @@ export async function getBunnyVideo(videoId: string): Promise<{ videoId: string;
  * external video URLs retain their existing application behavior. */
 export async function assertBunnyVideoReady(videoUrl: unknown): Promise<void> {
   if (typeof videoUrl !== 'string' || !videoUrl) return;
-  let url: URL;
-  try { url = new URL(videoUrl); } catch { return; }
-  if (url.hostname.replace(/\.$/, '') !== 'iframe.mediadelivery.net') return;
-  const match = /^\/(?:embed|play)\/(\d+)\/([0-9a-f-]{36})\/?$/i.exec(url.pathname);
-  if (!match || url.origin !== 'https://iframe.mediadelivery.net' || url.username || url.password
-    || match[1] !== configuration().libraryId || !isBunnyVideoId(match[2])) throw new BunnyServerError(400, 'رابط Bunny لا يطابق مكتبة الأكاديمية');
-  const video = await getBunnyVideo(match[2]);
-  if (video.state !== 'ready') throw new BunnyServerError(409, 'الفيديو غير جاهز؛ انتظر اكتمال معالجة Bunny قبل الحفظ');
+  const embed = parseBunnyEmbed(videoUrl);
+  if (!embed && !/mediadelivery\.net/i.test(videoUrl)) return;
+  if (!embed || embed.libraryId !== configuration().libraryId) throw new BunnyServerError(400, 'يرجى إدخال رابط فيديو من مكتبة الأكاديمية');
+  const video = await getBunnyVideo(embed.videoId);
+  if (video.state === 'failed') throw new BunnyServerError(409, 'تعذّر تجهيز الفيديو، يرجى اختيار فيديو آخر');
+  if (video.state !== 'ready') throw new BunnyServerError(409, 'جاري تجهيز الفيديو للمشاهدة... يرجى المحاولة بعد اكتمال التجهيز');
 }
 
 function parseScope(body: Record<string, unknown>): UploadScope {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import jwt from 'jsonwebtoken';
+import { protectCourseLessonSources } from '@/lib/lesson-links';
 
 export async function GET(req: Request) {
   try {
@@ -36,7 +37,8 @@ export async function GET(req: Request) {
       include: { course: { select: { title: true } } }
     });
 
-    return NextResponse.json({ enrollments, certificates, user: decoded }, { status: 200 });
+    const protectedEnrollments = enrollments.map(enrollment => ({ ...enrollment, course: protectCourseLessonSources(enrollment.course) }));
+    return NextResponse.json({ enrollments: protectedEnrollments, certificates, user: decoded }, { status: 200 });
   } catch (error) {
     console.error('Mobile Dashboard API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });

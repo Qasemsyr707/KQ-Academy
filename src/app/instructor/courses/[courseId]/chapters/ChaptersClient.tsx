@@ -2,11 +2,12 @@
 
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
-import { Video, PlusCircle, ArrowRight, Settings, Trash2, X, LockOpen, Lock, Paperclip } from 'lucide-react';
+import { Video, PlusCircle, ArrowRight, Settings, Trash2, X, LockOpen, Lock, Paperclip, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BunnyUploadPaused, useBunnyUpload } from '@/hooks/use-bunny-upload';
 import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
 import { AttachmentLinks } from '@/components/AttachmentLinks';
+import { LessonVideoEditor } from '@/components/LessonVideoEditor';
 
 export default function ChaptersClient({ course }: { course: any }) {
   const router = useRouter();
@@ -28,15 +29,9 @@ export default function ChaptersClient({ course }: { course: any }) {
   const introUpload = useBunnyUpload({ courseId: course.id, purpose: 'preview' });
   const introSaving = useRef(false);
 
-  // Lesson State
-  const [isAddingLesson, setIsAddingLesson] = useState<string | null>(null); // holds chapterId
-  const [lessonTitle, setLessonTitle] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('file');
-  const [isAddingLessonLoading, setIsAddingLessonLoading] = useState(false);
-  const lessonUpload = useBunnyUpload({ courseId: course.id, purpose: 'lesson' });
-  const lessonSaving = useRef(false);
+  // Video editing is separate from the lesson attachment controls.
+  const [lessonEditor, setLessonEditor] = useState<{ chapterId: string; lesson?: { id: string; title: string; videoUrl?: string | null } } | null>(null);
+  const [lessonSuccess, setLessonSuccess] = useState('');
 
   // Attachment State
   const [isAddingAttachment, setIsAddingAttachment] = useState<{ type: 'course' | 'chapter' | 'lesson', id: string } | null>(null);
@@ -112,56 +107,6 @@ export default function ChaptersClient({ course }: { course: any }) {
       alert('خطأ في الاتصال بالخادم');
     }
     setLoading(false);
-  };
-
-  const handleAddLesson = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (lessonSaving.current || !lessonTitle.trim() || !isAddingLesson) return;
-    if (uploadMode === 'url' && !videoUrl.trim()) return;
-    if (uploadMode === 'file' && !videoFile) return;
-
-    lessonSaving.current = true;
-    setIsAddingLessonLoading(true);
-    try {
-      let finalVideoUrl = videoUrl;
-
-      // Handle Bunny Stream Video Upload
-      if (uploadMode === 'file' && videoFile) {
-        const uploaded = await lessonUpload.upload(videoFile, lessonTitle);
-        finalVideoUrl = uploaded.embedUrl;
-      }
-
-      // Save Lesson to Database
-      const res = await fetch('/api/lessons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: lessonTitle,
-          videoUrl: finalVideoUrl,
-          chapterId: isAddingLesson,
-          isLive: false
-        })
-      });
-
-      if (res.ok) {
-        setLessonTitle('');
-        setVideoUrl('');
-        setVideoFile(null);
-        lessonUpload.complete();
-        setIsAddingLesson(null);
-        router.refresh(); // Reload to show new lesson
-      } else {
-        const data = await res.json();
-        alert(data.error || 'حدث خطأ أثناء إضافة الدرس');
-      }
-    } catch (error: unknown) {
-      if (!(error instanceof BunnyUploadPaused)) {
-        alert(error instanceof Error ? error.message : 'خطأ في الاتصال بالخادم أثناء الرفع');
-      }
-    } finally {
-      lessonSaving.current = false;
-      setIsAddingLessonLoading(false);
-    }
   };
 
   const handleEditChapter = async (e: React.FormEvent) => {
@@ -318,6 +263,7 @@ export default function ChaptersClient({ course }: { course: any }) {
           </div>
         </div>
         
+        {lessonSuccess && <p role="status" style={{ padding: '1rem', background: 'rgba(203,161,83,0.08)', border: '1px solid rgba(203,161,83,0.25)', borderRadius: '10px', color: 'var(--primary)', marginBottom: '1rem' }}>{lessonSuccess}</p>}
         {renderAttachments(course.attachments)}
 
         {course.previewVideoUrl && (
@@ -398,6 +344,11 @@ export default function ChaptersClient({ course }: { course: any }) {
                             <span>الدرس {idx + 1}: {lesson.title}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {!lesson.isLive && (
+                              <button onClick={() => { setLessonSuccess(''); setLessonEditor({ chapterId: chapter.id, lesson }); }} className="btn" style={{ padding: '0.2rem', color: 'var(--primary)' }} title="تعديل الدرس ومصدر الفيديو" aria-label={`تعديل الدرس: ${lesson.title}`}>
+                                <Pencil size={16} />
+                              </button>
+                            )}
                             <button onClick={() => setIsAddingAttachment({ type: 'lesson', id: lesson.id })} className="btn" style={{ padding: '0.2rem', color: '#10b981' }} title="إضافة مرفق للدرس">
                               <Paperclip size={16} />
                             </button>
@@ -420,7 +371,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                       </div>
                     ))
                   )}
-                  <button onClick={() => setIsAddingLesson(chapter.id)} style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', background: 'transparent', border: '1px dashed var(--primary)', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                  <button onClick={() => { setLessonSuccess(''); setLessonEditor({ chapterId: chapter.id }); }} style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', background: 'transparent', border: '1px dashed var(--primary)', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', alignSelf: 'flex-start' }}>
                     <PlusCircle size={16} /> إضافة درس جديد
                   </button>
                 </div>
@@ -527,58 +478,14 @@ export default function ChaptersClient({ course }: { course: any }) {
           </div>
         )}
 
-        {/* Add Lesson Modal */}
-        {isAddingLesson && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-            <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>إضافة درس جديد</h2>
-                <button disabled={isAddingLessonLoading || lessonUpload.locked} onClick={() => setIsAddingLesson(null)} className="btn" style={{ padding: '0.5rem' }}><X size={20} /></button>
-              </div>
-              
-              <form onSubmit={handleAddLesson} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>عنوان الدرس</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={isAddingLessonLoading || lessonUpload.locked}
-                    value={lessonTitle}
-                    onChange={(e) => setLessonTitle(e.target.value)}
-                    className="input-field"
-                    placeholder="مثال: مقدمة في بناء العلامة التجارية"
-                  />
-                </div>
-
-                {/* Video/Audio Upload Field */}
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>ملف الفيديو أو الصوت</label>
-                  <input
-                    disabled={isAddingLessonLoading || lessonUpload.locked}
-                    type="file"
-                    accept="video/*,audio/*"
-                    required
-                    onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
-                    className="input-field"
-                    style={{ padding: '0.8rem' }}
-                  />
-                  <BunnyUploadStatus state={lessonUpload.state} progress={lessonUpload.progress} onPause={lessonUpload.pause} busy={isAddingLessonLoading} />
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
-                    سيتم رفع الملف وتشفيره تلقائياً لضمان حمايته.
-                  </p>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                  <button type="submit" disabled={isAddingLessonLoading} className="btn btn-solid" style={{ flex: 1 }}>
-                    {isAddingLessonLoading ? 'جاري الإضافة...' : 'حفظ الدرس'}
-                  </button>
-                  <button type="button" disabled={isAddingLessonLoading || lessonUpload.locked} onClick={() => setIsAddingLesson(null)} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}>
-                    إلغاء
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+        {lessonEditor && (
+          <LessonVideoEditor
+            courseId={course.id}
+            chapterId={lessonEditor.chapterId}
+            lesson={lessonEditor.lesson}
+            onClose={() => setLessonEditor(null)}
+            onSaved={message => { setLessonSuccess(message); setLessonEditor(null); router.refresh(); }}
+          />
         )}
 
         {/* Add Intro Video Modal */}

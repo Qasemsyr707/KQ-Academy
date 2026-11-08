@@ -1,89 +1,65 @@
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import CoursePlayerClient from './CoursePlayerClient';
 import { protectCourseAttachmentLinks } from '@/lib/attachment-links';
+import { protectLessonSource } from '@/lib/lesson-links';
+import { isPublicLesson, managesLessonCourse, type LessonViewer } from '@/lib/lesson-playback';
 
 export default async function CourseLearnPage(props: { params: Promise<{ courseId: string }>, searchParams: Promise<{ lessonId?: string }> }) {
   const session = await getServerSession(authOptions);
-  const resolvedParams = await props.params;
-  const resolvedSearchParams = await props.searchParams;
+  if (!session?.user) redirect('/login');
+  const viewer = session.user as LessonViewer;
+  if (!viewer.id) redirect('/login');
+  const { courseId } = await props.params;
+  const searchParams = await props.searchParams;
 
-  if (!session) {
-    redirect('/login');
-  }
-
-  // Fetch enrollment to ensure user has access
-  const enrollment = await prisma.enrollment.findUnique({
-    where: {
-      userId_courseId: {
-        userId: (session.user as any).id,
-        courseId: resolvedParams.courseId
-      }
-    }
-  });
-
-  // Fetch course with chapters, lessons, attachments, and quizzes
-  const course = await prisma.course.findUnique({
-    where: { id: resolvedParams.courseId },
-    include: {
-      attachments: true,
-      chapters: {
-        orderBy: { order: 'asc' },
-        include: {
-          attachments: true,
-          lessons: {
-            orderBy: { order: 'asc' },
-            include: {
-              attachments: true
-            }
+  const [course, enrollment] = await Promise.all([
+    prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        attachments: true,
+        chapters: {
+          orderBy: { order: 'asc' },
+          include: {
+            attachments: true,
+            lessons: { orderBy: { order: 'asc' }, include: { attachments: true } },
+            quizzes: { include: { questions: true } },
           },
-          quizzes: {
-            include: {
-              questions: true
-            }
-          }
-        }
+        },
+        questions: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: { select: { name: true, role: true } },
+            answers: { orderBy: { createdAt: 'asc' }, include: { user: { select: { name: true, role: true } } } },
+          },
+        },
       },
-      questions: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: { name: true, role: true } },
-          answers: {
-            orderBy: { createdAt: 'asc' },
-            include: { user: { select: { name: true, role: true } } }
-          }
-        }
-      }
-    }
+    }),
+    prisma.enrollment.findUnique({ where: { userId_courseId: { userId: viewer.id, courseId } }, select: { id: true } }),
+  ]);
+  if (!course) notFound();
+  const hasAccess = !!enrollment || managesLessonCourse(course, viewer) || isPublicLesson(course, false);
+  if (!hasAccess && !course.chapters.some(chapter => isPublicLesson(course, chapter.isFree))) redirect(`/courses/${courseId}`);
+
+  // Sources stay on the server; the playback endpoint rechecks every request.
+  const chapters = course.chapters.map(chapter => {
+    const readable = hasAccess || isPublicLesson(course, chapter.isFree);
+    return {
+      ...chapter,
+      isFree: isPublicLesson(course, chapter.isFree),
+      attachments: readable ? chapter.attachments : [],
+      lessons: chapter.lessons.map(lesson => ({ ...protectLessonSource(lesson, readable), attachments: readable ? lesson.attachments : [] })),
+      quizzes: chapter.quizzes.map(quiz => readable ? quiz : { id: quiz.id, title: quiz.title, type: quiz.type }),
+    };
   });
-
-  if (!course) {
-    return <div style={{ color: '#fff', padding: '5rem', textAlign: 'center' }}>الكورس غير موجود</div>;
-  }
-
-  // Fallback Mock Data if DB has no chapters yet
-  const displayChapters = course.chapters.length > 0 ? course.chapters : [
-    {
-      id: 'c1', title: 'الفصل الأول: مقدمة في التسويق', isFree: true, lessons: [
-        { id: 'l1', title: 'مرحباً بك في الكورس', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '05:30' },
-        { id: 'l2', title: 'ما هو التسويق الرقمي؟', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '12:45' }
-      ]
-    },
-    {
-      id: 'c2', title: 'الفصل الثاني: استراتيجيات منصات التواصل', isFree: false, lessons: [
-        { id: 'l3', title: 'خوارزميات فيسبوك وانستغرام', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '20:15' },
-        { id: 'l4', title: 'كيفية كتابة محتوى بيعي (Copywriting)', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: '18:10' }
-      ]
-    }
-  ];
-
-  return <CoursePlayerClient 
-    course={protectCourseAttachmentLinks(course)}
-    chapters={displayChapters.map(protectCourseAttachmentLinks)}
-    hasAccess={!!enrollment || course.instructorId === (session.user as any).id || (session.user as any).role === 'ADMIN'} 
-    initialLessonId={resolvedSearchParams?.lessonId}
-    currentUserRole={(session.user as any).role}
+  const { chapters: _chapters, ...playerCourse } = course;
+  return <CoursePlayerClient
+    course={protectCourseAttachmentLinks({ ...playerCourse, attachments: hasAccess ? playerCourse.attachments : [] })}
+    chapters={chapters.map(protectCourseAttachmentLinks)}
+    hasAccess={hasAccess}
+    initialLessonId={searchParams.lessonId}
+    currentUserRole={viewer.role}
   />;
 }

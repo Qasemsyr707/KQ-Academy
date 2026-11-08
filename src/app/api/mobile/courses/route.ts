@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { protectCourseLessonSources } from '@/lib/lesson-links';
 
 export async function GET() {
   try {
@@ -13,7 +14,7 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     });
 
-    return NextResponse.json({ courses }, { status: 200 });
+    return NextResponse.json({ courses: courses.map(protectCourseLessonSources) }, { status: 200 });
   } catch (error) {
     console.error('Mobile Courses API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
