@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
       return NextResponse.json({ 
-        reply: 'مرحباً بك! لكي أعمل بشكل صحيح، يجب على مدير النظام إضافة مفتاح `GEMINI_API_KEY` في إعدادات البيئة (Vercel). أنا حالياً أعمل في وضع المحاكاة.' 
+        reply: 'مرحباً بك! لكي أعمل بشكل صحيح، يجب على مدير النظام إضافة مفتاح `GEMINI_API_KEY` في متغيرات البيئة في Coolify. أنا حالياً أعمل في وضع المحاكاة.'
       }, { status: 200 });
     }
 

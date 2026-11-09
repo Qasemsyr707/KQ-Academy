@@ -10,7 +10,7 @@ import { MAX_DOCUMENT_BYTES, PrivateFileError, isPrivateFileId, readLegacyImageO
 
 export const REUPLOAD_MESSAGE = 'الملف الأصلي غير موجود أو لم يُحفظ بصيغة صحيحة. يرجى إعادة رفع ملف PDF الأصلي من لوحة المدرّب.';
 export const PRIVATE_DOCUMENT_HEADERS = {
-  'Cache-Control': 'private, no-store, max-age=0', 'CDN-Cache-Control': 'no-store', 'Vercel-CDN-Cache-Control': 'no-store',
+  'Cache-Control': 'private, no-store, max-age=0', 'CDN-Cache-Control': 'no-store',
   Pragma: 'no-cache', Vary: 'Cookie', 'X-Content-Type-Options': 'nosniff',
 };
 
@@ -174,7 +174,6 @@ async function respondOriginal(request: Request, original: OriginalFile, headOnl
   if (publicImage) {
     headers.set('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=60');
     headers.set('CDN-Cache-Control', 'public, s-maxage=300');
-    headers.set('Vercel-CDN-Cache-Control', 'public, s-maxage=300');
     headers.delete('Pragma');
   }
   headers.set('Content-Type', mimeType);

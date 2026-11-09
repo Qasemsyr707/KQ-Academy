@@ -15,7 +15,7 @@ export async function POST(request: Request) {
           reply: `\`\`\`json
 [
   {
-    "text": "يرجى إضافة مفتاح GEMINI_API_KEY إلى إعدادات Vercel لتفعيل الذكاء الاصطناعي الحقيقي. هذا سؤال تجريبي.",
+    "text": "يرجى إضافة مفتاح GEMINI_API_KEY إلى متغيرات البيئة في Coolify لتفعيل الذكاء الاصطناعي الحقيقي. هذا سؤال تجريبي.",
     "options": ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
     "correctAnswer": 0,
     "points": 1

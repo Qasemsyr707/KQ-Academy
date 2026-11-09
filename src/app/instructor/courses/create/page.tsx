@@ -56,7 +56,7 @@ export default function CreateCoursePage() {
       let uploadedThumbnailUrl = '';
 
       if (thumbnailFile) {
-        // Compress image using Canvas to bypass Vercel size limits
+        // Compress image using Canvas to reduce upload size.
         uploadedThumbnailUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.readAsDataURL(thumbnailFile);

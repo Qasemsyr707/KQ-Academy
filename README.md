@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KQ Academy
 
-## Getting Started
+منصة تعليم إلكتروني عربية مبنية على Next.js وReact وTypeScript، مع PostgreSQL
+وPrisma وNextAuth. يدعم نظام الدروس رفع الفيديو مباشرة إلى Bunny Stream أو ربط
+فيديو موجود في المكتبة المعتمدة، مع مرفقات تعليمية خاصة وتحقق من صلاحيات الطالب.
 
-First, run the development server:
+## البنية المعتمدة
+
+- **GitHub:** إدارة الكود ومراجعة التغييرات.
+- **Hostinger VPS:** الخادم الذي يستضيف التطبيق وقاعدة PostgreSQL.
+- **Coolify:** بناء التطبيق وتشغيله وإدارة البيئة والتخزين الدائم.
+- **Bunny Stream:** تخزين الفيديوهات ومعالجتها وتشغيلها.
+
+يعمل التطبيق كخادم Next.js كامل باستخدام `next start`؛ يحتاج إلى واجهات API
+والمصادقة والوصول إلى قاعدة البيانات، ولذلك لا يُنشر كتصدير HTML ثابت.
+
+## التشغيل المحلي
+
+استخدم نسخة Node.js متوافقة مع متطلبات Next.js والحزم المثبتة، ثم:
 
 ```bash
+npm ci
+npx prisma generate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+أعدّ متغيرات البيئة محلياً من القيم المعتمدة للبيئة المقصودة. لا تُدرج ملفات
+`.env` أو المفاتيح في Git. يحتاج التطبيق إلى `DATABASE_URL` لقاعدة PostgreSQL،
+ومتغيرات المصادقة والتكاملات المستخدمة كما هو موضح في دليل النشر أدناه.
+افتح `http://localhost:3000` بعد التشغيل.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## الفحص والبناء
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+npm start
+```
 
-## Learn More
+يشغّل أمر البناء `prisma generate` ثم `next build --webpack`، دون Migration.
+صفحة `/curriculum` تقرأ قاعدة البيانات أثناء توليد الصفحات؛ لذلك يتطلب البناء
+الكامل قاعدة مخصصة لبيئة التحقق ويمكن الوصول إليها. لا يُعد نجاح التجميع بديلاً
+عن نجاح TypeScript؛ إعداد `ignoreBuildErrors` الحالي لا يلغي أخطاء فحص الأنواع.
 
-To learn more about Next.js, take a look at the following resources:
+## النشر والتكاملات
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [دليل GitHub + Hostinger VPS + Coolify](docs/coolify-deployment.md)
+- [رفع الفيديو والاستكمال الآمن](docs/bunny-upload-repair.md)
+- [مصادر فيديو الدروس وتشغيلها وصلاحياتها](docs/lesson-video-sources.md)
+- [مرفقات PDF والتخزين الخاص الدائم](docs/pdf-attachments-repair.md)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+لا يتطلب تنظيف إعدادات الاستضافة تغيير مخطط Prisma أو تعديل بيانات الدروس.
+لا تشغّل `db:push` أو أي Migration ضمن أوامر البناء أو بدء التطبيق.

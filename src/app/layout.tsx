@@ -6,7 +6,6 @@ import AuthProvider from '@/components/AuthProvider';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
-import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'KQ Academy | أكاديمية KQ للتعليم الإلكتروني',
@@ -113,7 +112,6 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
-          <Analytics />
         </AuthProvider>
         <WhatsAppButton />
       </body>
