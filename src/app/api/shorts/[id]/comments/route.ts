@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const comments = await prisma.shortComment.findMany({
@@ -28,7 +28,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
@@ -53,7 +53,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       data: {
         content,
         shortId: id,
-        userId: (session.user as any).id,
+        userId: session.user.id,
         parentId: finalParentId,
       },
       include: {

@@ -40,13 +40,14 @@ npm start
 ```
 
 يشغّل أمر البناء `prisma generate` ثم `next build --webpack`، دون Migration.
-صفحة `/curriculum` تقرأ قاعدة البيانات أثناء توليد الصفحات؛ لذلك يتطلب البناء
-الكامل قاعدة مخصصة لبيئة التحقق ويمكن الوصول إليها. لا يُعد نجاح التجميع بديلاً
-عن نجاح TypeScript؛ إعداد `ignoreBuildErrors` الحالي لا يلغي أخطاء فحص الأنواع.
+تُنفذ استعلامات الصفحات عند الطلب؛ لا يحتاج البناء إلى `DATABASE_URL`، بينما
+يحتاجه التطبيق عند التشغيل. تُخزّن بيانات المنهاج وShorts وsitemap العامة
+لخمس دقائق باستخدام Next Data Cache. يفحص البناء أنواع TypeScript دون تجاوز للأخطاء.
 
 ## النشر والتكاملات
 
 - [دليل GitHub + Hostinger VPS + Coolify](docs/coolify-deployment.md)
+- [إصلاح عوائق البناء والتحقق من Staging وLinux](docs/staging-build-readiness.md)
 - [رفع الفيديو والاستكمال الآمن](docs/bunny-upload-repair.md)
 - [مصادر فيديو الدروس وتشغيلها وصلاحياتها](docs/lesson-video-sources.md)
 - [مرفقات PDF والتخزين الخاص الدائم](docs/pdf-attachments-repair.md)

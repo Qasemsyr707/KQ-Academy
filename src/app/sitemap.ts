@@ -1,18 +1,23 @@
 import { MetadataRoute } from 'next';
 import { prisma } from '@/lib/db';
+import { connection } from 'next/server';
+import { unstable_cache } from 'next/cache';
+
+const getPublishedCourses = unstable_cache(() => prisma.course.findMany({
+  where: { status: 'PUBLISHED' },
+  select: { id: true, updatedAt: true },
+}), ['public-sitemap-courses-v1'], { revalidate: 300 });
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection();
   const baseUrl = 'https://kqacademy.com';
 
   // Get dynamic courses
-  let courses: any[] = [];
+  let courses: Awaited<ReturnType<typeof getPublishedCourses>> = [];
   try {
-    courses = await prisma.course.findMany({
-      where: { status: 'PUBLISHED' },
-      select: { id: true, updatedAt: true },
-    });
-  } catch (error) {
-    console.error('Failed to fetch courses for sitemap', error);
+    courses = await getPublishedCourses();
+  } catch {
+    console.error('Failed to fetch published courses for sitemap');
   }
 
   const courseUrls = courses.map((course) => ({

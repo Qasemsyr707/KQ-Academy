@@ -10,7 +10,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
   const resolvedParams = await searchParams;
 
   let categories: string[] = [];
-  let instructors: (string | undefined)[] = [];
+  let instructors: string[] = [];
   let initialCourses: any[] = [];
   let featuredCourses: any[] = [];
 
@@ -22,7 +22,8 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
     });
 
     categories = Array.from(new Set(allCourses.map(c => c.category))).filter(Boolean) as string[];
-    instructors = Array.from(new Set(allCourses.map(c => c.instructor?.name))).filter(Boolean);
+    instructors = Array.from(new Set(allCourses.map(c => c.instructor?.name)))
+      .filter((name): name is string => typeof name === 'string' && name.length > 0);
 
     initialCourses = await prisma.course.findMany({
       where: { status: 'PUBLISHED' },

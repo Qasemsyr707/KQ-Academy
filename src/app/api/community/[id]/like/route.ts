@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
@@ -12,8 +12,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const { liked } = await req.json(); // boolean indicating if we are liking or unliking
 
+    const { id } = await params;
     const post = await prisma.communityPost.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         upvotes: {
           increment: liked ? 1 : -1

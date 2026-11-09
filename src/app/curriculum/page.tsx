@@ -1,11 +1,11 @@
 import { prisma } from '@/lib/db';
 import CoursesClient from '../courses/CoursesClient';
 import { Suspense } from 'react';
+import { connection } from 'next/server';
+import { unstable_cache } from 'next/cache';
 
-export const revalidate = 300; // cache 5 min instead of force-dynamic
-
-export default async function CurriculumPage() {
-  const courses = await prisma.course.findMany({
+// Cache public catalogue data; defer the first query until a request arrives.
+const getCurriculumCourses = unstable_cache(() => prisma.course.findMany({
     where: { status: 'PUBLISHED', type: 'CURRICULUM' },
     include: {
       instructor: {
@@ -16,7 +16,11 @@ export default async function CurriculumPage() {
       }
     },
     orderBy: { createdAt: 'desc' }
-  });
+  }), ['public-curriculum-courses-v1'], { revalidate: 300 });
+
+export default async function CurriculumPage() {
+  await connection();
+  const courses = await getCurriculumCourses();
 
   return (
     <div style={{ paddingTop: '80px' }}>

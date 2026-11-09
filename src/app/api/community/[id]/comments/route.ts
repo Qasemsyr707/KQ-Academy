@@ -3,10 +3,11 @@ import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const comments = await prisma.communityComment.findMany({
-      where: { postId: params.id },
+      where: { postId: id },
       include: {
         user: { select: { name: true, role: true } }
       },
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
@@ -30,11 +31,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
+    const { id } = await params;
     const comment = await prisma.communityComment.create({
       data: {
         content,
-        postId: params.id,
-        userId: (session.user as any).id
+        postId: id,
+        userId: session.user.id
       },
       include: {
         user: { select: { name: true, role: true } }
