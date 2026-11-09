@@ -18,7 +18,7 @@ GitHub للكود، وCoolify على Hostinger VPS للبناء والتشغيل
 
 | الإعداد | القيمة |
 | --- | --- |
-| Install Command | `npm ci --include=dev` |
+| Install Command | `npm ci --include=dev --include=optional` |
 | Build Command | `npm run build` |
 | Start Command | `npm start -- --hostname 0.0.0.0 --port 3000` |
 | المنفذ الداخلي | `3000` |
@@ -28,9 +28,17 @@ GitHub للكود، وCoolify على Hostinger VPS للبناء والتشغيل
 بـ Nixpacks عند استخدامه حالياً؛ تغيير أداة البناء قرار منفصل يحتاج اختباراً.
 تحتاج مرحلة البناء إلى Prisma CLI وTypeScript من `devDependencies`، ولذلك
 يتضمن أمر التثبيت أدوات التطوير حتى عند ضبط `NODE_ENV=production`.
-اختر إصدار Node.js مدعوماً ومتوافقاً مع الحزم، وثبّت اختياره في Coolify؛ يمكن
-ضبط `NIXPACKS_NODE_VERSION` عند استعمال Nixpacks. الحد الأدنى في Next.js المثبت
-هو Node.js 20.9.0، ويجب مراعاة متطلبات بقية الحزم أيضاً.
+الإصدار المعتمد للتحقق هو Node.js **24.22.2 LTS** أو patch أحدث من سلسلة 24.
+تحدد `.nvmrc` النسخة 24.22.2، ويقبل `engines.node` أيضاً سلسلة 22 ابتداءً من
+22.23.4 كبديل إذا أثبت اختبار Linux مشكلة توافق مع 24. عند استعمال Nixpacks
+اضبط `NIXPACKS_NODE_VERSION=24` في تطبيق الاختبار؛ اختيار major وحده لا يضمن
+patch المطلوب. افحص النسخة الناتجة في البناء والتشغيل. يبدأ أمر البناء بفحص
+`verify:runtime`، ويرفض Node 20 أو patch أقدم من الحدود المحددة. لا تُحدّث
+Prisma أو تغيّر بياناته لمجرد أن وثائق Prisma الأحدث تستهدف إصداراً آخر.
+
+راجع [تحديث الحزم والتحقق على Linux](package-security-linux.md) قبل اعتماد
+صورة البناء. بعد `npm ci --include=dev --include=optional` نفّذ
+`npm run verify:runtime`؛ يجب أن يحل مشغل صور Next نسخة Sharp مصححة فعلياً.
 
 يجب أن يجري تثبيت الحزم و`prisma generate` على Linux داخل البناء، لا بنقل
 `node_modules` أو `.next` من Windows. لا يلزم تغيير `next.config.ts` أو حذف
