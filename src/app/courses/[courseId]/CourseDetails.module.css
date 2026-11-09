@@ -1,0 +1,735 @@
+/* ==========================================================================
+   Course details
+   ========================================================================== */
+
+.page {
+  position: relative;
+  padding-bottom: clamp(4rem, 8vw, 6rem);
+  isolation: isolate;
+}
+
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 560px;
+  z-index: -1;
+  background:
+    radial-gradient(70% 100% at 85% 0%, rgba(224, 184, 106, 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(20, 19, 16, 0.9), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  pointer-events: none;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  grid-template-areas:
+    'header aside'
+    'content aside';
+  column-gap: clamp(2rem, 4vw, 3.5rem);
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 3vw, 2.5rem) var(--gutter) 0;
+}
+
+/* ----- Header ----- */
+.header {
+  grid-area: header;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  color: var(--text-3);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.breadcrumb a {
+  color: var(--gold-200);
+}
+
+.breadcrumb a:hover {
+  color: var(--gold-100);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.title {
+  color: var(--text-1);
+  font-size: clamp(1.75rem, 1.3rem + 1.8vw, 2.6rem);
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.excerpt {
+  max-width: 760px;
+  color: var(--text-2);
+  font-size: var(--fs-lg);
+  line-height: 1.85;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.1rem;
+}
+
+.bestseller {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--r-pill);
+  background: var(--gold-gradient);
+  color: var(--text-on-gold);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.ratingInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ratingValue {
+  color: var(--warning);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.stars {
+  display: inline-flex;
+  gap: 1px;
+  color: var(--warning);
+}
+
+.factLink {
+  color: var(--gold-200);
+  font-size: 0.92rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(224, 184, 106, 0.35);
+  text-underline-offset: 4px;
+}
+
+.factText {
+  color: var(--text-2);
+  font-size: 0.92rem;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-1);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text-2);
+  font-size: 0.84rem;
+}
+
+.metaChip svg {
+  color: var(--gold-300);
+}
+
+/* ----- Purchase card ----- */
+.aside {
+  grid-area: aside;
+  align-self: start;
+  position: sticky;
+  top: calc(var(--nav-h) + 1.25rem);
+  z-index: 5;
+}
+
+.purchase {
+  border-radius: var(--r-xl);
+  border: 1px solid var(--line-gold);
+  background: linear-gradient(180deg, rgba(24, 23, 20, 0.97), rgba(13, 13, 15, 0.98));
+  box-shadow: var(--shadow-lg), var(--inner-highlight);
+  overflow: hidden;
+}
+
+.preview {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+
+.previewImage {
+  object-fit: cover;
+  opacity: 0.72;
+}
+
+.previewOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55));
+  color: #fff;
+}
+
+.previewPlay {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.previewLabel {
+  padding: 0.2rem 0.9rem;
+  border-radius: var(--r-pill);
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.purchaseBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.4rem;
+}
+
+.price {
+  color: var(--text-1);
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.priceFree {
+  color: var(--success);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.actions > a {
+  width: 100%;
+}
+
+.guarantee {
+  margin-top: -0.25rem;
+  color: var(--text-3);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.includesTitle {
+  color: var(--text-1);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.includes {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  color: var(--text-2);
+  font-size: 0.9rem;
+}
+
+.includes li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  line-height: 1.6;
+}
+
+.includes svg {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  color: var(--gold-300);
+}
+
+.secondaryActions {
+  display: flex;
+  justify-content: space-around;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line-1);
+}
+
+.textButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0.3rem 0.6rem;
+  border: none;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out);
+}
+
+.textButton:hover {
+  color: var(--gold-200);
+  background: rgba(203, 161, 83, 0.07);
+}
+
+/* ----- Content ----- */
+.content {
+  grid-area: content;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2.25rem, 4vw, 3rem);
+  min-width: 0;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  scroll-margin-top: calc(var(--nav-h) + 1.5rem);
+}
+
+.blockTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text-1);
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+}
+
+.blockTitle::before {
+  content: '';
+  width: 4px;
+  height: 1.1em;
+  border-radius: 3px;
+  background: var(--gold-gradient);
+}
+
+.blockSub {
+  color: var(--text-3);
+  font-size: 0.94rem;
+}
+
+/* Curriculum accordion */
+.accordion {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-2);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.chapter + .chapter {
+  border-top: 1px solid var(--line-1);
+}
+
+.chapterButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 1.25rem;
+  border: none;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text-1);
+  font-family: inherit;
+  text-align: right;
+  cursor: pointer;
+  transition: background-color var(--dur-2) var(--ease-out);
+}
+
+.chapterButton:hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.chapterButton[aria-expanded='true'] {
+  background: rgba(203, 161, 83, 0.07);
+}
+
+.chapterTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.chapterChevron {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--gold-300);
+  transition: transform var(--dur-3) var(--ease-out), background-color var(--dur-2) var(--ease-out);
+}
+
+.chapterButton[aria-expanded='true'] .chapterChevron {
+  transform: rotate(180deg);
+  background: rgba(203, 161, 83, 0.15);
+}
+
+.chapterCount {
+  flex-shrink: 0;
+  color: var(--text-3);
+  font-size: 0.86rem;
+}
+
+.lessons {
+  list-style: none;
+  padding: 0.35rem 1.25rem 1rem;
+}
+
+.lesson {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 48px;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+  font-size: 0.94rem;
+}
+
+.lesson:last-child {
+  border-bottom: none;
+}
+
+.lesson svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.lessonPreview svg {
+  color: var(--gold-300);
+}
+
+.lessonTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.lessonButton {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--gold-200);
+  font-family: inherit;
+  font-size: inherit;
+  text-align: right;
+  text-decoration: underline;
+  text-decoration-color: rgba(224, 184, 106, 0.35);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.lessonButton:hover {
+  color: var(--gold-100);
+}
+
+.freeBadge {
+  flex-shrink: 0;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--r-pill);
+  background: rgba(203, 161, 83, 0.14);
+  border: 1px solid rgba(203, 161, 83, 0.3);
+  color: var(--gold-200);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.emptyText {
+  padding: 1.5rem;
+  color: var(--text-3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 1.25rem;
+  color: var(--text-2);
+}
+
+.list li::marker {
+  color: var(--gold-300);
+}
+
+.prose {
+  color: var(--text-2);
+  font-size: 0.98rem;
+  line-height: 1.95;
+  white-space: pre-wrap;
+}
+
+/* Instructor */
+.instructorCard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border-radius: var(--r-xl);
+  border: 1px solid var(--line-1);
+  background: linear-gradient(180deg, rgba(22, 22, 26, 0.85), rgba(13, 13, 16, 0.9));
+}
+
+.instructorTop {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.instructorPhoto {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(203, 161, 83, 0.4);
+  background: var(--ink-3);
+  color: var(--text-3);
+}
+
+.instructorPhoto img {
+  object-fit: cover;
+}
+
+.instructorName {
+  color: var(--gold-200);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.instructorRole {
+  color: var(--text-3);
+  font-size: 0.92rem;
+}
+
+.instructorStats {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.6rem;
+}
+
+.instructorStats li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--line-1);
+  color: var(--text-2);
+  font-size: 0.88rem;
+}
+
+.instructorStats svg {
+  color: var(--gold-300);
+}
+
+/* Reviews */
+.reviewsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.reviews {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: 1rem;
+}
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.reviewHead {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.reviewAvatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(224, 184, 106, 0.25), rgba(203, 161, 83, 0.05)), var(--ink-3);
+  border: 1px solid rgba(203, 161, 83, 0.25);
+  color: var(--gold-200);
+  font-weight: 800;
+}
+
+.reviewAvatar img {
+  object-fit: cover;
+}
+
+.reviewName {
+  color: var(--text-1);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.reviewMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.reviewDate {
+  color: var(--text-3);
+  font-size: 0.76rem;
+}
+
+.reviewText {
+  color: var(--text-2);
+  font-size: 0.94rem;
+  line-height: 1.8;
+}
+
+/* Preview modal */
+.modalRoot {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.modalBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.86);
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 920px;
+}
+
+.modalBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+  color: var(--text-1);
+}
+
+.modalTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.modalClose {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.4rem 1rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.modalClose:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.modalPlayer {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'header'
+      'aside'
+      'content';
+  }
+  .aside {
+    position: static;
+    margin-bottom: 2.5rem;
+  }
+  .purchase {
+    max-width: 560px;
+  }
+}
+
+@media (max-width: 480px) {
+  .instructorTop {
+    align-items: flex-start;
+  }
+  .instructorPhoto {
+    width: 72px;
+    height: 72px;
+  }
+  .price {
+    font-size: 1.75rem;
+  }
+}

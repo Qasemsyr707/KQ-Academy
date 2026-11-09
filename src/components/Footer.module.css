@@ -1,0 +1,233 @@
+.footer {
+  position: relative;
+  overflow: hidden;
+  margin-top: auto;
+  background: linear-gradient(180deg, #0b0b0d 0%, #070708 100%);
+  border-top: 1px solid var(--line-1);
+  color: var(--text-1);
+}
+
+/* Gold hairline + soft glow at the top edge */
+.footer::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(203, 161, 83, 0.45), transparent);
+}
+
+.glow {
+  position: absolute;
+  top: -220px;
+  left: 50%;
+  width: min(900px, 120vw);
+  height: 360px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(203, 161, 83, 0.09), transparent 65%);
+  pointer-events: none;
+}
+
+.inner {
+  position: relative;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding: clamp(3.5rem, 6vw, 5rem) var(--gutter) 2rem;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) 1fr;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  padding-bottom: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+/* ----- Brand ----- */
+.brandBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.brandLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: fit-content;
+  color: var(--text-1);
+}
+
+.brandLink:hover {
+  color: var(--text-1);
+}
+
+.logo {
+  filter: drop-shadow(0 0 14px rgba(203, 161, 83, 0.28));
+}
+
+.brandName {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.tagline {
+  color: var(--text-3);
+  font-size: 0.92rem;
+  line-height: 1.8;
+  max-width: 34ch;
+}
+
+.socials {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.social {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0.3rem 0.85rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition:
+    color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out);
+}
+
+.social:hover {
+  color: var(--gold-200);
+  border-color: var(--line-gold);
+  background: rgba(203, 161, 83, 0.07);
+  transform: translateY(-2px);
+}
+
+/* ----- Link columns ----- */
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 2.25rem 1.75rem;
+}
+
+.columnTitle {
+  position: relative;
+  margin-bottom: 1.15rem;
+  padding-bottom: 0.7rem;
+  color: var(--text-1);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.columnTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--gold-gradient);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--text-3);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  transition: color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+
+.link::before {
+  content: '';
+  width: 0;
+  height: 1.5px;
+  margin-inline-end: 0;
+  background: var(--gold-300);
+  transition: width var(--dur-2) var(--ease-out), margin var(--dur-2) var(--ease-out);
+}
+
+.link:hover {
+  color: var(--gold-200);
+}
+
+.link:hover::before {
+  width: 10px;
+  margin-inline-end: 0.45rem;
+}
+
+/* ----- Bottom bar ----- */
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--line-1);
+}
+
+.copy {
+  color: var(--text-3);
+  font-size: 0.86rem;
+}
+
+.lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 38px;
+  padding: 0.4rem 1rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: border-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+
+.lang:hover {
+  border-color: var(--line-gold);
+  color: var(--text-1);
+}
+
+@media (max-width: 900px) {
+  .top {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
+  }
+  .bottom {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 360px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
