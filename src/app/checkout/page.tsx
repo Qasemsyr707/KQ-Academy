@@ -1,17 +1,22 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, Wallet, ShieldCheck, CheckCircle, Tag, AlertTriangle, ArrowRight, Upload, HelpCircle, Lock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { checkoutResult } from '@/lib/payments/checkout-result';
+
+type CheckoutCourse = { title: string; price: number; thumbnail: string | null; instructor: { name: string } };
+type WalletBalance = { walletUSD: number; walletSYP: number };
+type TrackingWindow = Window & { fbq?: (action: string, event: string, payload: { value: number; currency: string }) => void };
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const courseId = searchParams?.get('courseId') || '';
 
-  const [course, setCourse] = useState<any>(null);
-  const [walletData, setWalletData] = useState<any>(null);
+  const [course, setCourse] = useState<CheckoutCourse | null>(null);
+  const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState('STRIPE');
   const [coupon, setCoupon] = useState('');
@@ -19,6 +24,9 @@ function CheckoutContent() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const submitting = useRef(false);
+  const operation = useRef<{ fingerprint: string; id: string } | null>(null);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [receiptFileName, setReceiptFileName] = useState<string | null>(null);
   const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({});
@@ -39,13 +47,13 @@ function CheckoutContent() {
           setCourse(data.course);
           setWalletData(data.wallet);
           setPaymentSettings(data.paymentSettings || {});
-          if (typeof window !== 'undefined' && (window as any).fbq) {
-            (window as any).fbq('track', 'InitiateCheckout', { value: data.course?.price, currency: 'USD' });
-          }
+          (window as TrackingWindow).fbq?.('track', 'InitiateCheckout', { value: data.course?.price, currency: 'USD' });
+          const available = ['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'WALLET', 'MANUAL'].find(method => data.paymentSettings?.[`ENABLE_${method}`] !== 'false');
+          if (available) setPaymentMethod(available);
         } else {
           setError(data.error);
         }
-      } catch (err) {
+      } catch {
         setError('تعذر جلب بيانات الكورس.');
       }
       setLoading(false);
@@ -69,17 +77,19 @@ function CheckoutContent() {
         setError(data.error);
         setDiscount(0);
       }
-    } catch (err) {
+    } catch {
       setError('خطأ في التحقق من الكوبون');
     }
   };
 
   const handleCheckout = async () => {
+    if (submitting.current || success) return;
     if (paymentMethod === 'MANUAL' && !receiptImage) {
       setError('يرجى إرفاق صورة الإيصال لإتمام طلب التحويل اليدوي');
       return;
     }
 
+    submitting.current = true;
     setProcessing(true);
     setError('');
     
@@ -88,28 +98,29 @@ function CheckoutContent() {
         const res = await fetch('/api/checkout/wallet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ courseId, couponCode: coupon || undefined })
+          body: JSON.stringify({ courseId, paymentCurrency: 'USD', couponCode: coupon || undefined })
         });
         const data = await res.json();
         if (res.ok) {
           setSuccess(true);
-          if (typeof window !== 'undefined' && (window as any).fbq) {
-            (window as any).fbq('track', 'Purchase', { value: finalPrice, currency: 'USD' });
-          }
+          setSuccessMessage('تم الشراء بنجاح، جاري التوجيه...');
+          (window as TrackingWindow).fbq?.('track', 'Purchase', { value: finalPrice, currency: 'USD' });
           setTimeout(() => {
-            window.location.href = `/courses/${courseId}/learn`;
+            window.location.assign(`/courses/${encodeURIComponent(courseId)}/learn`);
           }, 2000);
         } else {
           setError(data.error || 'فشلت عملية الدفع من المحفظة');
         }
       } else {
-        // Stripe, PayPal, Manual
+        const fingerprint = JSON.stringify([courseId, paymentMethod, coupon, receiptImage]);
+        if (operation.current?.fingerprint !== fingerprint) operation.current = { fingerprint, id: crypto.randomUUID() };
         const res = await fetch('/api/checkout/gateway', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             courseId, 
             provider: paymentMethod, 
+            operationId: operation.current.id,
             couponCode: coupon || undefined,
             receiptImage: paymentMethod === 'MANUAL' ? receiptImage : undefined
           })
@@ -117,22 +128,23 @@ function CheckoutContent() {
         const data = await res.json();
         
         if (res.ok) {
-          if (data.redirectUrl) {
-            window.location.href = data.redirectUrl;
-          } else {
-            setSuccess(true); // Manual receipt uploaded or similar
-            if (typeof window !== 'undefined' && (window as any).fbq) {
-              (window as any).fbq('track', 'Purchase', { value: finalPrice, currency: 'USD' });
-            }
+          const result = checkoutResult(data, paymentMethod);
+          if (result.kind === 'redirect') window.location.assign(result.url);
+          else if (result.kind === 'enrolled') window.location.assign(`/courses/${encodeURIComponent(courseId)}/learn`);
+          else {
+            setSuccess(true);
+            setSuccessMessage('تم إرسال طلب الدفع وهو قيد المراجعة. سيُفعّل الوصول بعد تأكيد الدفع.');
           }
         } else {
           setError(data.error || 'حدث خطأ في تجهيز بوابة الدفع');
         }
       }
-    } catch (err) {
-      setError('خطأ في الاتصال بالخادم');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'تعذّر تأكيد الطلب. أعد المحاولة بنفس البيانات للتحقق من حالته.');
+    } finally {
+      submitting.current = false;
+      setProcessing(false);
     }
-    setProcessing(false);
   };
 
   if (!courseId) {
@@ -156,7 +168,7 @@ function CheckoutContent() {
     );
   }
 
-  const finalPrice = course?.price - (course?.price * (discount / 100));
+  const finalPrice = (course?.price ?? 0) * (1 - discount / 100);
 
   return (
     <div style={{ minHeight: '100vh', background: '#050505', color: '#fff' }}>
@@ -343,7 +355,7 @@ function CheckoutContent() {
                     <span style={{ fontSize: '1.1rem' }}>رصيدك الحالي:</span>
                     <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>${walletData?.walletUSD?.toFixed(2) || '0.00'}</span>
                   </div>
-                  {(walletData?.walletUSD || 0) < (course?.price - (course?.price * (discount / 100))) ? (
+                  {(walletData?.walletUSD || 0) < finalPrice ? (
                     <div style={{ color: 'var(--danger)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <AlertTriangle size={18} /> رصيدك غير كافٍ لإتمام عملية الشراء. يرجى شحن محفظتك أولاً.
                     </div>
@@ -430,7 +442,7 @@ function CheckoutContent() {
               )}
               <div>
                 <h3 style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.2rem' }}>{course?.title}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: 0 }}>{(course?.instructor as any)?.name}</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', margin: 0 }}>{course?.instructor.name}</p>
               </div>
             </div>
 
@@ -443,7 +455,7 @@ function CheckoutContent() {
               {discount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)' }}>
                   <span>الخصم ({discount}%)</span>
-                  <span>- ${(course?.price * (discount / 100)).toFixed(2)}</span>
+                  <span>- ${((course?.price ?? 0) * (discount / 100)).toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -461,7 +473,7 @@ function CheckoutContent() {
             
             {success && (
               <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid var(--success)', padding: '1rem', borderRadius: '12px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                <CheckCircle size={20} /> تمت العملية بنجاح! جاري التوجيه...
+                <CheckCircle size={20} /> {successMessage}
               </div>
             )}
 

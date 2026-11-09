@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser } from '@/lib/request-user';
+import { CheckoutError } from '@/lib/payments/checkout-context';
+import { paymentId, positiveAmount, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
+import { checkoutAvailable } from '@/lib/payments/availability';
+
+const PUBLIC_PAYMENT_SWITCHES = ['ENABLE_STRIPE', 'ENABLE_PAYPAL', 'ENABLE_TABBY', 'ENABLE_TAMARA', 'ENABLE_WALLET', 'ENABLE_MANUAL'];
 
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
+    const viewer = await requireRequestUser(req);
 
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('courseId');
 
-    if (!courseId) {
-      return NextResponse.json({ error: 'معرف الكورس مفقود' }, { status: 400 });
-    }
+    if (!paymentId(courseId)) throw new CheckoutError(400, 'معرف الكورس مفقود');
 
     const course = await prisma.course.findUnique({
       where: { id: courseId },
@@ -29,11 +28,11 @@ export async function GET(req: Request) {
     });
 
     if (!course) {
-      return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
+      throw new CheckoutError(404, 'الكورس غير موجود');
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: (session.user as any).id },
+      where: { id: viewer.id },
       select: { walletUSD: true, walletSYP: true }
     });
 
@@ -41,24 +40,26 @@ export async function GET(req: Request) {
       where: { key: 'exchangeRate' }
     });
     
-    const exchangeRate = exchangeRateSetting ? parseFloat(exchangeRateSetting.value) : 14500;
+    const exchangeRate = positiveAmount(exchangeRateSetting ? Number(exchangeRateSetting.value) : 14500);
 
-    const allSettings = await prisma.setting.findMany();
+    const allSettings = await prisma.setting.findMany({ where: { key: { in: PUBLIC_PAYMENT_SWITCHES } } });
     const paymentSettings: Record<string, string> = {};
     allSettings.forEach(s => {
-      if (s.key.startsWith('ENABLE_')) {
+      if (PUBLIC_PAYMENT_SWITCHES.includes(s.key)) {
         paymentSettings[s.key] = s.value;
       }
     });
+    for (const key of PUBLIC_PAYMENT_SWITCHES) {
+      if (!checkoutAvailable(key.slice('ENABLE_'.length))) paymentSettings[key] = 'false';
+    }
 
     return NextResponse.json({
       course,
       wallet: user,
       exchangeRate,
       paymentSettings
-    });
+    }, { headers: WALLET_HEADERS });
   } catch (error) {
-    console.error('Checkout Info API Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
+    return walletError(error);
   }
 }

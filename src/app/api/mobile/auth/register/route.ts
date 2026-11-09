@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 
 export async function POST(req: Request) {
   try {
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) return NextResponse.json({ error: 'خدمة تسجيل الدخول غير متاحة حالياً' }, { status: 503 });
     const { name, email, password } = await req.json();
 
     if (!name || !email || !password) {
@@ -28,7 +30,6 @@ export async function POST(req: Request) {
       }
     });
 
-    const secret = process.env.NEXTAUTH_SECRET || 'fallback_secret_for_mobile';
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, secret, {
       expiresIn: '30d',
     });

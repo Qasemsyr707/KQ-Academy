@@ -3,9 +3,6 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
-// Admin emails that always have ADMIN role
-const ADMIN_EMAILS = ['qasemalsokhny@gmail.com'];
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -35,16 +32,8 @@ export const authOptions: NextAuthOptions = {
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
         if (!isPasswordValid) return null;
 
-        // Force ADMIN role for admin emails
-        const role = ADMIN_EMAILS.includes(user.email.toLowerCase()) ? 'ADMIN' : user.role;
-
-        // Update role in DB if it changed
-        if (role !== user.role) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { role: 'ADMIN' },
-          });
-        }
+        // Database privileges are authoritative; login must never promote users.
+        const role = user.role;
 
         // NOTE: We do NOT store the image in the token to avoid
         // REQUEST_HEADER_TOO_LARGE errors (base64 images are too big for cookies).
@@ -84,5 +73,5 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: { signIn: '/login' },
-  secret: process.env.NEXTAUTH_SECRET || 'kq-academy-secret-2026-qasem-khaled',
+  secret: process.env.NEXTAUTH_SECRET,
 };

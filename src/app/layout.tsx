@@ -6,6 +6,7 @@ import AuthProvider from '@/components/AuthProvider';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import { serializeJsonLd } from '@/lib/safe-json-ld';
 
 export const metadata: Metadata = {
   title: 'KQ Academy | أكاديمية KQ للتعليم الإلكتروني',
@@ -69,7 +70,7 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(orgSchema) }}
         />
         {/* Meta Pixel Code */}
         <script dangerouslySetInnerHTML={{

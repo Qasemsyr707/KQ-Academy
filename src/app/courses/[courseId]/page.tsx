@@ -6,6 +6,7 @@ import CourseDetailsClient from './CourseDetailsClient';
 import { Metadata } from 'next';
 import { protectCourseLessonSources } from '@/lib/lesson-links';
 import { getBunnyPlaybackUrl } from '@/lib/bunny-playback';
+import { serializeJsonLd } from '@/lib/safe-json-ld';
 
 export async function generateMetadata({ params }: { params: Promise<{ courseId: string }> }): Promise<Metadata> {
   try {
@@ -148,7 +149,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
       <>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(courseSchema) }}
         />
         <CourseDetailsClient course={playerCourse} isEnrolled={isEnrolled} />
       </>

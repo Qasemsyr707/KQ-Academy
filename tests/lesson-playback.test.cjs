@@ -133,7 +133,13 @@ test('anonymous mobile catalogue and detail responses redact paid lesson sources
   }
 });
 
-test('enrolled mobile dashboard retains enrollment and certificate metadata while removing reusable lesson sources', async () => {
+test('enrolled mobile dashboard retains enrollment and certificate metadata while removing reusable lesson sources', async t => {
+  const originalSecret = process.env.NEXTAUTH_SECRET;
+  process.env.NEXTAUTH_SECRET = 'dashboard-playback-unit-test-only';
+  t.after(() => {
+    if (originalSecret === undefined) delete process.env.NEXTAUTH_SECRET;
+    else process.env.NEXTAUTH_SECRET = originalSecret;
+  });
   const course = { id: 'course', chapters: [{ lessons: [{ id: LESSON, title: 'Private', videoUrl: VIDEO, content: 'private notes', liveRoomName: 'private-room' }] }] };
   const certificate = { id: 'certificate', course: { title: 'Course' } };
   const mocks = {

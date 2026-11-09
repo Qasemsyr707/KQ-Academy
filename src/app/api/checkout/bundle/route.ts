@@ -1,89 +1,35 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+﻿import { NextResponse } from 'next/server';
+import { requireRequestUser } from '@/lib/request-user';
+import { CheckoutError } from '@/lib/payments/checkout-context';
+import { withPaymentTransaction } from '@/lib/payments/transactions';
+import { debitWallet, paymentBody, paymentId, positiveAmount, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 
-const AFFILIATE_COMMISSION_RATE = 0.10;
-
-// POST /api/checkout/bundle — Purchase a course bundle
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
+    const user = await requireRequestUser(req);
+    const { bundleId, paymentMethod, referralCode } = paymentBody(await req.json());
+    if (!paymentId(bundleId) || paymentMethod !== 'WALLET' || (referralCode !== undefined && (typeof referralCode !== 'string' || referralCode.length > 200))) {
+      throw new CheckoutError(400, 'بيانات الحزمة أو طريقة الدفع غير صالحة');
     }
-
-    const { bundleId, paymentMethod, referralCode } = await req.json();
-
-    const bundle = await prisma.courseBundle.findUnique({
-      where: { id: bundleId, isActive: true },
-      include: { courses: { include: { course: true } } }
-    });
-
-    if (!bundle) {
-      return NextResponse.json({ error: 'الحزمة غير موجودة' }, { status: 404 });
-    }
-
-    // Wallet payment
-    if (paymentMethod === 'WALLET') {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-      if (!user || user.walletUSD < bundle.price) {
-        return NextResponse.json({ error: 'رصيد المحفظة غير كافٍ' }, { status: 400 });
+    await withPaymentTransaction(async tx => {
+      const enabled = await tx.setting.findUnique({ where: { key: 'ENABLE_WALLET' } });
+      if (enabled?.value === 'false') throw new CheckoutError(403, 'الدفع من المحفظة غير مفعّل');
+      const existing = await tx.bundlePayment.findFirst({ where: { userId: user.id, bundleId, status: 'APPROVED' } });
+      if (existing) return;
+      const bundle = await tx.courseBundle.findUnique({ where: { id: bundleId, isActive: true }, include: { courses: { include: { course: true } } } });
+      if (!bundle) throw new CheckoutError(404, 'الحزمة غير موجودة');
+      const amount = positiveAmount(bundle.price);
+      if (!bundle.courses.length) throw new CheckoutError(400, 'الحزمة لا تحتوي كورسات متاحة');
+      if (!await debitWallet(tx, user.id, 'USD', amount)) throw new CheckoutError(400, 'رصيد المحفظة غير كافٍ');
+      await tx.bundlePayment.create({ data: { userId: user.id, bundleId: bundle.id, amount, provider: 'WALLET', status: 'APPROVED' } });
+      for (const course of bundle.courses) {
+        await tx.enrollment.upsert({ where: { userId_courseId: { userId: user.id, courseId: course.courseId } }, update: {}, create: { userId: user.id, courseId: course.courseId, progress: 0 } });
       }
-
-      await prisma.$transaction(async (tx) => {
-        // Deduct wallet
-        await tx.user.update({
-          where: { id: session.user.id },
-          data: { walletUSD: { decrement: bundle.price } }
-        });
-
-        // Create payment record
-        await tx.bundlePayment.create({
-          data: {
-            userId: session.user.id,
-            bundleId: bundle.id,
-            amount: bundle.price,
-            provider: 'WALLET',
-            status: 'APPROVED'
-          }
-        });
-
-        // Enroll user in ALL courses in the bundle
-        for (const bc of bundle.courses) {
-          await tx.enrollment.upsert({
-            where: { userId_courseId: { userId: session.user.id, courseId: bc.courseId } },
-            update: {},
-            create: { userId: session.user.id, courseId: bc.courseId, progress: 0 }
-          });
-        }
-
-        // Handle affiliate commission
-        if (referralCode) {
-          const referrer = await tx.user.findFirst({
-            where: { affiliateCode: referralCode, id: { not: session.user.id } }
-          });
-          if (referrer) {
-            const commission = bundle.price * AFFILIATE_COMMISSION_RATE;
-            await tx.affiliateEarning.create({
-              data: {
-                ownerId: referrer.id,
-                buyerId: session.user.id,
-                bundleId: bundle.id,
-                amount: commission,
-                status: 'PENDING'
-              }
-            });
-          }
-        }
-      });
-
-      return NextResponse.json({ success: true, message: 'تم شراء الحزمة بنجاح! تم تسجيلك في جميع الكورسات.' });
-    }
-
-    return NextResponse.json({ error: 'طريقة الدفع غير مدعومة بعد' }, { status: 400 });
-  } catch (error) {
-    console.error('Bundle Checkout Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ أثناء الشراء' }, { status: 500 });
-  }
+      if (referralCode) {
+        const referrer = await tx.user.findFirst({ where: { affiliateCode: referralCode, id: { not: user.id } } });
+        if (referrer) await tx.affiliateEarning.create({ data: { ownerId: referrer.id, buyerId: user.id, bundleId: bundle.id, amount: amount * 0.1, status: 'PENDING' } });
+      }
+    });
+    return NextResponse.json({ success: true, message: 'تم شراء الحزمة بنجاح! تم تسجيلك في جميع الكورسات.' }, { headers: WALLET_HEADERS });
+  } catch (error) { return walletError(error); }
 }

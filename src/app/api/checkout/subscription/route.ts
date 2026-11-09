@@ -1,85 +1,32 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { sendWelcomeEmail } from '@/lib/email';
+﻿import { NextResponse } from 'next/server';
+import { requireRequestUser } from '@/lib/request-user';
+import { CheckoutError } from '@/lib/payments/checkout-context';
+import { withPaymentTransaction } from '@/lib/payments/transactions';
+import { debitWallet, paymentBody, paymentId, positiveAmount, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 
-// POST /api/checkout/subscription — Subscribe to a plan
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
-    }
-
-    const { planId, period, paymentMethod } = await req.json();
-
-    const plan = await prisma.subscriptionPlan.findUnique({
-      where: { id: planId, isActive: true }
-    });
-
-    if (!plan) {
-      return NextResponse.json({ error: 'خطة الاشتراك غير موجودة' }, { status: 404 });
-    }
-
-    const price = period === 'YEARLY' ? plan.priceYearly : plan.priceMonthly;
-    const endDate = new Date();
-    if (period === 'YEARLY') {
-      endDate.setFullYear(endDate.getFullYear() + 1);
-    } else {
-      endDate.setMonth(endDate.getMonth() + 1);
-    }
-
-    // Check for existing active subscription
-    const existing = await prisma.userSubscription.findFirst({
-      where: { userId: session.user.id, status: 'ACTIVE' }
-    });
-    if (existing) {
-      return NextResponse.json({ error: 'لديك اشتراك نشط بالفعل' }, { status: 400 });
-    }
-
-    if (paymentMethod === 'WALLET') {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-      if (!user || user.walletUSD < price) {
-        return NextResponse.json({ error: 'رصيد المحفظة غير كافٍ' }, { status: 400 });
+    const user = await requireRequestUser(req);
+    const { planId, period, paymentMethod } = paymentBody(await req.json());
+    if (!paymentId(planId) || (period !== 'MONTHLY' && period !== 'YEARLY') || paymentMethod !== 'WALLET') throw new CheckoutError(400, 'بيانات الاشتراك أو طريقة الدفع غير صالحة');
+    const result = await withPaymentTransaction(async tx => {
+      const enabled = await tx.setting.findUnique({ where: { key: 'ENABLE_WALLET' } });
+      if (enabled?.value === 'false') throw new CheckoutError(403, 'الدفع من المحفظة غير مفعّل');
+      const existing = await tx.userSubscription.findFirst({ where: { userId: user.id, status: 'ACTIVE', endDate: { gt: new Date() } } });
+      if (existing) {
+        if (existing.planId !== planId || existing.period !== period) throw new CheckoutError(409, 'لديك اشتراك نشط بالفعل');
+        return { message: 'لديك اشتراك نشط بالفعل في هذه الخطة' };
       }
-
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: session.user.id },
-          data: { walletUSD: { decrement: price } }
-        }),
-        prisma.userSubscription.create({
-          data: {
-            userId: session.user.id,
-            planId: plan.id,
-            period,
-            status: 'ACTIVE',
-            endDate,
-            provider: 'WALLET'
-          }
-        }),
-        prisma.walletTransaction.create({
-          data: {
-            userId: session.user.id,
-            amount: -price,
-            currency: 'USD',
-            type: 'PURCHASE',
-            status: 'APPROVED',
-            provider: 'WALLET'
-          }
-        })
-      ]);
-
-      return NextResponse.json({
-        success: true,
-        message: `تم تفعيل اشتراك "${plan.name}" بنجاح حتى ${endDate.toLocaleDateString('ar-EG')}`
-      });
-    }
-
-    return NextResponse.json({ error: 'طريقة الدفع غير مدعومة بعد' }, { status: 400 });
-  } catch (error) {
-    console.error('Subscription Checkout Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ أثناء الاشتراك' }, { status: 500 });
-  }
+      const plan = await tx.subscriptionPlan.findUnique({ where: { id: planId, isActive: true } });
+      if (!plan) throw new CheckoutError(404, 'خطة الاشتراك غير موجودة');
+      const amount = positiveAmount(period === 'YEARLY' ? plan.priceYearly : plan.priceMonthly);
+      if (!await debitWallet(tx, user.id, 'USD', amount)) throw new CheckoutError(400, 'رصيد المحفظة غير كافٍ');
+      const endDate = new Date();
+      if (period === 'YEARLY') endDate.setFullYear(endDate.getFullYear() + 1); else endDate.setMonth(endDate.getMonth() + 1);
+      await tx.userSubscription.create({ data: { userId: user.id, planId: plan.id, period, status: 'ACTIVE', endDate, provider: 'WALLET' } });
+      await tx.walletTransaction.create({ data: { userId: user.id, amount, currency: 'USD', type: 'PURCHASE', status: 'APPROVED', provider: 'WALLET' } });
+      return { message: `تم تفعيل اشتراك "${plan.name}" بنجاح حتى ${endDate.toLocaleDateString('ar-EG')}` };
+    });
+    return NextResponse.json({ success: true, ...result }, { headers: WALLET_HEADERS });
+  } catch (error) { return walletError(error); }
 }

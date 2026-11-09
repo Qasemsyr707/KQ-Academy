@@ -17,8 +17,9 @@ export class PaymentFactory {
       case 'TAMARA':
         return new TamaraAdapter();
       case 'MANUAL':
-      default:
         return new ManualAdapter();
+      default:
+        throw new Error('Unsupported payment provider');
     }
   }
 }

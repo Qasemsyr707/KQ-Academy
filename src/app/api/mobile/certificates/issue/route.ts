@@ -10,12 +10,16 @@ export async function POST(req: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const secret = process.env.NEXTAUTH_SECRET || 'fallback_secret_for_mobile';
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) return NextResponse.json({ error: 'خدمة تسجيل الدخول غير متاحة حالياً' }, { status: 503 });
     
-    let decoded: any;
+    let decoded: jwt.JwtPayload | string;
     try {
-      decoded = jwt.verify(token, secret);
-    } catch (e) {
+      decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+    } catch {
+      return NextResponse.json({ error: 'توكن غير صالح' }, { status: 401 });
+    }
+    if (typeof decoded === 'string' || typeof decoded.id !== 'string' || !decoded.id) {
       return NextResponse.json({ error: 'توكن غير صالح' }, { status: 401 });
     }
 

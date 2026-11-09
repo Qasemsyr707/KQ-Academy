@@ -3,13 +3,13 @@ import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development-only-qasm-elearning';
-
 export async function POST(req: Request) {
   try {
+    const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) return NextResponse.json({ error: 'خدمة تسجيل الدخول غير متاحة حالياً' }, { status: 503 });
     const { email, password } = await req.json();
 
-    if (!email || !password) {
+    if (typeof email !== 'string' || !email || email.length > 320 || typeof password !== 'string' || !password || password.length > 1024) {
       return NextResponse.json({ error: 'الرجاء إدخال البريد الإلكتروني وكلمة المرور' }, { status: 400 });
     }
 
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       where: { email }
     });
 
-    if (!user) {
+    if (!user || user.isBanned) {
       return NextResponse.json({ error: 'بيانات الدخول غير صحيحة' }, { status: 401 });
     }
 
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     // Generate JWT Token for Mobile
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, name: user.name },
-      JWT_SECRET,
+      secret,
       { expiresIn: '30d' }
     );
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('Mobile Login API Error:', error);
+    if (error instanceof SyntaxError) return NextResponse.json({ error: 'بيانات الدخول غير صالحة' }, { status: 400 });
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
   }
 }
