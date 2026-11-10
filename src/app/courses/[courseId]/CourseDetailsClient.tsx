@@ -237,7 +237,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: Co
         </aside>
 
         {/* ----- Content ----- */}
-        <div className={styles.content}>
+        <div className={`${styles.content} kq-section-light`}>
           {/* Course Content */}
           <section className={styles.block} aria-labelledby="course-content-title" data-reveal="">
             <h2 id="course-content-title" className={styles.blockTitle}>محتوى الدورة</h2>

@@ -225,7 +225,7 @@ export default function CoursesClient({
 
       {/* Featured Courses Section */}
       {showFeatured && (
-        <section className={`${styles.container} ${styles.featured}`} aria-labelledby="catalog-featured-title">
+        <section className={`${styles.container} ${styles.featured} kq-section-light`} aria-labelledby="catalog-featured-title">
           <h2 id="catalog-featured-title" className={styles.sectionTitle}>
             <span className={styles.sectionIcon} aria-hidden="true"><Star size={22} fill="currentColor" /></span>
             دورات مميزة ننصح بها
@@ -253,7 +253,7 @@ export default function CoursesClient({
         </section>
       )}
 
-      <div className={`${styles.container} ${styles.layout}`}>
+      <div className={`${styles.container} ${styles.layout} kq-section-light`}>
         {/* Desktop Sidebar */}
         <aside className={styles.sidebar} aria-label="فلاتر البحث">
           {renderFilters('desktop')}

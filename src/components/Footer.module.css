@@ -2,7 +2,7 @@
   position: relative;
   overflow: hidden;
   margin-top: auto;
-  background: linear-gradient(180deg, #0b0b0d 0%, #070708 100%);
+  background: #2b2f36;
   border-top: 1px solid var(--line-1);
   color: var(--text-1);
 }
@@ -13,7 +13,7 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(203, 161, 83, 0.45), transparent);
+  background: linear-gradient(90deg, transparent, rgba(201, 164, 92, 0.35), transparent);
 }
 
 .glow {
@@ -23,7 +23,7 @@
   width: min(900px, 120vw);
   height: 360px;
   transform: translateX(-50%);
-  background: radial-gradient(ellipse at center, rgba(203, 161, 83, 0.09), transparent 65%);
+  background: radial-gradient(ellipse at center, rgba(201, 164, 92, 0.04), transparent 65%);
   pointer-events: none;
 }
 
@@ -61,7 +61,7 @@
 }
 
 .logo {
-  filter: drop-shadow(0 0 14px rgba(203, 161, 83, 0.28));
+  filter: drop-shadow(0 0 10px rgba(201, 164, 92, 0.16));
 }
 
 .brandName {
@@ -105,7 +105,7 @@
 .social:hover {
   color: var(--gold-200);
   border-color: var(--line-gold);
-  background: rgba(203, 161, 83, 0.07);
+  background: rgba(201, 164, 92, 0.07);
   transform: translateY(-2px);
 }
 

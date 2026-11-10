@@ -110,10 +110,10 @@ export default function ResumePage() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif', direction: 'rtl' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif', direction: 'rtl' }}>
       
       {/* Navbar */}
-      <div style={{ padding: '1rem 2rem', background: '#0a0a0a', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ padding: '1rem 2rem', background: 'var(--ink-2)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem' }}>
             لوحة التحكم <ChevronRight size={14} />
@@ -315,7 +315,7 @@ export default function ResumePage() {
         </div>
 
         {/* Right: Preview Panel */}
-        <div style={{ background: '#0a0a0a', overflowY: 'auto', padding: '2rem', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ background: 'var(--ink-2)', overflowY: 'auto', padding: '2rem', display: 'flex', justifyContent: 'center' }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}

@@ -2,7 +2,7 @@ import { MapPin, MessageCircle, Mail, Phone } from 'lucide-react';
 
 export default function ContactPage() {
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '4rem 2rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', padding: '4rem 2rem' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', color: 'var(--primary)', textAlign: 'center' }}>تواصل معنا</h1>
         <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>نحن هنا للإجابة على استفساراتكم ومساعدتكم في أي وقت.</p>

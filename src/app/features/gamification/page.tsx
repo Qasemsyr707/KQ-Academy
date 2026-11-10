@@ -54,7 +54,7 @@ export default function GamificationPage() {
   };
 
   if (loading) {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: 'var(--primary)' }}><Loader2 className="animate-spin" size={40} /></div>;
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: 'var(--primary)' }}><Loader2 className="animate-spin" size={40} /></div>;
   }
 
   if (!data || !data.user) {
@@ -67,7 +67,7 @@ export default function GamificationPage() {
   const progressPercent = ((user.points % 500) / 500) * 100;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '4rem 2rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', padding: '4rem 2rem' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '3rem' }}>

@@ -257,7 +257,7 @@ export default function LiveClient({ initialStreams, initialInstructors }: { ini
       {/* Edit Quota Modal */}
       {editingInstructor && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', width: '100%', maxWidth: '400px' }}>
+          <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', width: '100%', maxWidth: '400px' }}>
             <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--primary)' }}>تعديل حصة المدرب</h2>
             <div style={{ marginBottom: '1.5rem', color: '#fff', fontSize: '1.1rem' }}>{editingInstructor.name}</div>
             

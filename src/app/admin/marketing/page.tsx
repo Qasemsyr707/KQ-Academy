@@ -5,7 +5,7 @@ export const metadata = { title: 'إدارة التسويق | لوحة الأد�
 
 export default function AdminMarketingPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#050505' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--background)' }} />}>
       <MarketingAdminClient />
     </Suspense>
   );

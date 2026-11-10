@@ -61,7 +61,7 @@ export default function SubmissionsClient({ pendingAttempts }: { pendingAttempts
       </div>
 
       {attempts.length === 0 ? (
-        <div style={{ padding: '4rem', textAlign: 'center', background: '#111', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+        <div style={{ padding: '4rem', textAlign: 'center', background: 'var(--ink-3)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
           <CheckCircle size={48} color="rgba(34, 197, 94, 0.5)" style={{ margin: '0 auto 1rem' }} />
           <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#22c55e' }}>تم تصحيح جميع الإجابات!</h3>
           <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: '2rem' }}>لا يوجد أي ملفات بإنتظار التصحيح حالياً.</p>
@@ -69,7 +69,7 @@ export default function SubmissionsClient({ pendingAttempts }: { pendingAttempts
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {attempts.map(attempt => (
-            <div key={attempt.id} style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div key={attempt.id} style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem' }}>
                 <div style={{ display: 'flex', gap: '1rem' }}>

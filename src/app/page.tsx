@@ -64,7 +64,7 @@ export default async function HomePage() {
 
       {/* Featured Courses */}
       {featuredCourses.length > 0 && (
-        <section className={styles.section} aria-labelledby="featured-title">
+        <section className={`${styles.section} kq-section-light`} aria-labelledby="featured-title">
           <div className={styles.container}>
             <SectionHeader
               id="featured-title"
@@ -95,7 +95,7 @@ export default async function HomePage() {
       <div className={styles.seam} aria-hidden="true" />
 
       {/* Latest Courses */}
-      <section className={styles.section} aria-labelledby="latest-title">
+      <section className={`${styles.section} kq-section-light`} aria-labelledby="latest-title">
         <div className={styles.container}>
           <SectionHeader
             id="latest-title"

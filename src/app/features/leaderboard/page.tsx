@@ -65,7 +65,7 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
       {/* Hero Banner */}
       <div style={{
@@ -135,7 +135,7 @@ export default function LeaderboardPage() {
               جاري تحميل قائمة الأوائل...
             </div>
           ) : leaderboard.length === 0 ? (
-            <div style={{ background: '#111', borderRadius: '24px', padding: '4rem 2rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ background: 'var(--ink-3)', borderRadius: '24px', padding: '4rem 2rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
               <Trophy size={64} color="rgba(255,255,255,0.1)" style={{ marginBottom: '1.5rem' }} />
               <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.75rem' }}>القائمة فارغة حتى الآن!</h3>
               <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>كن أول من يصعد إلى قمة الترتيب.</p>
@@ -195,7 +195,7 @@ export default function LeaderboardPage() {
         {/* My Stats Sidebar */}
         <div style={{ position: 'sticky', top: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          <div style={{ background: '#111', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.07)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.07)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'var(--primary)', filter: 'blur(80px)', opacity: 0.15, borderRadius: '50%' }} />
             
             <h3 style={{ fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -227,7 +227,7 @@ export default function LeaderboardPage() {
           </div>
 
           {/* Badges */}
-          <div style={{ background: '#111', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ background: 'var(--ink-3)', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)' }}>
             <h4 style={{ fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               🏅 أوسمتي
             </h4>

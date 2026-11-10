@@ -81,7 +81,7 @@ export default function AdminWalletClient({ initialTransactions, initialRate }: 
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
             {transactions.map(tx => (
-              <div key={tx.id} style={{ background: '#111', padding: '1.5rem', borderRadius: '12px', border: tx.type === 'WITHDRAW' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)', position: 'relative', overflow: 'hidden' }}>
+              <div key={tx.id} style={{ background: 'var(--ink-3)', padding: '1.5rem', borderRadius: '12px', border: tx.type === 'WITHDRAW' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, padding: '0.2rem 1rem', background: tx.type === 'WITHDRAW' ? 'var(--danger)' : 'var(--success)', color: tx.type === 'WITHDRAW' ? '#fff' : '#000', fontSize: '0.8rem', fontWeight: 'bold', borderBottomRightRadius: '8px' }}>
                   {tx.type === 'WITHDRAW' ? 'سحب أرباح' : 'شحن محفظة'}
                 </div>

@@ -17,38 +17,46 @@
 :root {
   color-scheme: dark;
 
-  /* Surfaces — deep, slightly warm charcoal */
-  --ink-0: #060607;
-  --ink-1: #0b0b0d;
-  --ink-2: #111114;
-  --ink-3: #17171b;
-  --ink-4: #1f1f24;
+  /* Surfaces — warm charcoal ladder (page → raised panels) */
+  --ink-0: #2b2f36; /* navbar, hero, dark pages */
+  --ink-1: #2e323a; /* subtle bands */
+  --ink-2: #31353d; /* fields / secondary surfaces */
+  --ink-3: #343941; /* secondary dark surfaces: cards and panels */
+  --ink-4: #3c414a; /* hover / raised */
 
-  /* Brand gold — #cba153 remains the source of truth */
-  --gold-50: #fbf4e4;
-  --gold-100: #f3e3bd;
-  --gold-200: #ecd3a0;
-  --gold-300: #e0b86a;
-  --gold-400: #cba153;
-  --gold-500: #b0883f;
-  --gold-600: #8c6b31;
-  --gold-gradient: linear-gradient(135deg, #f2dca6 0%, #d9b267 38%, #cba153 62%, #9e7a38 100%);
-  --gold-text-gradient: linear-gradient(120deg, #f6e3b4 0%, #e0b86a 42%, #cba153 70%, #b48c45 100%);
-  --gold-soft: rgba(203, 161, 83, 0.1);
-  --gold-glow: rgba(224, 184, 106, 0.22);
+  /* Approved palette (also used by the ivory content scope) */
+  --ivory: #f6f3ed;        /* main ivory background */
+  --ivory-card: #fbf8f3;   /* light cards */
+  --ivory-line: #e8e1d8;   /* light borders */
+  --text-ivory: #2b2b2b;   /* text on ivory */
+  --text-muted: #6f6a64;   /* secondary text on ivory */
+  --gold-hover: #b38b43;   /* gold hover */
+
+  /* Brand gold — #C9A45C is the source of truth */
+  --gold-50: #faf4e6;
+  --gold-100: #f1e3c3;
+  --gold-200: #e6cf9e;
+  --gold-300: #dabb7e;
+  --gold-400: #c9a45c;
+  --gold-500: #b38b43;
+  --gold-600: #8a6c34;
+  --gold-gradient: linear-gradient(135deg, #d4b371 0%, #c9a45c 55%, #b38b43 100%);
+  --gold-text-gradient: linear-gradient(120deg, #e6cf9e 0%, #dabb7e 45%, #c9a45c 100%);
+  --gold-soft: rgba(201, 164, 92, 0.12);
+  --gold-glow: rgba(201, 164, 92, 0.1);
 
   /* Typography colours — warm off-white with measured contrast */
-  --text-1: #f6f2ea;
-  --text-2: rgba(246, 242, 234, 0.74);
-  --text-3: rgba(246, 242, 234, 0.56);
-  --text-on-gold: #17130a;
+  --text-1: #f5f1e8; /* text on dark */
+  --text-2: rgba(245, 241, 232, 0.8);
+  --text-3: rgba(245, 241, 232, 0.66); /* ≥4.5:1 on #2B2F36 and #343941 */
+  --text-on-gold: #2b2b2b;
 
   /* Lines */
-  --line-1: rgba(255, 255, 255, 0.06);
-  --line-2: rgba(255, 255, 255, 0.1);
-  --line-3: rgba(255, 255, 255, 0.16);
-  --line-gold: rgba(203, 161, 83, 0.28);
-  --line-gold-strong: rgba(224, 184, 106, 0.55);
+  --line-1: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.11);
+  --line-3: rgba(255, 255, 255, 0.18);
+  --line-gold: rgba(201, 164, 92, 0.3);
+  --line-gold-strong: rgba(201, 164, 92, 0.6);
 
   /* Semantic */
   --success: #2fbf71;
@@ -62,10 +70,10 @@
   --primary: var(--gold-400);
   --primary-hover: var(--gold-300);
   --secondary: var(--ink-2);
-  --surface: rgba(22, 22, 26, 0.66);
+  --surface: var(--ink-3);
   --border: var(--line-gold);
   --border-light: var(--line-1);
-  --glass: rgba(9, 9, 11, 0.72);
+  --glass: rgba(35, 38, 43, 0.94);
   --color-text-muted: var(--text-3);
 
   /* Type */
@@ -94,15 +102,16 @@
   --r-pill: 999px;
 
   /* Elevation (static — never animated directly) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 10px 30px -12px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 30px 70px -24px rgba(0, 0, 0, 0.85), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
-  --shadow-gold: 0 18px 50px -18px rgba(203, 161, 83, 0.45);
-  --inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-sm: 0 1px 2px rgba(10, 11, 13, 0.25), 0 2px 8px rgba(10, 11, 13, 0.16);
+  --shadow-md: 0 10px 28px -14px rgba(10, 11, 13, 0.55), 0 2px 6px rgba(10, 11, 13, 0.18);
+  --shadow-lg: 0 26px 56px -26px rgba(10, 11, 13, 0.65), 0 8px 20px -12px rgba(10, 11, 13, 0.3);
+  --shadow-gold: 0 12px 30px -18px rgba(201, 164, 92, 0.2);
+  --inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
   /* Glass */
-  --glass-bg: linear-gradient(180deg, rgba(28, 28, 33, 0.72), rgba(16, 16, 19, 0.72));
-  --glass-blur: 14px;
+  /* Panels are solid surfaces (no glassmorphism) */
+  --glass-bg: linear-gradient(180deg, #373c44, #343941);
+  --glass-blur: 0px;
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -125,7 +134,6 @@
 @media (max-width: 900px) {
   :root {
     --nav-h: 64px;
-    --glass-blur: 10px;
   }
 }
 
@@ -181,9 +189,8 @@ body::before {
   inset: 0;
   height: 100vh;
   background:
-    radial-gradient(60rem 40rem at 85% -10%, rgba(203, 161, 83, 0.07), transparent 60%),
-    radial-gradient(50rem 36rem at 0% 40%, rgba(203, 161, 83, 0.035), transparent 60%),
-    linear-gradient(180deg, var(--ink-0), var(--ink-1));
+    radial-gradient(60rem 40rem at 85% -10%, rgba(201, 164, 92, 0.035), transparent 60%),
+    linear-gradient(180deg, #2e323a, var(--ink-0) 40%);
   z-index: -1;
   pointer-events: none;
 }
@@ -371,7 +378,7 @@ bdi {
   padding: 0.38rem 0.9rem;
   border-radius: var(--r-pill);
   border: 1px solid var(--line-gold);
-  background: linear-gradient(180deg, rgba(203, 161, 83, 0.12), rgba(203, 161, 83, 0.04));
+  background: linear-gradient(180deg, rgba(201, 164, 92, 0.12), rgba(201, 164, 92, 0.04));
   color: var(--gold-200);
   font-size: var(--fs-sm);
   font-weight: 700;
@@ -536,11 +543,11 @@ bdi {
   --btn-border: transparent;
   background: var(--gold-gradient);
   color: var(--text-on-gold);
-  box-shadow: 0 10px 30px -12px rgba(203, 161, 83, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 22px -14px rgba(201, 164, 92, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .btn-solid::after {
-  background: linear-gradient(135deg, #f7e6bd 0%, #e3bf78 50%, #cfa65a 100%);
+  background: var(--gold-hover);
 }
 
 .btn-solid:hover {
@@ -632,7 +639,7 @@ bdi {
   padding: 1rem 1.25rem;
   border-radius: var(--r-md);
   border: 1px solid var(--line-2);
-  background: rgba(0, 0, 0, 0.42);
+  background: var(--ink-2);
   color: var(--text-1);
   font-family: inherit;
   font-size: 1rem;
@@ -650,7 +657,7 @@ bdi {
 :where(input, textarea, select):focus {
   outline: none;
   border-color: var(--gold-400);
-  box-shadow: 0 0 0 4px rgba(203, 161, 83, 0.14);
+  box-shadow: 0 0 0 4px rgba(201, 164, 92, 0.14);
 }
 
 :where(input[type='checkbox'], input[type='radio']) {
@@ -662,7 +669,7 @@ bdi {
   padding: 0.85rem 1rem;
   border-radius: var(--r-md);
   border: 1px solid var(--line-2);
-  background: rgba(0, 0, 0, 0.42);
+  background: var(--ink-2);
   color: var(--text-1);
   font-family: inherit;
   font-size: 0.98rem;
@@ -678,7 +685,7 @@ bdi {
 .input-field:focus {
   outline: none;
   border-color: var(--gold-400);
-  box-shadow: 0 0 0 4px rgba(203, 161, 83, 0.14);
+  box-shadow: 0 0 0 4px rgba(201, 164, 92, 0.14);
 }
 
 select.input-field {
@@ -709,13 +716,13 @@ select.input-field option {
   font-weight: 700;
   line-height: 1.4;
   border: 1px solid var(--line-2);
-  background: rgba(10, 10, 12, 0.72);
+  background: rgba(43, 47, 54, 0.82);
   color: var(--text-1);
 }
 
 .kq-badge--gold {
   border-color: var(--line-gold);
-  background: rgba(203, 161, 83, 0.12);
+  background: rgba(201, 164, 92, 0.12);
   color: var(--gold-200);
 }
 
@@ -788,12 +795,12 @@ select.input-field option {
   background: var(--ink-0);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(203, 161, 83, 0.22);
+  background: rgba(201, 164, 92, 0.22);
   border-radius: 10px;
   border: 2px solid var(--ink-0);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(203, 161, 83, 0.5);
+  background: rgba(201, 164, 92, 0.5);
 }
 
 /* Legacy hook kept for any remaining usages */
@@ -903,4 +910,60 @@ select.input-field option {
     animation-duration: 1.6s !important;
     animation-iteration-count: infinite !important;
   }
+}
+
+/* =========================================================================
+   6. WARM OFF-WHITE SECTIONS
+   -------------------------------------------------------------------------
+   Opt-in scope for calm light bands below the hero. Re-maps the same tokens,
+   so components inside keep their structure and simply change palette.
+   ========================================================================= */
+.kq-section-light {
+  color-scheme: light;
+
+  --ink-0: #f6f3ed; /* main ivory background */
+  --ink-1: #f6f3ed;
+  --ink-2: #fbf8f3; /* light cards / fields */
+  --ink-3: #fbf8f3; /* light cards */
+  --ink-4: #e8e1d8;
+
+  --text-1: #2b2b2b; /* text on ivory */
+  --text-2: #6f6a64; /* secondary text */
+  --text-3: #6f6a64;
+  --text-on-gold: #2b2b2b;
+
+  --line-1: #e8e1d8; /* light borders */
+  --line-2: #e8e1d8;
+  --line-3: rgba(43, 43, 43, 0.18);
+  --line-gold: rgba(179, 139, 67, 0.38);
+  --line-gold-strong: rgba(179, 139, 67, 0.6);
+
+  /* Gold used as *text* needs a deeper tone on ivory (#C9A45C is 2.1:1) */
+  --gold-100: #6e5222;
+  --gold-200: #7d5e26;
+  --gold-300: #8a6a2c;
+  --gold-text-gradient: linear-gradient(120deg, #8a6a2c, #9e7a37);
+  --gold-soft: rgba(201, 164, 92, 0.14);
+
+  /* Semantic colours deep enough for text on ivory */
+  --warning: #8f620f;
+  --success: #1f7a47;
+
+  --background: #f6f3ed;
+  --foreground: #2b2b2b;
+  --surface: #fbf8f3;
+  --glass-bg: #fbf8f3;
+
+  --shadow-sm: 0 1px 2px rgba(43, 43, 43, 0.05), 0 2px 6px rgba(43, 43, 43, 0.04);
+  --shadow-md: 0 8px 22px -14px rgba(43, 43, 43, 0.2);
+  --shadow-lg: 0 18px 40px -22px rgba(43, 43, 43, 0.26);
+  --inner-highlight: 0 0 #0000;
+
+  background: var(--ink-0);
+  color: var(--text-1);
+}
+
+.kq-section-light ::selection {
+  background: rgba(201, 164, 92, 0.3);
+  color: var(--text-1);
 }

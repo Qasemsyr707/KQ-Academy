@@ -30,7 +30,7 @@
   padding: clamp(1.75rem, 4vw, 2.75rem);
   border-radius: var(--r-xl);
   border: 1px solid var(--line-1);
-  background: linear-gradient(180deg, rgba(22, 22, 26, 0.85), rgba(12, 12, 15, 0.9));
+  background: linear-gradient(180deg, #383d45, #343941);
   box-shadow: var(--shadow-lg), var(--inner-highlight);
 }
 
@@ -50,7 +50,7 @@
 }
 
 .logo {
-  filter: drop-shadow(0 6px 20px rgba(203, 161, 83, 0.3));
+  filter: drop-shadow(0 4px 14px rgba(201, 164, 92, 0.18));
 }
 
 .title {
@@ -263,9 +263,9 @@
   padding: clamp(2.5rem, 5vw, 4.5rem);
   border-inline-start: 1px solid var(--line-1);
   background:
-    radial-gradient(90% 70% at 20% 10%, rgba(224, 184, 106, 0.2), transparent 60%),
-    radial-gradient(70% 60% at 90% 100%, rgba(203, 161, 83, 0.1), transparent 60%),
-    linear-gradient(160deg, #15130e, #0a0a0c 60%);
+    radial-gradient(90% 70% at 20% 10%, rgba(218, 187, 126, 0.1), transparent 60%),
+    radial-gradient(70% 60% at 90% 100%, rgba(201, 164, 92, 0.05), transparent 60%),
+    linear-gradient(160deg, #3a3832, #2b2f36 60%);
 }
 
 .brandSide::before {
@@ -290,7 +290,7 @@
   transform: translateX(-50%);
   z-index: -1;
   opacity: 0.16;
-  filter: drop-shadow(0 0 60px rgba(224, 184, 106, 0.45));
+  filter: drop-shadow(0 0 40px rgba(218, 187, 126, 0.2));
 }
 
 .brandContent {
@@ -336,8 +336,8 @@
   height: 36px;
   flex-shrink: 0;
   border-radius: 11px;
-  background: rgba(203, 161, 83, 0.12);
-  border: 1px solid rgba(203, 161, 83, 0.28);
+  background: rgba(201, 164, 92, 0.12);
+  border: 1px solid rgba(201, 164, 92, 0.28);
   color: var(--gold-200);
 }
 

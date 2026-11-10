@@ -32,7 +32,7 @@ export default async function WalletPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff' }}>
       
       {/* Top Accent Line */}
       <div style={{ height: '4px', background: 'linear-gradient(to right, var(--primary), #b8852a, #3b82f6)', width: '100%' }} />

@@ -39,7 +39,7 @@ function QuoteMark() {
 
 export default function Testimonials() {
   return (
-    <section className={styles.section} aria-labelledby="testimonials-title">
+    <section className={`${styles.section} kq-section-light`} aria-labelledby="testimonials-title">
       <div className={styles.container}>
         <SectionHeader
           id="testimonials-title"

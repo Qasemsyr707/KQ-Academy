@@ -206,7 +206,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
       {/* Edit Modal */}
       {editingCourse && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--primary)' }}>إدارة الكورس</h2>
             
             <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
@@ -228,9 +228,9 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   onChange={e => setEditStatus(e.target.value)}
                   style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', outline: 'none' }}
                 >
-                  <option value="PENDING" style={{ background: '#111' }}>قيد المراجعة (لا يظهر للطلاب)</option>
-                  <option value="PUBLISHED" style={{ background: '#111' }}>منشور (يظهر للطلاب ومتاح للبيع)</option>
-                  <option value="REJECTED" style={{ background: '#111' }}>مرفوض (محجوب بالكامل)</option>
+                  <option value="PENDING" style={{ background: 'var(--ink-3)' }}>قيد المراجعة (لا يظهر للطلاب)</option>
+                  <option value="PUBLISHED" style={{ background: 'var(--ink-3)' }}>منشور (يظهر للطلاب ومتاح للبيع)</option>
+                  <option value="REJECTED" style={{ background: 'var(--ink-3)' }}>مرفوض (محجوب بالكامل)</option>
                 </select>
               </div>
 
@@ -241,8 +241,8 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   onChange={e => setEditType(e.target.value)}
                   style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', outline: 'none' }}
                 >
-                  <option value="SKILL" style={{ background: '#111' }}>كورس مهاري عام (برمجة، لغات، أعمال...)</option>
-                  <option value="CURRICULUM" style={{ background: '#111' }}>منهاج دراسي (بكالوريا، تاسع...)</option>
+                  <option value="SKILL" style={{ background: 'var(--ink-3)' }}>كورس مهاري عام (برمجة، لغات، أعمال...)</option>
+                  <option value="CURRICULUM" style={{ background: 'var(--ink-3)' }}>منهاج دراسي (بكالوريا، تاسع...)</option>
                 </select>
               </div>
 
@@ -276,7 +276,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', outline: 'none' }}
                 >
                   {instructors.map(inst => (
-                    <option key={inst.id} value={inst.id} style={{ background: '#111' }}>
+                    <option key={inst.id} value={inst.id} style={{ background: 'var(--ink-3)' }}>
                       {inst.name} ({inst.email})
                     </option>
                   ))}

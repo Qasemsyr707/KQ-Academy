@@ -46,11 +46,11 @@ export default function ARLabsPage() {
   const filteredModels = models.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.category.includes(searchQuery));
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <Script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js" />
       
       {/* Navbar / Header */}
-      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ padding: '1.5rem 2rem', background: 'var(--ink-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
             لوحة التحكم <ChevronRight size={16} />
@@ -73,7 +73,7 @@ export default function ARLabsPage() {
       <div style={{ display: 'flex', height: 'calc(100vh - 81px)', overflow: 'hidden' }}>
         
         {/* Sidebar */}
-        <div style={{ width: '350px', background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: '350px', background: 'var(--ink-2)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '1.5rem' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Layers size={18} /> المجسمات المتاحة

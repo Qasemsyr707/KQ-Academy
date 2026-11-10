@@ -158,7 +158,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
     console.error("Error loading course details:", error);
     // Render a friendly error page instead of crashing with 500
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff', padding: '2rem', textAlign: 'center' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: '#fff', padding: '2rem', textAlign: 'center' }}>
         <h1 style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--danger)', marginBottom: '1rem' }}>عذراً، حدث خطأ!</h1>
         <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.7)', maxWidth: '600px', marginBottom: '2rem' }}>
           لم نتمكن من جلب بيانات الكورس في الوقت الحالي. قد يكون هذا بسبب تحديثات جارية على المنصة أو أن الكورس غير متوفر.

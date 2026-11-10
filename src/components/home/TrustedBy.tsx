@@ -85,7 +85,7 @@ function LogoGroup({ hidden }: { hidden?: boolean }) {
 
 export default function TrustedBy() {
   return (
-    <section className={styles.trusted} aria-labelledby="trusted-title">
+    <section className={`${styles.trusted} kq-section-light`} aria-labelledby="trusted-title">
       <h2 id="trusted-title" className={styles.trustedTitle} data-reveal="fade">
         تحظى <span className="text-gold" style={{ fontWeight: 800 }}>KQ Academy</span> بثقة أكثر من 17,000 شركة ومتعلم حول العالم
       </h2>

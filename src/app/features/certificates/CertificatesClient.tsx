@@ -60,10 +60,10 @@ export default function CertificatesClient({ initialCerts }: { initialCerts: Cer
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
       {/* Navbar */}
-      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ padding: '1.5rem 2rem', background: 'var(--ink-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
             لوحة التحكم <ChevronRight size={16} />
@@ -114,7 +114,7 @@ export default function CertificatesClient({ initialCerts }: { initialCerts: Cer
                 transition={{ delay: index * 0.1 }}
                 key={cert.id}
                 style={{ 
-                  background: '#111', 
+                  background: 'var(--ink-3)', 
                   borderRadius: '24px', 
                   border: '1px solid rgba(255,255,255,0.05)',
                   overflow: 'hidden',

@@ -13,7 +13,7 @@ const curriculumLinks = [
 
 export default function WhySection() {
   return (
-    <section className={styles.section} aria-labelledby="why-title">
+    <section className={`${styles.section} kq-section-light`} aria-labelledby="why-title">
       <div className={styles.container}>
         <SectionHeader
           id="why-title"

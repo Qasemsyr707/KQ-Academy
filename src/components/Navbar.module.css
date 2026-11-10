@@ -10,10 +10,10 @@
   display: flex;
   align-items: center;
   transition: background-color var(--dur-3) var(--ease-out), border-color var(--dur-3) var(--ease-out);
-  background: rgba(8, 8, 10, 0.62);
+  background: rgba(43, 47, 54, 0.95);
   border-bottom: 1px solid transparent;
-  backdrop-filter: saturate(150%) blur(18px);
-  -webkit-backdrop-filter: saturate(150%) blur(18px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 /* Gold hairline that fades in once the page scrolls */
@@ -22,14 +22,14 @@
   position: absolute;
   inset: auto 0 -1px 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(203, 161, 83, 0.4) 30%, rgba(203, 161, 83, 0.4) 70%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(201, 164, 92, 0.4) 30%, rgba(201, 164, 92, 0.4) 70%, transparent);
   opacity: 0;
   transition: opacity var(--dur-3) var(--ease-out);
   pointer-events: none;
 }
 
 .header[data-scrolled='true'] {
-  background: rgba(8, 8, 10, 0.86);
+  background: rgba(43, 47, 54, 0.98);
   border-bottom-color: var(--line-1);
 }
 
@@ -61,7 +61,7 @@
 }
 
 .brandLogo {
-  filter: drop-shadow(0 2px 10px rgba(203, 161, 83, 0.18));
+  filter: drop-shadow(0 2px 10px rgba(201, 164, 92, 0.18));
 }
 
 /* ----- Desktop links ----- */
@@ -130,8 +130,8 @@
 .link[aria-current='page'],
 .link[aria-expanded='true'] {
   color: var(--gold-200);
-  background: rgba(203, 161, 83, 0.1);
-  border-color: rgba(203, 161, 83, 0.28);
+  background: rgba(201, 164, 92, 0.1);
+  border-color: rgba(201, 164, 92, 0.28);
 }
 
 .link[aria-current='page']::after,
@@ -166,7 +166,7 @@
   padding: 0.45rem;
   border-radius: var(--r-lg);
   border: 1px solid var(--line-2);
-  background: rgba(13, 13, 16, 0.97);
+  background: var(--ink-3);
   box-shadow: var(--shadow-lg), var(--inner-highlight);
   opacity: 0;
   visibility: hidden;
@@ -316,13 +316,13 @@
   color: var(--text-on-gold);
   font-size: 0.82rem;
   font-weight: 800;
-  box-shadow: 0 6px 18px -8px rgba(203, 161, 83, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 16px -10px rgba(201, 164, 92, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   transition: transform var(--dur-1) var(--ease-out), filter var(--dur-2) var(--ease-out);
 }
 
 .wallet:hover {
   color: var(--text-on-gold);
-  filter: brightness(1.06);
+  background: var(--gold-hover);
 }
 
 .wallet:active {
@@ -376,7 +376,7 @@
 .loginBtn:hover {
   color: var(--text-1);
   border-color: var(--line-gold-strong);
-  background: rgba(203, 161, 83, 0.08);
+  background: rgba(201, 164, 92, 0.08);
 }
 
 .registerBtn {
@@ -389,13 +389,13 @@
   color: var(--text-on-gold);
   font-size: 0.86rem;
   font-weight: 800;
-  box-shadow: 0 8px 22px -10px rgba(203, 161, 83, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 20px -12px rgba(201, 164, 92, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   transition: transform var(--dur-1) var(--ease-out), filter var(--dur-2) var(--ease-out);
 }
 
 .registerBtn:hover {
   color: var(--text-on-gold);
-  filter: brightness(1.06);
+  background: var(--gold-hover);
 }
 
 .registerBtn:active,
@@ -448,7 +448,7 @@
 }
 
 .textBtn:hover {
-  background: rgba(203, 161, 83, 0.08);
+  background: rgba(201, 164, 92, 0.08);
 }
 
 .notifList {
@@ -478,7 +478,7 @@
 }
 
 .notifItem[data-unread='true'] {
-  background: rgba(203, 161, 83, 0.05);
+  background: rgba(201, 164, 92, 0.05);
 }
 
 .notifDot {
@@ -492,7 +492,7 @@
 
 .notifItem[data-unread='true'] .notifDot {
   background: var(--gold-300);
-  box-shadow: 0 0 0 3px rgba(203, 161, 83, 0.15);
+  box-shadow: 0 0 0 3px rgba(201, 164, 92, 0.15);
 }
 
 .notifTitle {
@@ -551,7 +551,7 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #0f0f12, #09090b);
+  background: linear-gradient(180deg, #343941, #2b2f36);
   border-left: 1px solid var(--line-gold);
   box-shadow: -30px 0 80px -20px rgba(0, 0, 0, 0.8);
   transform: translate3d(100%, 0, 0);
@@ -602,7 +602,7 @@
   align-items: center;
   gap: 0.85rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(90deg, rgba(203, 161, 83, 0.08), transparent);
+  background: linear-gradient(90deg, rgba(201, 164, 92, 0.08), transparent);
   border-bottom: 1px solid var(--line-1);
 }
 
@@ -667,8 +667,8 @@
 
 .drawerLink:hover,
 .drawerLink[aria-current='page'] {
-  background: rgba(203, 161, 83, 0.09);
-  border-color: rgba(203, 161, 83, 0.22);
+  background: rgba(201, 164, 92, 0.09);
+  border-color: rgba(201, 164, 92, 0.22);
   color: var(--gold-200);
 }
 
@@ -686,7 +686,7 @@
 
 .drawerLink[aria-current='page'] .drawerIcon,
 .drawerLink:hover .drawerIcon {
-  background: rgba(203, 161, 83, 0.14);
+  background: rgba(201, 164, 92, 0.14);
   color: var(--gold-300);
 }
 

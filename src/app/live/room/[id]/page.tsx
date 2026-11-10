@@ -36,9 +36,9 @@ function ViewerRoom() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#050505', overflow: 'hidden', direction: 'rtl' }}>
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--background)', overflow: 'hidden', direction: 'rtl' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: '#0a0a0a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: 'var(--ink-2)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', padding: '5px 12px', borderRadius: '999px' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.5s infinite' }} />
@@ -57,7 +57,7 @@ function ViewerRoom() {
       </div>
 
       {showChat && (
-        <div style={{ width: '300px', display: 'flex', flexDirection: 'column', background: '#0a0a0a', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ width: '300px', display: 'flex', flexDirection: 'column', background: 'var(--ink-2)', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 'bold', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}><MessageSquare size={16} color="var(--primary)" />الدردشة</span>
             <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}><X size={16} /></button>
@@ -105,7 +105,7 @@ export default function LiveRoomPage() {
   }, [id]);
 
   if (error) return (
-    <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px', direction: 'rtl' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px', direction: 'rtl' }}>
       <Radio size={48} color="#ef4444" />
       <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>لا يمكن الانضمام للبث</h2>
       <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', maxWidth: '400px' }}>{error}</p>
@@ -114,7 +114,7 @@ export default function LiveRoomPage() {
   );
 
   if (!token) return (
-    <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
       <Loader2 size={48} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} />
       <p style={{ color: 'rgba(255,255,255,0.6)' }}>جاري الاتصال بالبث...</p>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>

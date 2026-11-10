@@ -50,7 +50,7 @@ export default async function AdminDashboard() {
   });
 
   return (
-    <div style={{ padding: '2rem 5%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
+    <div style={{ padding: '2rem 5%', minHeight: '100vh', background: 'var(--background)', color: '#fff' }}>
       
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
