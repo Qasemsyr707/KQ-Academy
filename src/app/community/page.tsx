@@ -139,7 +139,7 @@ export default function CommunityPage() {
   };
 
   return (
-    <div style={{ padding: 'clamp(1rem, 3vw, 2rem) 3%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
+    <div style={{ padding: 'clamp(1rem, 3vw, 2rem) 3%', minHeight: '100vh', background: 'var(--background)', color: '#fff' }}>
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ 

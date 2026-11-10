@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import CoursesClient from './CoursesClient';
 import { Suspense } from 'react';
+import { CatalogLoading } from '@/components/ui/Skeletons';
 
 
 // يُحدَّث كل 5 دقائق بدلاً من force-dynamic الذي يستهلك bandwidth لكل زيارة
@@ -54,7 +55,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
   }
 
 return (
-  <Suspense fallback={<div>جارٍ تحميل الكورسات...</div>}>
+  <Suspense fallback={<CatalogLoading />}>
     <CoursesClient
       initialCourses={initialCourses}
       featuredCourses={featuredCourses}

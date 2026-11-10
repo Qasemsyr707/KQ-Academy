@@ -21,7 +21,7 @@ export default function LiveStreamsPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', direction: 'rtl', fontFamily: "'Cairo', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', direction: 'rtl', fontFamily: "'Cairo', sans-serif" }}>
       <Navbar />
       <style>{`
         .live-page { max-width: 1200px; margin: 0 auto; padding: 120px 24px 80px; }
@@ -54,7 +54,7 @@ export default function LiveStreamsPage() {
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(203,161,83,0.3)', borderTopColor: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
           </div>
         ) : streams.length === 0 ? (
-          <div style={{ background: '#0a0a0a', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '24px', padding: '60px 24px', textAlign: 'center' }}>
+          <div style={{ background: 'var(--ink-2)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '24px', padding: '60px 24px', textAlign: 'center' }}>
             <Radio size={48} color="rgba(255,255,255,0.2)" style={{ margin: '0 auto 20px' }} />
             <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '12px' }}>لا توجد بثوث حالياً</h3>
             <p style={{ color: 'rgba(255,255,255,0.5)' }}>لم يقم المدربون بجدولة أو بدء أي بث مباشر في الكورسات الخاصة بك حتى الآن.</p>

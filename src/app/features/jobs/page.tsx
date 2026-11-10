@@ -57,10 +57,10 @@ export default function JobsPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
       {/* Navbar */}
-      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ padding: '1.5rem 2rem', background: 'var(--ink-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
             لوحة التحكم <ChevronRight size={16} />
@@ -89,10 +89,10 @@ export default function JobsPage() {
                 placeholder="ابحث عن مسمى وظيفي، مهارة، أو شركة..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#fff', outline: 'none', fontSize: '1rem' }}
+                style={{ width: '100%', padding: '1rem 1rem 1rem 3rem', background: 'var(--ink-3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#fff', outline: 'none', fontSize: '1rem' }}
               />
             </div>
-            <button style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '0 1.5rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+            <button style={{ background: 'var(--ink-3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '0 1.5rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
               <Filter size={20} /> تصفية
             </button>
           </div>
@@ -122,7 +122,7 @@ export default function JobsPage() {
                     transition={{ delay: index * 0.1 }}
                     key={job.id}
                     style={{ 
-                      background: '#111', 
+                      background: 'var(--ink-3)', 
                       borderRadius: '20px', 
                       border: '1px solid rgba(255,255,255,0.05)',
                       padding: '1.5rem',

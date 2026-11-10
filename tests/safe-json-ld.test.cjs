@@ -97,6 +97,7 @@ test('root layout retains the organization JSON-LD schema and Arabic page attrib
     './globals.css': {}, 'next/script': Stub,
     '@/components/AuthProvider': Stub, '@/components/Navbar': Stub,
     '@/components/Footer': Stub, '@/components/WhatsAppButton': Stub,
+    '@/components/motion/MotionLayer': Stub, './fonts': { cairo: { variable: 'font-cairo' } },
   }).default;
   const output = layout({ children: null });
   assert.equal(output.type, 'html');

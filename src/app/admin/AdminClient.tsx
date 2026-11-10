@@ -175,7 +175,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {payments.map((payment: any) => (
-                <div key={payment.id} style={{ background: '#111', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div key={payment.id} style={{ background: 'var(--ink-3)', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{payment.user.name}</span>
                     <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>${payment.amount.toLocaleString()}</span>
@@ -240,7 +240,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
               <p style={{ color: 'rgba(255,255,255,0.5)' }}>لا توجد كوبونات حالياً.</p>
             ) : (
               coupons.map((coupon: any) => (
-                <div key={coupon.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div key={coupon.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--ink-3)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div>
                     <span style={{ fontWeight: 'bold', fontSize: '1.2rem', letterSpacing: '1px', color: '#fff' }}>{coupon.code}</span>
                     {coupon.course && <span style={{ display: 'block', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.2rem' }}>مخصص لكورس: {coupon.course.title}</span>}
@@ -265,7 +265,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
         
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
           {['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'WALLET', 'MANUAL'].map(method => (
-            <div key={method} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#111', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', flex: '1 1 300px' }}>
+            <div key={method} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--ink-3)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', flex: '1 1 300px' }}>
               <div>
                 <h4 style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.3rem' }}>
                   {method === 'STRIPE' ? 'البطاقة الائتمانية' 

@@ -58,11 +58,11 @@ function StudioRoom({ onEnd }: { onEnd: () => void }) {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#050505', overflow: 'hidden', direction: 'rtl' }}>
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--background)', overflow: 'hidden', direction: 'rtl' }}>
       {/* Video Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Top Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', background: '#0a0a0a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', background: 'var(--ink-2)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', padding: '6px 14px', borderRadius: '999px' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.5s infinite' }} />
@@ -85,7 +85,7 @@ function StudioRoom({ onEnd }: { onEnd: () => void }) {
         <RoomAudioRenderer />
 
         {/* Controls */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '20px', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--ink-2)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           <button onClick={toggleMic} style={{ width: '56px', height: '56px', borderRadius: '50%', border: 'none', background: isMuted ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.1)', color: isMuted ? '#ef4444' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
             {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
           </button>
@@ -103,7 +103,7 @@ function StudioRoom({ onEnd }: { onEnd: () => void }) {
 
       {/* Chat Sidebar */}
       {showChat && (
-        <div style={{ width: '320px', display: 'flex', flexDirection: 'column', background: '#0a0a0a', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ width: '320px', display: 'flex', flexDirection: 'column', background: 'var(--ink-2)', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><MessageSquare size={18} color="var(--primary)" /> الدردشة المباشرة</span>
             <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}><X size={18} /></button>
@@ -159,7 +159,7 @@ export default function StudioPage() {
   }, [id, router]);
 
   if (error) return (
-    <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
       <Radio size={48} color="#ef4444" />
       <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>لا يمكن الوصول للاستوديو</h2>
       <p style={{ color: 'rgba(255,255,255,0.5)' }}>{error}</p>
@@ -168,7 +168,7 @@ export default function StudioPage() {
   );
 
   if (!token) return (
-    <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
       <Loader2 size={48} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} />
       <p style={{ color: 'rgba(255,255,255,0.6)' }}>جاري الاتصال بالاستوديو...</p>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>

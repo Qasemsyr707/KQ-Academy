@@ -322,7 +322,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
   const isQuiz = activeItem && 'questions' in activeItem;
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#050505', color: '#fff', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--background)', color: '#fff', overflow: 'hidden' }}>
       <style dangerouslySetInnerHTML={{__html: `
         .player-sidebar {
           background: #0a0a0a;
@@ -576,7 +576,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
 
             {/* If Quiz */}
             {isQuiz && activeItem && (
-              <div className="quiz-card" style={{ background: '#111', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
+              <div className="quiz-card" style={{ background: 'var(--ink-3)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                   <div style={{ width: '60px', height: '60px', background: 'rgba(203, 161, 83, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <CheckSquare size={32} color="var(--warning)" />
@@ -745,7 +745,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                     animate={{ scale: 1, opacity: 1 }} 
                     exit={{ scale: 0.9, opacity: 0 }} 
                     className="review-modal-card"
-                    style={{ background: '#111', padding: 'clamp(1rem, 3vw, 2rem)', borderRadius: '16px', width: '90%', maxWidth: '500px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}
+                    style={{ background: 'var(--ink-3)', padding: 'clamp(1rem, 3vw, 2rem)', borderRadius: '16px', width: '90%', maxWidth: '500px', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}
                   >
                     <button onClick={() => setShowReview(false)} style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
                       <X size={24} />

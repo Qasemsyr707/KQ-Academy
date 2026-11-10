@@ -48,7 +48,7 @@ export default function RefundPage() {
               </div>
 
               {/* Conditions Card */}
-              <div style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--border-light)', borderRadius: '24px', padding: '40px', transition: 'border-color 0.3s' }}>
+              <div style={{ backgroundColor: 'var(--ink-2)', border: '1px solid var(--border-light)', borderRadius: '24px', padding: '40px', transition: 'border-color 0.3s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', borderBottom: '1px solid var(--border-light)', paddingBottom: '24px' }}>
                   <div style={{ padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
                     <CheckCircle2 size={28} color="var(--primary)" />
@@ -79,7 +79,7 @@ export default function RefundPage() {
               </div>
 
               {/* Exclusions Card */}
-              <div style={{ backgroundColor: '#0a0a0a', border: '1px solid var(--border-light)', borderRadius: '24px', padding: '40px' }}>
+              <div style={{ backgroundColor: 'var(--ink-2)', border: '1px solid var(--border-light)', borderRadius: '24px', padding: '40px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', borderBottom: '1px solid var(--border-light)', paddingBottom: '24px' }}>
                   <div style={{ padding: '12px', backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: '12px' }}>
                     <AlertTriangle size={28} color="#ef4444" />

@@ -24,7 +24,7 @@ export default function QuizzesListClient({ quizzes }: { quizzes: any[] }) {
       </div>
 
       {quizzes.length === 0 ? (
-        <div style={{ padding: '4rem', textAlign: 'center', background: '#111', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+        <div style={{ padding: '4rem', textAlign: 'center', background: 'var(--ink-3)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
           <FileEdit size={48} color="rgba(255,255,255,0.2)" style={{ margin: '0 auto 1rem' }} />
           <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'rgba(255,255,255,0.7)' }}>ليس لديك أي اختبارات حالياً</h3>
           <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: '2rem' }}>قم بإنشاء اختبارات لتقييم طلابك في الكورسات المختلفة.</p>
@@ -32,7 +32,7 @@ export default function QuizzesListClient({ quizzes }: { quizzes: any[] }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
           {quizzes.map((quiz) => (
-            <div key={quiz.id} style={{ background: '#111', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div key={quiz.id} style={{ background: 'var(--ink-3)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{quiz.title}</h3>
                 <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '12px', background: quiz.type === 'MANUAL_FILE' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(96, 165, 250, 0.1)', color: quiz.type === 'MANUAL_FILE' ? '#10b981' : '#60a5fa' }}>

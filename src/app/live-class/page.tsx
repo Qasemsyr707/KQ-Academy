@@ -34,9 +34,9 @@ export default function LiveClassroom() {
 
   if (!preJoinComplete) {
     return (
-      <div style={{ height: '100vh', background: '#050505', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ height: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <h1 style={{ color: '#fff', marginBottom: '2rem', fontSize: '2rem' }}>تجهيز البث المباشر (غرفة الانتظار)</h1>
-        <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
           {/* PreJoin component automatically asks for camera/mic permissions and shows preview */}
           <PreJoin 
             onSubmit={() => setPreJoinComplete(true)}
@@ -55,7 +55,7 @@ export default function LiveClassroom() {
 
   if (token === '') {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: '#fff' }}>
         <Loader2 size={48} className="spin" color="var(--primary)" style={{ marginBottom: '1rem' }} />
         <h2 style={{ fontSize: '1.5rem' }}>جاري الاتصال بخوادم البث المباشر (WebRTC)...</h2>
         <style jsx global>{`

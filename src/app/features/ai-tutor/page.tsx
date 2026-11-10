@@ -67,8 +67,8 @@ export default function AITutorPage() {
 
   if (!session) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff' }}>
-        <div style={{ textAlign: 'center', padding: '2rem', background: '#111', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: '#fff' }}>
+        <div style={{ textAlign: 'center', padding: '2rem', background: 'var(--ink-3)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <Bot size={64} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>يجب تسجيل الدخول</h2>
           <p style={{ color: 'rgba(255,255,255,0.6)' }}>يرجى تسجيل الدخول للتمكن من التحدث مع المعلم الذكي.</p>
@@ -78,10 +78,10 @@ export default function AITutorPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
       {/* Header */}
-      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 10 }}>
+      <div style={{ padding: '1.5rem 2rem', background: 'var(--ink-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ width: '50px', height: '50px', background: 'rgba(203, 161, 83, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Bot size={28} color="var(--primary)" />
         </div>
@@ -165,7 +165,7 @@ export default function AITutorPage() {
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(203, 161, 83, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Bot size={20} color="var(--primary)" />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#111', padding: '1rem 1.5rem', borderRadius: '16px', borderTopLeftRadius: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--ink-3)', padding: '1rem 1.5rem', borderRadius: '16px', borderTopLeftRadius: 0 }}>
               <Loader2 size={16} className="animate-spin" color="var(--primary)" />
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>جاري التفكير...</span>
             </div>
@@ -175,8 +175,8 @@ export default function AITutorPage() {
       </div>
 
       {/* Input Area */}
-      <div style={{ padding: '2rem', background: 'linear-gradient(to top, #050505 50%, transparent)', position: 'sticky', bottom: 0 }}>
-        <form onSubmit={handleSubmit} style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', gap: '1rem', background: '#111', padding: '0.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div style={{ padding: '2rem', background: 'linear-gradient(to top, var(--background) 50%, transparent)', position: 'sticky', bottom: 0 }}>
+        <form onSubmit={handleSubmit} style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', gap: '1rem', background: 'var(--ink-3)', padding: '0.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)' }}>
           <input 
             type="text"
             value={input}

@@ -23,7 +23,7 @@ export default async function VerifyCertificatePage({
 
   if (!certificate) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: '#fff' }}>
         <div style={{ padding: '3rem', textAlign: 'center', maxWidth: '500px', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '20px', background: 'rgba(239,68,68,0.05)' }}>
           <XCircle size={64} color="#ef4444" style={{ margin: '0 auto 1.5rem auto' }} />
           <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>شهادة غير صالحة</h1>
@@ -41,7 +41,7 @@ export default async function VerifyCertificatePage({
   const issuedDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB');
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '3rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', direction: 'ltr' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', padding: '3rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', direction: 'ltr' }}>
       
       <div style={{ width: '100%', maxWidth: '800px', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link href="/verify" style={{ color: 'rgba(203,161,83,0.8)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
@@ -49,7 +49,7 @@ export default async function VerifyCertificatePage({
         </Link>
       </div>
 
-      <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', width: '100%', maxWidth: '800px', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--ink-3)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', width: '100%', maxWidth: '800px', overflow: 'hidden' }}>
         <div style={{ background: 'rgba(34, 197, 94, 0.1)', padding: '2rem', borderBottom: '1px solid rgba(34, 197, 94, 0.2)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <CheckCircle size={56} color="#22c55e" style={{ marginBottom: '1rem' }} />
           <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#22c55e', margin: 0 }}>VALID CERTIFICATE</h1>

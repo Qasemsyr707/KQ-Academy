@@ -96,7 +96,7 @@ export default function TeachPage() {
         </section>
 
         {/* Why Teach With Us */}
-        <section style={{ padding: '100px 0', backgroundColor: '#0a0a0a', borderBottom: '1px solid var(--border-light)' }}>
+        <section style={{ padding: '100px 0', backgroundColor: 'var(--ink-2)', borderBottom: '1px solid var(--border-light)' }}>
           <div className="container" style={{ textAlign: 'center' }}>
             <h2 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '16px' }}>لماذا تختار <span style={{ color: 'var(--primary)' }}>KQ Academy</span>؟</h2>
             <div style={{ width: '80px', height: '4px', backgroundColor: 'var(--primary)', margin: '0 auto 30px', borderRadius: '4px', boxShadow: '0 0 15px rgba(203,161,83,0.6)' }} />
@@ -104,7 +104,7 @@ export default function TeachPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', maxWidth: '1000px', margin: '0 auto' }}>
               {reasons.map((reason, index) => (
-                <div key={index} style={{ backgroundColor: '#111', padding: '40px', borderRadius: '30px', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all 0.3s' }}>
+                <div key={index} style={{ backgroundColor: 'var(--ink-3)', padding: '40px', borderRadius: '30px', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all 0.3s' }}>
                   <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #e0b86a)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 0 30px rgba(203,161,83,0.4)' }}>
                     {reason.icon}
                   </div>
@@ -117,7 +117,7 @@ export default function TeachPage() {
         </section>
 
         {/* Steps */}
-        <section style={{ padding: '100px 0', backgroundColor: '#050505', borderBottom: '1px solid var(--border-light)' }}>
+        <section style={{ padding: '100px 0', backgroundColor: 'var(--background)', borderBottom: '1px solid var(--border-light)' }}>
           <div className="container" style={{ textAlign: 'center' }}>
             <h2 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '20px' }}>رحلتك نحو النجاح بـ <span style={{ color: 'var(--primary)' }}>3 خطوات</span></h2>
             <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', maxWidth: '600px', margin: '0 auto 60px' }}>لقد صممنا كل شيء ليكون بديهياً ومريحاً لك. ابدأ الآن واجعل العالم صفك الدراسي.</p>
@@ -125,7 +125,7 @@ export default function TeachPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px', maxWidth: '1000px', margin: '0 auto' }}>
               {steps.map((step, index) => (
                 <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px' }}>
-                  <div style={{ width: '90px', height: '90px', borderRadius: '25px', backgroundColor: '#111', border: '2px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 900, color: 'var(--primary)', marginBottom: '24px', boxShadow: '0 0 40px rgba(203,161,83,0.3)', transform: 'rotate(5deg)' }}>
+                  <div style={{ width: '90px', height: '90px', borderRadius: '25px', backgroundColor: 'var(--ink-3)', border: '2px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 900, color: 'var(--primary)', marginBottom: '24px', boxShadow: '0 0 40px rgba(203,161,83,0.3)', transform: 'rotate(5deg)' }}>
                     {step.step}
                   </div>
                   <div style={{ padding: '15px', backgroundColor: 'rgba(203,161,83,0.1)', borderRadius: '50%', marginBottom: '20px' }}>
@@ -140,7 +140,7 @@ export default function TeachPage() {
         </section>
 
         {/* Requirements Section */}
-        <section style={{ padding: '100px 0', backgroundColor: '#0a0a0a', borderBottom: '1px solid var(--border-light)' }}>
+        <section style={{ padding: '100px 0', backgroundColor: 'var(--ink-2)', borderBottom: '1px solid var(--border-light)' }}>
           <div className="container" style={{ textAlign: 'center' }}>
             <div style={{ width: '90px', height: '90px', backgroundColor: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px', boxShadow: '0 0 50px rgba(203,161,83,0.5)' }}>
               <Award size={48} color="#050505" />
@@ -150,7 +150,7 @@ export default function TeachPage() {
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', maxWidth: '1000px', margin: '0 auto' }}>
               {requirements.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', padding: '30px', backgroundColor: '#050505', border: '1px solid rgba(203,161,83,0.2)', borderRadius: '24px' }}>
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', padding: '30px', backgroundColor: 'var(--background)', border: '1px solid rgba(203,161,83,0.2)', borderRadius: '24px' }}>
                   <CheckCircle size={36} color="var(--primary)" />
                   <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{item}</span>
                 </div>
@@ -160,7 +160,7 @@ export default function TeachPage() {
         </section>
 
         {/* Premium CTA Section */}
-        <section style={{ padding: '120px 0', backgroundColor: '#050505', textAlign: 'center' }}>
+        <section style={{ padding: '120px 0', backgroundColor: 'var(--background)', textAlign: 'center' }}>
           <div className="container">
             <h2 style={{ fontSize: '4rem', fontWeight: 900, marginBottom: '30px' }}>هل أنت مستعد <span style={{ color: 'var(--primary)', textShadow: '0 0 30px rgba(203,161,83,0.8)' }}>للانطلاق</span>؟</h2>
             <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.7)', maxWidth: '600px', margin: '0 auto 50px', lineHeight: 1.8 }}>

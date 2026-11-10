@@ -1,11 +1,13 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 import './globals.css';
+import { cairo } from './fonts';
 import Script from 'next/script';
 import AuthProvider from '@/components/AuthProvider';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import MotionLayer from '@/components/motion/MotionLayer';
 import { serializeJsonLd } from '@/lib/safe-json-ld';
 
 export const metadata: Metadata = {
@@ -41,6 +43,11 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: '#060607',
+  colorScheme: 'dark',
+};
+
 const orgSchema = {
   "@context": "https://schema.org",
   "@type": "EducationalOrganization",
@@ -66,7 +73,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" className={cairo.variable} data-scroll-behavior="smooth">
       <head>
         <script
           type="application/ld+json"
@@ -93,6 +100,7 @@ export default function RootLayout({
         <noscript>
           <img height="1" width="1" style={{ display: 'none' }} src="https://www.facebook.com/tr?id=1995445104466661&ev=PageView&noscript=1" alt="" />
         </noscript>
+        <a href="#main-content" className="skip-link">تخطَّ إلى المحتوى الرئيسي</a>
         <AuthProvider>
           <Navbar />
           {/* Google Analytics - loads only if NEXT_PUBLIC_GA_ID is set */}
@@ -109,10 +117,11 @@ export default function RootLayout({
               </Script>
             </>
           )}
-          <main className="main-content">
+          <main id="main-content" className="main-content" tabIndex={-1}>
             {children}
           </main>
           <Footer />
+          <MotionLayer />
         </AuthProvider>
         <WhatsAppButton />
       </body>

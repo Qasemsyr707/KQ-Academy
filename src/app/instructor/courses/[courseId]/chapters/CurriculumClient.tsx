@@ -279,7 +279,7 @@ export default function CurriculumClient({ course }: { course: any }) {
       {/* Chapters List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
         {chapters.map((chapter: any, index: number) => (
-          <div key={chapter.id} style={{ background: '#111', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+          <div key={chapter.id} style={{ background: 'var(--ink-3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
             {/* Chapter Header */}
             <div style={{ padding: '1rem 1.5rem', background: 'rgba(255,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 'bold' }}>
@@ -471,7 +471,7 @@ export default function CurriculumClient({ course }: { course: any }) {
 
       {/* Add Chapter Form */}
       {isAddingChapter ? (
-        <div style={{ background: '#111', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ background: 'var(--ink-3)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
            <input 
               type="text" 
               placeholder="عنوان الفصل (مثال: الأساسيات)"

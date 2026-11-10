@@ -149,7 +149,7 @@ function CheckoutContent() {
 
   if (!courseId) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: '#fff' }}>
         <div style={{ textAlign: 'center' }}>
           <AlertTriangle size={64} color="var(--danger)" style={{ margin: '0 auto 1rem' }} />
           <h2>الكورس غير محدد</h2>
@@ -161,7 +161,7 @@ function CheckoutContent() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>
         <div className="loader" style={{ width: '50px', height: '50px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -171,10 +171,10 @@ function CheckoutContent() {
   const finalPrice = (course?.price ?? 0) * (1 - discount / 100);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff' }}>
       
       {/* Checkout Header */}
-      <div style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '2rem 5%' }}>
+      <div style={{ background: 'var(--ink-2)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '2rem 5%' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link href={`/courses/${courseId}`} style={{ color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <ArrowRight size={20} style={{ marginLeft: '0.5rem' }} /> العودة
@@ -249,7 +249,7 @@ function CheckoutContent() {
                     <p style={{ marginBottom: '1rem' }}>يرجى تحويل المبلغ الإجمالي إلى أحد الحسابات التالية. <strong>اضغط على أي نص لنسخه.</strong></p>
                     
                     {/* Sham Cash */}
-                    <div style={{ background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
+                    <div style={{ background: 'var(--ink-3)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
                       <h4 style={{ color: '#3EEDC4', fontWeight: 'bold', marginBottom: '0.5rem' }}>1. شام كاش (Sham Cash)</h4>
                       <div 
                         onClick={() => handleCopy('f698bd6104ecfc91435335321b7978fc')} 
@@ -272,7 +272,7 @@ function CheckoutContent() {
                     </div>
 
                     {/* Binance */}
-                    <div style={{ background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
+                    <div style={{ background: 'var(--ink-3)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
                       <h4 style={{ color: '#f59e0b', fontWeight: 'bold', marginBottom: '0.5rem' }}>2. بينانس (Binance)</h4>
                       <div 
                         onClick={() => handleCopy('1014947222')} 
@@ -285,7 +285,7 @@ function CheckoutContent() {
                     </div>
 
                     {/* Syriatel Cash */}
-                    <div style={{ background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
+                    <div style={{ background: 'var(--ink-3)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
                       <h4 style={{ color: '#ef4444', fontWeight: 'bold', marginBottom: '0.5rem' }}>3. سيرتيل كاش (Syriatel Cash)</h4>
                       <p style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.7)' }}>باسم: قاسم السخني</p>
                       <div 
@@ -299,7 +299,7 @@ function CheckoutContent() {
                     </div>
 
                     {/* Haram */}
-                    <div style={{ background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
+                    <div style={{ background: 'var(--ink-3)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1rem' }}>
                       <h4 style={{ color: '#3b82f6', fontWeight: 'bold', marginBottom: '0.5rem' }}>4. شركة الهرم للحوالات</h4>
                       <p style={{ margin: '0 0 0.5rem 0', color: 'rgba(255,255,255,0.7)' }}>الاسم: قاسم عبد السلام السخني<br/>المحافظة: دمشق</p>
                       <div 
@@ -509,7 +509,7 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505' }}><div className="loader" style={{ borderTopColor: 'var(--primary)', animation: 'spin 1s linear infinite' }} /></div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}><div className="loader" style={{ borderTopColor: 'var(--primary)', animation: 'spin 1s linear infinite' }} /></div>}>
       <CheckoutContent />
     </Suspense>
   );

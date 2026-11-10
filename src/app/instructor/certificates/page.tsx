@@ -38,7 +38,7 @@ export default async function InstructorCertificatesPage() {
         </div>
       </div>
 
-      <div style={{ background: '#111', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--ink-3)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
         {certificates.length === 0 ? (
           <div style={{ padding: '4rem', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
             <Award size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />

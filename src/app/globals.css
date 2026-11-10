@@ -1,68 +1,297 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;800&family=Outfit:wght@300;400;600;800&display=swap');
+/* ==========================================================================
+   KQ Academy — Design System Foundation
+   --------------------------------------------------------------------------
+   1. Tokens          (colour, type, space, radius, elevation, motion)
+   2. Base / reset    (RTL-first, accessible defaults)
+   3. Layout helpers  (legacy grid helpers kept for existing pages)
+   4. Components      (buttons, cards, fields, badges, skeletons, spinners)
+   5. Motion system   (entrance, scroll reveal, spotlight, reduced motion)
 
+   Every legacy class name and custom property used across the platform is
+   preserved; they now resolve to the refined tokens below.
+   ========================================================================== */
+
+/* -------------------------------------------------------------------------
+   1. TOKENS
+   ------------------------------------------------------------------------- */
 :root {
-  --background: #050505;
-  --foreground: #ffffff;
-  --primary: #cba153; /* Luxurious Gold */
-  --primary-hover: #e0b86a;
-  --secondary: #121212;
-  --surface: rgba(25, 25, 25, 0.6);
-  --border: rgba(203, 161, 83, 0.2);
-  --border-light: rgba(255, 255, 255, 0.05);
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --glass: rgba(10, 10, 10, 0.7);
+  color-scheme: dark;
+
+  /* Surfaces — warm charcoal ladder (page → raised panels) */
+  --ink-0: #2b2f36; /* navbar, hero, dark pages */
+  --ink-1: #2e323a; /* subtle bands */
+  --ink-2: #31353d; /* fields / secondary surfaces */
+  --ink-3: #343941; /* secondary dark surfaces: cards and panels */
+  --ink-4: #3c414a; /* hover / raised */
+
+  /* Approved palette (also used by the ivory content scope) */
+  --ivory: #f6f3ed;        /* main ivory background */
+  --ivory-card: #fbf8f3;   /* light cards */
+  --ivory-line: #e8e1d8;   /* light borders */
+  --text-ivory: #2b2b2b;   /* text on ivory */
+  --text-muted: #6f6a64;   /* secondary text on ivory */
+  --gold-hover: #b38b43;   /* gold hover */
+
+  /* Brand gold — #C9A45C is the source of truth */
+  --gold-50: #faf4e6;
+  --gold-100: #f1e3c3;
+  --gold-200: #e6cf9e;
+  --gold-300: #dabb7e;
+  --gold-400: #c9a45c;
+  --gold-500: #b38b43;
+  --gold-600: #8a6c34;
+  --gold-gradient: linear-gradient(135deg, #d4b371 0%, #c9a45c 55%, #b38b43 100%);
+  --gold-text-gradient: linear-gradient(120deg, #e6cf9e 0%, #dabb7e 45%, #c9a45c 100%);
+  --gold-soft: rgba(201, 164, 92, 0.12);
+  --gold-glow: rgba(201, 164, 92, 0.1);
+
+  /* Typography colours — warm off-white with measured contrast */
+  --text-1: #f5f1e8; /* text on dark */
+  --text-2: rgba(245, 241, 232, 0.8);
+  --text-3: rgba(245, 241, 232, 0.66); /* ≥4.5:1 on #2B2F36 and #343941 */
+  --text-on-gold: #2b2b2b;
+
+  /* Lines */
+  --line-1: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.11);
+  --line-3: rgba(255, 255, 255, 0.18);
+  --line-gold: rgba(201, 164, 92, 0.3);
+  --line-gold-strong: rgba(201, 164, 92, 0.6);
+
+  /* Semantic */
+  --success: #2fbf71;
+  --warning: #f2a93b;
+  --danger: #ef5350;
+  --info: #5b9cf5;
+
+  /* Legacy aliases (used throughout existing pages) */
+  --background: var(--ink-0);
+  --foreground: var(--text-1);
+  --primary: var(--gold-400);
+  --primary-hover: var(--gold-300);
+  --secondary: var(--ink-2);
+  --surface: var(--ink-3);
+  --border: var(--line-gold);
+  --border-light: var(--line-1);
+  --glass: rgba(35, 38, 43, 0.94);
+  --color-text-muted: var(--text-3);
+
+  /* Type */
+  --font-sans: var(--font-cairo, 'Cairo'), system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: clamp(1.2rem, 1.1rem + 0.5vw, 1.4rem);
+  --fs-2xl: clamp(1.45rem, 1.2rem + 1vw, 1.9rem);
+  --fs-3xl: clamp(1.8rem, 1.4rem + 1.8vw, 2.6rem);
+  --fs-display: clamp(2.35rem, 1.5rem + 3.9vw, 4.6rem);
+
+  /* Space */
+  --gutter: clamp(1rem, 0.6rem + 2vw, 2rem);
+  --section-y: clamp(4rem, 2.5rem + 6vw, 7.5rem);
+  --container: 1280px;
+  --nav-h: 72px;
+
+  /* Radius */
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* Elevation (static — never animated directly) */
+  --shadow-sm: 0 1px 2px rgba(10, 11, 13, 0.25), 0 2px 8px rgba(10, 11, 13, 0.16);
+  --shadow-md: 0 10px 28px -14px rgba(10, 11, 13, 0.55), 0 2px 6px rgba(10, 11, 13, 0.18);
+  --shadow-lg: 0 26px 56px -26px rgba(10, 11, 13, 0.65), 0 8px 20px -12px rgba(10, 11, 13, 0.3);
+  --shadow-gold: 0 12px 30px -18px rgba(201, 164, 92, 0.2);
+  --inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Glass */
+  /* Panels are solid surfaces (no glassmorphism) */
+  --glass-bg: linear-gradient(180deg, #373c44, #343941);
+  --glass-blur: 0px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0.9, 0.25, 1.15);
+  --dur-1: 140ms;
+  --dur-2: 220ms;
+  --dur-3: 360ms;
+  --dur-4: 640ms;
+  --dur-5: 900ms;
+  --stagger: 70ms;
+
+  /* Layers */
+  --z-nav: 200;
+  --z-drawer: 400;
+  --z-modal: 1000;
+  --z-toast: 1100;
 }
 
-* {
+@media (max-width: 900px) {
+  :root {
+    --nav-h: 64px;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   2. BASE
+   ------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
-  max-width: 100%;
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   overflow-x: hidden;
+  overflow-x: clip; /* clip keeps position: sticky working, unlike hidden */
+  scroll-padding-top: calc(var(--nav-h) + 16px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
+  max-width: 100%;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Cairo', 'Outfit', sans-serif;
-  line-height: 1.6;
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: 1.7;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  direction: rtl; /* RTL for Arabic */
+  overflow-x: clip;
+  direction: rtl;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Luxury Background Mesh */
+/* Ambient brand atmosphere — static, painted once */
 body::before {
   content: '';
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
+  inset: 0;
   height: 100vh;
-  background: 
-    radial-gradient(circle at 15% 50%, rgba(203, 161, 83, 0.05), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(203, 161, 83, 0.03), transparent 25%);
+  background:
+    radial-gradient(60rem 40rem at 85% -10%, rgba(201, 164, 92, 0.035), transparent 60%),
+    linear-gradient(180deg, #2e323a, var(--ink-0) 40%);
   z-index: -1;
   pointer-events: none;
+}
+
+::selection {
+  background: rgba(224, 184, 106, 0.32);
+  color: #fff;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+/* Inline icon SVGs keep their intrinsic box */
+svg {
+  flex-shrink: 0;
 }
 
 a {
   color: inherit;
   text-decoration: none;
-  transition: color 0.3s ease;
+  transition: color var(--dur-2) var(--ease-out);
 }
 
-a:hover {
+/* Zero specificity so component classes and inline colours always win */
+:where(a):hover {
   color: var(--primary);
 }
 
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold-300);
+  outline-offset: 3px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Latin numerals and inline English read correctly inside Arabic copy */
+.num,
+bdi {
+  font-variant-numeric: tabular-nums;
+  unicode-bidi: isolate;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: calc(var(--z-toast) + 1);
+  padding: 0.7rem 1.1rem;
+  border-radius: var(--r-pill);
+  background: var(--gold-gradient);
+  color: var(--text-on-gold);
+  font-weight: 700;
+  transform: translateY(-160%);
+  transition: transform var(--dur-2) var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  color: var(--text-on-gold);
+}
+
+/* -------------------------------------------------------------------------
+   3. LAYOUT HELPERS
+   ------------------------------------------------------------------------- */
 .container {
   max-width: 1400px;
   margin: 0 auto;
@@ -70,7 +299,14 @@ a:hover {
   width: 100%;
 }
 
-/* Premium Navigation */
+.kq-container {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Legacy navbar class (kept for any page that still references it) */
 .navbar {
   position: fixed;
   top: 0;
@@ -102,8 +338,9 @@ a:hover {
 }
 
 .main-content {
-  margin-top: 80px;
-  min-height: calc(100vh - 80px);
+  margin-top: var(--nav-h);
+  min-height: calc(100vh - var(--nav-h));
+  flex: 1 0 auto;
 }
 
 /* ===== Responsive Grid System ===== */
@@ -112,7 +349,7 @@ a:hover {
 .grid-3   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 .grid-4   { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
 .grid-5   { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; }
-.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 1.5rem; }
 .dashboard-layout { display: grid; grid-template-columns: 1fr 380px; gap: 3rem; }
 .instructor-layout { display: grid; grid-template-columns: 1fr 3fr; gap: 2rem; }
 .community-layout { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; align-items: start; }
@@ -122,18 +359,34 @@ a:hover {
 .stack-mobile { display: flex; flex-direction: row; gap: 1rem; align-items: center; }
 .flex-wrap-center { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; }
 
-/* ===== Typography ===== */
+/* ===== Typography helpers ===== */
 .hero-title-responsive { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 900; }
 .section-title { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800; }
 
+.text-gold {
+  background: var(--gold-text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--gold-300);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.38rem 0.9rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-gold);
+  background: linear-gradient(180deg, rgba(201, 164, 92, 0.12), rgba(201, 164, 92, 0.04));
+  color: var(--gold-200);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 /* ===== Mobile Overrides (max-width: 768px) ===== */
 @media (max-width: 768px) {
-  .main-content {
-    margin-top: 60px; /* Navbar height on mobile */
-    min-height: calc(100vh - 60px);
-  }
-
-  /* Grid overrides */
   .grid-1-2         { grid-template-columns: 1fr; }
   .grid-2           { grid-template-columns: 1fr; }
   .grid-3           { grid-template-columns: repeat(2, 1fr); }
@@ -146,14 +399,11 @@ a:hover {
   .community-layout > div:last-child { position: static !important; }
   .live-sessions-grid { grid-template-columns: 1fr; gap: 1rem; }
 
-  /* Flex overrides */
   .stack-mobile { flex-direction: column; align-items: stretch; }
 
-  /* Container */
   .container { padding: 1rem; }
 
-  /* Glass card */
-  .glass-card { padding: 1.25rem; border-radius: 16px; }
+  .glass-card { padding: 1.25rem; border-radius: var(--r-lg); }
 }
 
 @media (max-width: 480px) {
@@ -161,114 +411,208 @@ a:hover {
   .grid-5 { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* -------------------------------------------------------------------------
+   4. COMPONENTS
+   ------------------------------------------------------------------------- */
 
-/* Premium Glass Card */
+/* ----- Glass card ----- */
 .glass-card {
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-light);
-  border-radius: 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-lg);
   padding: 2.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-md), var(--inner-highlight);
   position: relative;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition:
+    transform var(--dur-3) var(--ease-out),
+    border-color var(--dur-3) var(--ease-out);
 }
 
+/* A single soft sheen on hover — transform-only */
 .glass-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
-  transform: skewX(-20deg);
-  transition: 0.5s;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.035), transparent);
+  transform: translateX(-160%) skewX(-18deg);
+  pointer-events: none;
 }
 
-.glass-card:hover {
-  transform: translateY(-8px);
-  border-color: var(--border);
-  box-shadow: 0 20px 50px rgba(203, 161, 83, 0.05);
+@media (hover: hover) and (pointer: fine) {
+  .glass-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--line-gold);
+  }
+
+  .glass-card:hover::before {
+    transform: translateX(360%) skewX(-18deg);
+    transition: transform 900ms var(--ease-out);
+  }
 }
 
-.glass-card:hover::before {
-  left: 200%;
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md), var(--inner-highlight);
 }
 
-/* Luxury Buttons */
+/* ----- Surface card (non-glass, cheap to paint) ----- */
+.kq-surface {
+  background: linear-gradient(180deg, var(--ink-3), var(--ink-2));
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm), var(--inner-highlight);
+}
+
+/* ----- Buttons ----- */
 .btn {
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid var(--primary);
-  padding: 0.8rem 2rem;
-  border-radius: 30px;
-  font-weight: 600;
+  --btn-bg: transparent;
+  --btn-fg: var(--gold-300);
+  --btn-border: var(--line-gold-strong);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: 1px solid var(--btn-border);
+  padding: 0.8rem 1.75rem;
+  min-height: 44px;
+  border-radius: var(--r-pill);
+  font-weight: 700;
   font-family: inherit;
+  font-size: 0.98rem;
+  line-height: 1.3;
   cursor: pointer;
-  transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    color var(--dur-2) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
 }
 
+/* Fill wipe that follows reading direction (RTL: right → left) */
 .btn::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--primary);
+  inset: 0;
+  background: var(--gold-gradient);
   z-index: -1;
-  transition: transform 0.3s ease;
   transform: scaleX(0);
   transform-origin: right;
+  transition: transform var(--dur-3) var(--ease-out);
 }
 
 .btn:hover {
-  color: var(--background);
+  color: var(--text-on-gold);
 }
 
 .btn:hover::after {
   transform: scaleX(1);
-  transform-origin: left;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn:disabled::after {
+  transform: scaleX(0);
 }
 
 .btn-solid {
-  background: var(--primary);
-  color: var(--background);
+  --btn-fg: var(--text-on-gold);
+  --btn-border: transparent;
+  background: var(--gold-gradient);
+  color: var(--text-on-gold);
+  box-shadow: 0 8px 22px -14px rgba(201, 164, 92, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.btn-solid::after {
+  background: var(--gold-hover);
 }
 
 .btn-solid:hover {
-  background: var(--primary-hover);
-  box-shadow: 0 0 20px rgba(203, 161, 83, 0.4);
+  color: var(--text-on-gold);
+  background: var(--gold-gradient);
 }
 
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 800;
-  line-height: 1.2;
+.btn-outline {
+  --btn-fg: var(--text-1);
+  --btn-border: var(--line-3);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-1);
 }
 
+.btn-outline::after {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-outline:hover {
+  color: var(--text-1);
+  border-color: var(--line-gold-strong);
+}
+
+.btn-ghost {
+  --btn-fg: var(--text-2);
+  --btn-border: transparent;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.btn-ghost::after {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btn-ghost:hover {
+  color: var(--text-1);
+}
+
+.btn-lg {
+  padding: 1rem 2.1rem;
+  font-size: 1.05rem;
+  min-height: 52px;
+}
+
+.btn-sm {
+  padding: 0.5rem 1.05rem;
+  font-size: 0.86rem;
+  min-height: 36px;
+}
+
+/* ----- Typography (legacy hero helpers) ----- */
 .hero-title {
   font-size: clamp(3rem, 5vw, 5rem);
   text-align: center;
-  background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #b9b5ad 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 1.5rem;
 }
 
 .hero-subtitle {
   text-align: center;
-  color: #a1a1aa;
-  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  color: var(--text-2);
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
   max-width: 800px;
   margin: 0 auto 4rem auto;
 }
@@ -284,45 +628,342 @@ h1, h2, h3, h4, h5, h6 {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
   gap: 2.5rem;
 }
 
-/* Form Elements */
-input, textarea {
+/* ----- Form fields ----- */
+:where(input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='submit'], [type='button'], [type='image'], [type='hidden'])),
+:where(textarea) {
   width: 100%;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  border: 1px solid var(--border-light);
-  background: rgba(0,0,0,0.5);
-  color: white;
+  padding: 1rem 1.25rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-2);
+  background: var(--ink-2);
+  color: var(--text-1);
   font-family: inherit;
-  transition: all 0.3s ease;
+  font-size: 1rem;
+  transition:
+    border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out);
 }
 
-input:focus, textarea:focus {
+:where(input, textarea, select)::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+
+:where(input, textarea, select):focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 15px rgba(203, 161, 83, 0.1);
+  border-color: var(--gold-400);
+  box-shadow: 0 0 0 4px rgba(201, 164, 92, 0.14);
 }
 
-/* Custom Scrollbar */
+:where(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--gold-400);
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-2);
+  background: var(--ink-2);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.98rem;
+  transition:
+    border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+
+.input-field:hover {
+  border-color: var(--line-3);
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--gold-400);
+  box-shadow: 0 0 0 4px rgba(201, 164, 92, 0.14);
+}
+
+select.input-field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-left: 2.5rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--gold-300) 50%),
+    linear-gradient(135deg, var(--gold-300) 50%, transparent 50%);
+  background-position: 1.1rem 52%, 1.45rem 52%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+select.input-field option {
+  background: var(--ink-2);
+  color: var(--text-1);
+}
+
+/* ----- Badges ----- */
+.kq-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1.4;
+  border: 1px solid var(--line-2);
+  background: rgba(43, 47, 54, 0.82);
+  color: var(--text-1);
+}
+
+.kq-badge--gold {
+  border-color: var(--line-gold);
+  background: rgba(201, 164, 92, 0.12);
+  color: var(--gold-200);
+}
+
+/* ----- Loading: spinners + skeletons ----- */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin,
+.animate-spin {
+  animation: spin 0.9s linear infinite;
+}
+
+.loader {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: var(--gold-300);
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes kq-shimmer {
+  to { transform: translateX(-100%); }
+}
+
+.kq-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: var(--r-sm);
+}
+
+.kq-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: kq-shimmer 1.6s var(--ease-in-out) infinite;
+}
+
+/* ----- Progress ----- */
+.kq-progress {
+  position: relative;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.kq-progress > span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--gold-gradient);
+  transform-origin: right;
+  transform: scaleX(var(--value, 0));
+  transition: transform var(--dur-5) var(--ease-out);
+}
+
+/* ----- Scrollbar ----- */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: var(--ink-0);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(201, 164, 92, 0.22);
   border-radius: 10px;
+  border: 2px solid var(--ink-0);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+  background: rgba(201, 164, 92, 0.5);
 }
 
-.featured-course-card:hover {
-  transform: translateY(-10px) scale(1.02) !important;
-  box-shadow: 0 20px 50px -10px rgba(203,161,83,0.3) !important;
-  border: 1px solid rgba(203,161,83,0.6) !important;
+/* Legacy hook kept for any remaining usages */
+.featured-course-card {
+  transition: transform var(--dur-3) var(--ease-out), border-color var(--dur-3) var(--ease-out);
+}
+@media (hover: hover) {
+  .featured-course-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--line-gold-strong) !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   5. MOTION SYSTEM
+   -------------------------------------------------------------------------
+   Rules:
+   • Server HTML is always the final, readable state. Nothing is hidden
+     unless JavaScript has run and the element is still below the fold.
+   • Only opacity and transform are animated.
+   • prefers-reduced-motion disables movement everywhere.
+   ------------------------------------------------------------------------- */
+
+/* Entrance (CSS-only, runs on first paint; used for above-the-fold content) */
+@keyframes kq-enter-up {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes kq-enter-scale {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes kq-enter-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-enter] {
+    animation: kq-enter-up var(--dur-5) var(--ease-out) both;
+    animation-delay: calc(var(--enter-i, 0) * 85ms + 60ms);
+  }
+  [data-enter='scale'] { animation-name: kq-enter-scale; }
+  [data-enter='fade'] { animation-name: kq-enter-fade; }
+
+  /* Scroll reveal — state attribute is set by <RevealObserver /> */
+  [data-reveal-state='hidden'] {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  [data-reveal='scale'][data-reveal-state='hidden'] {
+    transform: translate3d(0, 16px, 0) scale(0.965);
+  }
+  [data-reveal='fade'][data-reveal-state='hidden'] {
+    transform: none;
+  }
+  [data-reveal-state='shown'] {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--dur-4) var(--ease-out),
+      transform var(--dur-4) var(--ease-out);
+    transition-delay: calc(min(var(--reveal-i, 0), 8) * var(--stagger));
+  }
+}
+
+/* Pointer spotlight — CSS vars are written by <PointerEffects /> */
+.kq-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+
+.kq-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), rgba(224, 184, 106, 0.1), transparent 55%);
+  transition: opacity var(--dur-3) var(--ease-out);
+  z-index: -1; /* above the card background, below its content */
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .kq-spotlight:hover::after {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .spin,
+  .animate-spin,
+  .loader {
+    /* Keep loading indicators meaningful but slow */
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* =========================================================================
+   6. WARM OFF-WHITE SECTIONS
+   -------------------------------------------------------------------------
+   Opt-in scope for calm light bands below the hero. Re-maps the same tokens,
+   so components inside keep their structure and simply change palette.
+   ========================================================================= */
+.kq-section-light {
+  color-scheme: light;
+
+  --ink-0: #f6f3ed; /* main ivory background */
+  --ink-1: #f6f3ed;
+  --ink-2: #fbf8f3; /* light cards / fields */
+  --ink-3: #fbf8f3; /* light cards */
+  --ink-4: #e8e1d8;
+
+  --text-1: #2b2b2b; /* text on ivory */
+  --text-2: #6f6a64; /* secondary text */
+  --text-3: #6f6a64;
+  --text-on-gold: #2b2b2b;
+
+  --line-1: #e8e1d8; /* light borders */
+  --line-2: #e8e1d8;
+  --line-3: rgba(43, 43, 43, 0.18);
+  --line-gold: rgba(179, 139, 67, 0.38);
+  --line-gold-strong: rgba(179, 139, 67, 0.6);
+
+  /* Gold used as *text* needs a deeper tone on ivory (#C9A45C is 2.1:1) */
+  --gold-100: #6e5222;
+  --gold-200: #7d5e26;
+  --gold-300: #8a6a2c;
+  --gold-text-gradient: linear-gradient(120deg, #8a6a2c, #9e7a37);
+  --gold-soft: rgba(201, 164, 92, 0.14);
+
+  /* Semantic colours deep enough for text on ivory */
+  --warning: #8f620f;
+  --success: #1f7a47;
+
+  --background: #f6f3ed;
+  --foreground: #2b2b2b;
+  --surface: #fbf8f3;
+  --glass-bg: #fbf8f3;
+
+  --shadow-sm: 0 1px 2px rgba(43, 43, 43, 0.05), 0 2px 6px rgba(43, 43, 43, 0.04);
+  --shadow-md: 0 8px 22px -14px rgba(43, 43, 43, 0.2);
+  --shadow-lg: 0 18px 40px -22px rgba(43, 43, 43, 0.26);
+  --inner-highlight: 0 0 #0000;
+
+  background: var(--ink-0);
+  color: var(--text-1);
+}
+
+.kq-section-light ::selection {
+  background: rgba(201, 164, 92, 0.3);
+  color: var(--text-1);
 }
