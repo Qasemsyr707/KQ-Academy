@@ -11,6 +11,64 @@ type CheckoutCourse = { title: string; price: number; thumbnail: string | null; 
 type WalletBalance = { walletUSD: number; walletSYP: number };
 type TrackingWindow = Window & { fbq?: (action: string, event: string, payload: { value: number; currency: string }) => void };
 
+/** Image types the purchase endpoint accepts for a manual-transfer receipt. */
+const RECEIPT_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+/** Decoded size the purchase endpoint accepts. */
+const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
+/** Photos straight from a phone camera are accepted, then shrunk before upload. */
+const MAX_SOURCE_BYTES = 15 * 1024 * 1024;
+/** Small images are sent untouched so screenshots stay pixel-sharp. */
+const KEEP_ORIGINAL_BYTES = 400 * 1024;
+const RECEIPT_MAX_SIDE = 1600;
+/** Slow connections get a reassurance first, then a clear, retryable error. */
+const SLOW_HINT_MS = 12_000;
+const REQUEST_TIMEOUT_MS = 90_000;
+
+const dataUrlBytes = (url: string) => Math.floor(((url.length - url.indexOf(',') - 1) * 3) / 4);
+
+function readAsDataUrl(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => (typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('read')));
+    reader.onerror = () => reject(reader.error ?? new Error('read'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * The receipt travels inside the purchase request, so a multi-megabyte photo can
+ * keep the button on "جاري المعالجة" for minutes on a slow mobile connection.
+ * Re-encode large images as a compact JPEG (every digit stays readable) that the
+ * server accepts unchanged.
+ */
+async function prepareReceipt(file: File): Promise<string> {
+  if (file.size <= KEEP_ORIGINAL_BYTES) return readAsDataUrl(file);
+  try {
+    const bitmap = await createImageBitmap(file);
+    try {
+      const scale = Math.min(1, RECEIPT_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('canvas');
+      context.fillStyle = '#ffffff'; // transparent screenshots become white, not black
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      for (const quality of [0.8, 0.7, 0.6]) {
+        const url = canvas.toDataURL('image/jpeg', quality);
+        if (url.startsWith('data:image/jpeg') && dataUrlBytes(url) <= MAX_RECEIPT_BYTES) return url;
+      }
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    /* Decoding unavailable: fall back to the original file below. */
+  }
+  if (file.size > MAX_RECEIPT_BYTES) throw new Error('too-large');
+  return readAsDataUrl(file);
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const courseId = searchParams?.get('courseId') || '';
@@ -22,6 +80,8 @@ function CheckoutContent() {
   const [coupon, setCoupon] = useState('');
   const [discount, setDiscount] = useState(0);
   const [processing, setProcessing] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const [preparingReceipt, setPreparingReceipt] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -83,7 +143,7 @@ function CheckoutContent() {
   };
 
   const handleCheckout = async () => {
-    if (submitting.current || success) return;
+    if (submitting.current || success || preparingReceipt) return;
     if (paymentMethod === 'MANUAL' && !receiptImage) {
       setError('يرجى إرفاق صورة الإيصال لإتمام طلب التحويل اليدوي');
       return;
@@ -92,15 +152,22 @@ function CheckoutContent() {
     submitting.current = true;
     setProcessing(true);
     setError('');
-    
+    // Never leave the customer on an endless spinner: reassure after a few
+    // seconds, then stop waiting. Retrying is safe: the gateway request reuses the
+    // same operation id, and the wallet endpoint never charges an owned course twice.
+    const controller = new AbortController();
+    const slowTimer = setTimeout(() => setSlow(true), SLOW_HINT_MS);
+    const timeoutTimer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
     try {
       if (paymentMethod === 'WALLET') {
         const res = await fetch('/api/checkout/wallet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ courseId, paymentCurrency: 'USD', couponCode: coupon || undefined })
+          body: JSON.stringify({ courseId, paymentCurrency: 'USD', couponCode: coupon || undefined }),
+          signal: controller.signal,
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (res.ok) {
           setSuccess(true);
           setSuccessMessage('تم الشراء بنجاح، جاري التوجيه...');
@@ -123,9 +190,10 @@ function CheckoutContent() {
             operationId: operation.current.id,
             couponCode: coupon || undefined,
             receiptImage: paymentMethod === 'MANUAL' ? receiptImage : undefined
-          })
+          }),
+          signal: controller.signal,
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         
         if (res.ok) {
           const result = checkoutResult(data, paymentMethod);
@@ -140,8 +208,17 @@ function CheckoutContent() {
         }
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'تعذّر تأكيد الطلب. أعد المحاولة بنفس البيانات للتحقق من حالته.');
+      if (controller.signal.aborted) {
+        setError('استغرق الطلب وقتاً أطول من المعتاد بسبب بطء الاتصال، ولم يصلنا تأكيد بعد. اضغط «إتمام الشراء» مرة أخرى للتحقق من حالة طلبك؛ لن يُنشأ طلب مكرر ولن يُخصم المبلغ مرتين.');
+      } else if (error instanceof TypeError) {
+        setError('تعذّر الاتصال بالخادم. تحقّق من اتصالك بالإنترنت ثم اضغط «إتمام الشراء» مرة أخرى؛ لن يُنشأ طلب مكرر.');
+      } else {
+        setError(error instanceof Error ? error.message : 'تعذّر تأكيد الطلب. أعد المحاولة بنفس البيانات للتحقق من حالته.');
+      }
     } finally {
+      clearTimeout(slowTimer);
+      clearTimeout(timeoutTimer);
+      setSlow(false);
       submitting.current = false;
       setProcessing(false);
     }
@@ -318,29 +395,38 @@ function CheckoutContent() {
                     <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '2rem', border: `2px dashed ${receiptImage ? 'var(--success)' : 'rgba(255,255,255,0.2)'}`, borderRadius: '12px', cursor: 'pointer', background: 'rgba(0,0,0,0.3)', transition: 'border-color 0.3s' }}>
                       <input 
                         type="file" 
-                        accept="image/*" 
-                        style={{ display: 'none' }} 
-                        onChange={(e) => {
+                        accept={RECEIPT_TYPES.join(',')}
+                        style={{ display: 'none' }}
+                        disabled={preparingReceipt || processing}
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (file) {
-                            if (file.size > 2 * 1024 * 1024) {
-                              setError('حجم الصورة يجب أن لا يتجاوز 2 ميغابايت');
-                              return;
-                            }
-                            setError('');
+                          e.target.value = '';
+                          if (!file) return;
+                          if (!RECEIPT_TYPES.includes(file.type)) {
+                            setError('صيغة الصورة غير مدعومة. يرجى رفع صورة بصيغة JPG أو PNG أو WebP');
+                            return;
+                          }
+                          if (file.size > MAX_SOURCE_BYTES) {
+                            setError('حجم الصورة كبير جداً، يرجى اختيار صورة أصغر من 15 ميغابايت');
+                            return;
+                          }
+                          setError('');
+                          setPreparingReceipt(true);
+                          try {
+                            setReceiptImage(await prepareReceipt(file));
                             setReceiptFileName(file.name);
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setReceiptImage(reader.result as string);
-                            };
-                            reader.readAsDataURL(file);
+                          } catch {
+                            setError('تعذّر تجهيز الصورة، يرجى اختيار صورة أخرى بصيغة JPG أو PNG');
+                          } finally {
+                            setPreparingReceipt(false);
                           }
                         }}
                       />
                       <Upload size={32} color={receiptImage ? 'var(--success)' : 'rgba(255,255,255,0.5)'} />
-                      <span style={{ color: receiptImage ? 'var(--success)' : 'rgba(255,255,255,0.7)', fontWeight: receiptImage ? 'bold' : 'normal' }}>
-                        {receiptFileName ? receiptFileName : 'انقر هنا لاختيار صورة الإيصال (jpg, png)'}
+                      <span aria-live="polite" style={{ color: receiptImage ? 'var(--success)' : 'rgba(255,255,255,0.7)', fontWeight: receiptImage ? 'bold' : 'normal' }}>
+                        {preparingReceipt ? 'جاري تجهيز الصورة...' : receiptFileName ? receiptFileName : 'انقر هنا لاختيار صورة الإيصال (jpg, png)'}
                       </span>
+                      <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.8rem' }}>تُضغط الصور الكبيرة تلقائياً لرفع أسرع</span>
                     </label>
                   </div>
                 </div>
@@ -479,17 +565,23 @@ function CheckoutContent() {
 
             <button 
               onClick={handleCheckout} 
-              disabled={processing || success}
-              className="btn btn-solid" 
+              disabled={processing || success || preparingReceipt}
+              className="btn btn-solid"
               style={{ width: '100%', padding: '1.2rem', fontSize: '1.2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', opacity: processing ? 0.7 : 1 }}
             >
               {processing ? (
-                <>جاري المعالجة <div className="loader" style={{ width: '20px', height: '20px', borderWidth: '2px' }} /></>
+                <>{paymentMethod === 'MANUAL' ? 'جاري إرسال الطلب والإيصال' : 'جاري المعالجة'} <div className="loader" style={{ width: '20px', height: '20px', borderWidth: '2px' }} /></>
               ) : (
                 <><ShieldCheck size={24} /> إتمام الشراء (${finalPrice?.toFixed(2)})</>
               )}
             </button>
-            
+
+            {processing && slow && (
+              <p role="status" style={{ marginTop: '1rem', marginBottom: 0, padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid rgba(201,164,92,0.45)', background: 'rgba(201,164,92,0.1)', color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                الاتصال أبطأ من المعتاد، ما زلنا نعالج طلبك. يرجى إبقاء هذه الصفحة مفتوحة.
+              </p>
+            )}
+
             <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', marginTop: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
               <Lock size={12} /> معاملة آمنة ومشفرة بالكامل
             </p>
