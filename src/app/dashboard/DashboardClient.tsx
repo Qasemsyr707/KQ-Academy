@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Trophy, Clock, Bell, Flame, TrendingUp, PlayCircle, Bot, Video, Headphones, Wallet, Settings, LayoutDashboard, ChevronLeft, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
+import { formatDate, formatNumber } from '@/lib/format';
 
 export default function DashboardClient({ enrollments, points }: { enrollments: any[], points: number }) {
   const { data: session } = useSession();
@@ -124,7 +125,7 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
             <div style={{ width: '1px', background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent)' }}></div>
             <div>
               <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', textShadow: '0 0 20px rgba(34,197,94,0.4)' }}>
-                <Trophy size={26} /> {points.toLocaleString()}
+                <Trophy size={26} /> {formatNumber(points)}
               </div>
               <p style={{ fontSize: '0.85rem', opacity: 0.7, margin: 0, fontWeight: 600 }}>نقطة خبرة (XP)</p>
             </div>
@@ -245,7 +246,7 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
                           </div>
                           <h4 style={{ fontSize: 'clamp(0.9rem, 2vw, 1.1rem)', fontWeight: 'bold', marginBottom: '0.4rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{enrollment.course.title}</h4>
                           <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', margin: '0 0 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <Clock size={13} /> آخر نشاط: {new Date(enrollment.updatedAt).toLocaleDateString('ar-SA')}
+                            <Clock size={13} /> آخر نشاط: {formatDate(enrollment.updatedAt)}
                           </p>
                           <div className="enroll-card-progress">
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '0.4rem', fontWeight: 600 }}>

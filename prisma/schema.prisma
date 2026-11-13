@@ -57,6 +57,7 @@ model User {
   matchmakingRequests   MatchmakingRequest[] @relation("UserMatchmaking")
   matchedWithRequests   MatchmakingRequest[] @relation("UserMatchedWith")
   notifications         Notification[]
+  lessonProgress LessonProgress[]
 }
 
 model Course {
@@ -122,6 +123,7 @@ model Lesson {
 
   chapter        Chapter      @relation(fields: [chapterId], references: [id])
   attachments    Attachment[]
+  progress    LessonProgress[]
 }
 
 model Attachment {
@@ -586,9 +588,30 @@ model Notification {
   message   String   @db.Text
   link      String?
   isRead    Boolean  @default(false)
+  // One notification per business event: a retried request or webhook cannot
+  // create the same notification twice. Null for legacy rows.
+  dedupeKey String?  @unique
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+}
+
+// Server-side record of a completed lesson. Replaces browser-only progress so
+// completion follows the student across devices and can gate certificates.
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  courseId    String
+  completedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, courseId])
 }
 
 model StoredFile {

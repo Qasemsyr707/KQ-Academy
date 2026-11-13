@@ -71,31 +71,57 @@ export default function Navbar() {
 
   useEffect(() => {
     if (status !== 'authenticated') return;
+    let cancelled = false;
     const fetchNotifications = async () => {
+      // A hidden tab does not poll; it refreshes as soon as it becomes visible.
+      if (document.visibilityState === 'hidden') return;
       try {
-        const res = await fetch('/api/notifications');
-        if (res.ok) {
+        const res = await fetch('/api/notifications', { cache: 'no-store' });
+        if (res.ok && !cancelled) {
           const data = await res.json();
           const list: NotificationItem[] = data.notifications || [];
           setNotifications(list);
-          setUnreadCount(list.filter(n => !n.isRead).length);
+          // The server counts every unread notification, not only the 20 listed.
+          setUnreadCount(typeof data.unreadCount === 'number' ? data.unreadCount : list.filter(n => !n.isRead).length);
         }
       } catch (e) {
         console.error(e);
       }
     };
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
-  }, [status]);
+    const interval = setInterval(fetchNotifications, 45000);
+    window.addEventListener('focus', fetchNotifications);
+    document.addEventListener('visibilitychange', fetchNotifications);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchNotifications);
+      document.removeEventListener('visibilitychange', fetchNotifications);
+    };
+  }, [status, pathname]);
+
+  const markAsRead = (id: string) => {
+    const target = notifications.find(n => n.id === id);
+    if (!target || target.isRead) return;
+    setNotifications(notifications.map(n => (n.id === id ? { ...n, isRead: true } : n)));
+    setUnreadCount(count => Math.max(0, count - 1));
+    // keepalive: the request survives the navigation that the click starts.
+    fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+      keepalive: true,
+    }).catch(e => console.error(e));
+  };
 
   const markAllAsRead = async () => {
     try {
-      await fetch('/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAll: true })
       });
+      if (!res.ok) return;
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (e) {
@@ -280,13 +306,13 @@ export default function Navbar() {
                 </div>
                 <div className={styles.notifList}>
                   {notifications.length === 0 ? (
-                    <div className={styles.notifEmpty}>لا توجد إشعارات جديدة</div>
+                    <div className={styles.notifEmpty}>لا توجد إشعارات بعد</div>
                   ) : (
                     notifications.map(notif => (
                       <Link
                         href={notif.link || '#'}
                         key={notif.id}
-                        onClick={() => setShowNotifications(false)}
+                        onClick={() => { markAsRead(notif.id); setShowNotifications(false); }}
                         className={styles.notifItem}
                         data-unread={!notif.isRead ? 'true' : 'false'}
                       >

@@ -3,6 +3,7 @@ import { requireRequestUser } from '@/lib/request-user';
 import { CheckoutError } from '@/lib/payments/checkout-context';
 import { withPaymentTransaction } from '@/lib/payments/transactions';
 import { debitWallet, paymentBody, paymentId, positiveAmount, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
+import { notifyEnrollment } from '@/lib/notifications';
 
 export async function POST(req: Request) {
   try {
@@ -38,7 +39,8 @@ export async function POST(req: Request) {
       if (!deducted) throw new CheckoutError(400, 'رصيد المحفظة غير كافٍ');
       await tx.walletTransaction.create({ data: { userId: user.id, amount, currency, type: 'PURCHASE', status: 'APPROVED', provider: 'WALLET' } });
       await tx.enrollment.upsert({ where: { userId_courseId: { userId: user.id, courseId } }, update: {}, create: { userId: user.id, courseId } });
-      await tx.payment.create({ data: { userId: user.id, courseId, amount, couponId, paymentMethod: 'WALLET', provider: 'WALLET', status: 'APPROVED' } });
+      const payment = await tx.payment.create({ data: { userId: user.id, courseId, amount, couponId, paymentMethod: 'WALLET', provider: 'WALLET', status: 'APPROVED' } });
+      await notifyEnrollment(tx, { userId: user.id, courseId, courseTitle: course.title, instructorId: course.instructorId, eventKey: payment.id });
     });
     return NextResponse.json({ message: 'تم الشراء بنجاح' }, { headers: WALLET_HEADERS });
   } catch (error) { return walletError(error); }

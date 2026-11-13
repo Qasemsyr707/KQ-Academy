@@ -5,6 +5,7 @@ import { CheckoutError, readCheckoutContext } from './checkout-context';
 import { identifier, objectValue } from './provider-validation';
 import { withPaymentTransaction } from './transactions';
 import { PAYMENT_HEADERS } from './checkout';
+import { notifyEnrollment } from '@/lib/notifications';
 
 const ONLINE_PROVIDERS = ['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA'];
 const MAX_BODY_BYTES = 262_144;
@@ -93,6 +94,15 @@ export async function handlePaymentWebhook(req: Request, provider: string) {
         update: {}, create: { userId: expected.userId, courseId: expected.courseId, progress: 0 },
       });
     });
+    // After the payment is committed; the dedupe key makes a repeated delivery harmless,
+    // and a notification problem must never make the gateway retry a paid order.
+    try {
+      const course = await prisma.course.findUnique({ where: { id: expected.courseId }, select: { title: true, instructorId: true } });
+      if (course) {
+        await notifyEnrollment(prisma, { userId: expected.userId, courseId: expected.courseId, courseTitle: course.title,
+          instructorId: course.instructorId, eventKey: payment.id });
+      }
+    } catch (error) { console.error('[payments webhook] enrollment notification', error); }
     return NextResponse.json({ success: true, received: true }, { headers: PAYMENT_HEADERS });
   } catch (error) {
     return NextResponse.json({ error: error instanceof CheckoutError ? error.message : 'تعذّرت معالجة إشعار الدفع' }, {

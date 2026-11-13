@@ -1,5 +1,6 @@
 import { CheckoutError, readCheckoutContext } from '@/lib/payments/checkout-context';
 import { withPaymentTransaction } from '@/lib/payments/transactions';
+import { notify, notifyEnrollment } from '@/lib/notifications';
 
 export type ManualReviewStatus = 'APPROVED' | 'REJECTED';
 
@@ -51,6 +52,15 @@ export async function reviewManualPayment(paymentId: string, status: ManualRevie
           walletSYP: context.currency === 'SYP' ? { increment: amount } : undefined,
         },
       });
+    }
+
+    if (status === 'APPROVED') {
+      await notifyEnrollment(tx, { userId: payment.userId, courseId: payment.courseId, courseTitle: payment.course.title,
+        instructorId: payment.course.instructorId, eventKey: payment.id });
+    } else {
+      await notify(tx, { userId: payment.userId, title: 'تعذّر تأكيد الدفع',
+        message: `لم نتمكن من تأكيد دفعتك لكورس «${payment.course.title}». يمكنك إعادة المحاولة أو التواصل مع الدعم.`,
+        link: `/checkout?courseId=${payment.courseId}`, dedupeKey: `payment-rejected:${payment.id}` });
     }
 
     const updatedPayment = await tx.payment.findUnique({ where: { id: payment.id }, include: { course: true } });

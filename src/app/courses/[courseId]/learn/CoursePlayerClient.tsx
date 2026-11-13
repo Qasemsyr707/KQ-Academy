@@ -100,6 +100,36 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
     }
   }, [completedItems, course.id, isLoaded]);
 
+  // Progress lives on the server so it follows the student across devices.
+  // Lessons completed earlier on this device only (before progress was saved
+  // on the server) are uploaded once, then both sources are merged.
+  useEffect(() => {
+    if (!isLoaded || !hasAccess || !course.id) return;
+    let cancelled = false;
+    const lessonIds = new Set<string>(chapters.flatMap((c: any) => (c.lessons || []).map((l: any) => l.id)));
+    (async () => {
+      try {
+        let local: string[] = [];
+        try { local = JSON.parse(localStorage.getItem(`course_${course.id}_completed`) || '[]'); } catch { local = []; }
+        const res = await fetch(`/api/courses/${course.id}/progress`, { cache: 'no-store' });
+        if (!res.ok) return;
+        let data = await res.json();
+        const saved = new Set<string>(data.completedItemIds || []);
+        const unsynced = local.filter(id => typeof id === 'string' && lessonIds.has(id) && !saved.has(id));
+        if (unsynced.length > 0) {
+          const sync = await fetch(`/api/courses/${course.id}/progress`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonIds: unsynced }),
+          });
+          if (sync.ok) data = await sync.json();
+        }
+        if (cancelled) return;
+        setCompletedItems(data.completedItemIds || []);
+        if (data.certificateId) setCertId(data.certificateId);
+      } catch { /* Offline: keep showing this device's saved progress. */ }
+    })();
+    return () => { cancelled = true; };
+  }, [isLoaded, hasAccess, course.id, chapters]);
+
   useEffect(() => {
     if (isLoaded && activeItem && typeof window !== 'undefined') {
       localStorage.setItem(`course_${course.id}_active`, activeItem.id);
@@ -144,8 +174,18 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
 
   const markCompleted = (itemId: string) => {
     if (!completedItems.includes(itemId)) {
-      setCompletedItems([...completedItems, itemId]);
+      setCompletedItems(items => (items.includes(itemId) ? items : [...items, itemId]));
     }
+    // Quizzes are recorded by their own submission; lessons are saved here.
+    const isLesson = chapters.some((c: any) => (c.lessons || []).some((l: any) => l.id === itemId));
+    if (!isLesson || !hasAccess || !course.id) return;
+    fetch(`/api/courses/${course.id}/progress`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonId: itemId }),
+    }).then(async res => {
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.certificateId) setCertId(data.certificateId);
+    }).catch(() => { /* Saved on this device; uploaded on the next visit. */ });
   };
 
   const calculateProgress = () => {
@@ -155,7 +195,10 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
       totalItems += (c.quizzes?.length || 0);
     });
     if (totalItems === 0) return 0;
-    return Math.round((completedItems.length / totalItems) * 100);
+    // Count only items that still exist in the course, each once.
+    const existing = new Set<string>(chapters.flatMap((c: any) => [...(c.lessons || []), ...(c.quizzes || [])].map((i: any) => i.id)));
+    const done = new Set(completedItems.filter(id => existing.has(id))).size;
+    return done >= totalItems ? 100 : Math.min(99, Math.round((done / totalItems) * 100));
   };
 
   const handleGenerateCertificate = async () => {

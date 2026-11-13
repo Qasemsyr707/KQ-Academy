@@ -7,6 +7,7 @@ import { assertOwnedDocumentReference } from '@/lib/owned-document';
 import { PrivateFileError } from '@/lib/private-file-storage';
 import { createHash } from 'node:crypto';
 import { normalizeLessonVideoReference } from '@/lib/lesson-video';
+import { notifySafely } from '@/lib/notifications';
 
 export async function POST(req: Request) {
   try {
@@ -94,6 +95,23 @@ export async function POST(req: Request) {
       }
       throw error;
     }
+
+    // Tell enrolled students about new content. Never fails the instructor's save.
+    try {
+      const course = await prisma.course.findFirst({
+        where: { chapters: { some: { id: chapterId } }, status: 'PUBLISHED' },
+        select: { id: true, title: true, enrollments: { select: { userId: true }, take: 5000 } },
+      });
+      if (course) {
+        await notifySafely(...course.enrollments.map(enrollment => ({
+          userId: enrollment.userId,
+          title: isLive ? 'بث مباشر جديد في كورسك' : 'درس جديد في كورسك',
+          message: `أُضيف «${lesson.title}» إلى كورس «${course.title}».`,
+          link: `/courses/${course.id}/learn?lessonId=${lesson.id}`,
+          dedupeKey: `new-lesson:${lesson.id}`,
+        })));
+      }
+    } catch (error) { console.error('[lessons] new lesson notification', error); }
 
     return savedResponse(lesson);
 

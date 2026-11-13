@@ -26,7 +26,11 @@ export async function GET(
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 });
     }
 
-    const startDate = new Date(certificate.course.createdAt).toLocaleDateString('en-GB'); 
+    // The student's own start: their enrollment date (course creation only as a fallback for old records).
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId: certificate.userId, courseId: certificate.courseId } }, select: { createdAt: true },
+    });
+    const startDate = new Date(enrollment?.createdAt ?? certificate.course.createdAt).toLocaleDateString('en-GB');
     const endDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB');
     const issueDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB');
 
