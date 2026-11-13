@@ -172,7 +172,7 @@ export default function CreateQuizClient({ courses }: { courses: any[] }) {
       ) : (
         <form onSubmit={handleSubmit}>
           {/* Quiz Details */}
-          <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' }}>
+          <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' }}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', fontWeight: 'bold', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.8rem' }}>التفاصيل الأساسية</h2>
             
             <div style={{ marginBottom: '1.5rem' }}>
@@ -186,7 +186,7 @@ export default function CreateQuizClient({ courses }: { courses: any[] }) {
                 style={{ width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', fontSize: '1.05rem' }}
               >
                 {courses.map(c => (
-                  <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.title}</option>
+                  <option key={c.id} value={c.id} style={{ background: 'var(--ink-3)' }}>{c.title}</option>
                 ))}
               </select>
             </div>
@@ -199,9 +199,9 @@ export default function CreateQuizClient({ courses }: { courses: any[] }) {
                 style={{ width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', fontSize: '1.05rem' }}
                 required
               >
-                <option value="" disabled style={{ background: '#111' }}>-- اختر الفصل --</option>
+                <option value="" disabled style={{ background: 'var(--ink-3)' }}>-- اختر الفصل --</option>
                 {chapters.map((ch: any) => (
-                  <option key={ch.id} value={ch.id} style={{ background: '#111' }}>{ch.title}</option>
+                  <option key={ch.id} value={ch.id} style={{ background: 'var(--ink-3)' }}>{ch.title}</option>
                 ))}
               </select>
             </div>
@@ -226,8 +226,8 @@ export default function CreateQuizClient({ courses }: { courses: any[] }) {
                   onChange={(e) => setQuizType(e.target.value)}
                   style={{ width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', fontSize: '1.05rem' }}
                 >
-                  <option value="AUTOMATIC" style={{ background: '#111' }}>أسئلة مؤتمتة (اختيار من متعدد)</option>
-                  <option value="MANUAL_FILE" style={{ background: '#111' }}>رفع ملف جاهز (يصحح يدوياً)</option>
+                  <option value="AUTOMATIC" style={{ background: 'var(--ink-3)' }}>أسئلة مؤتمتة (اختيار من متعدد)</option>
+                  <option value="MANUAL_FILE" style={{ background: 'var(--ink-3)' }}>رفع ملف جاهز (يصحح يدوياً)</option>
                 </select>
               </div>
               <div>
@@ -245,7 +245,7 @@ export default function CreateQuizClient({ courses }: { courses: any[] }) {
           </div>
 
           {quizType === 'MANUAL_FILE' && (
-            <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' }}>
+            <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', fontWeight: 'bold', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <FileText size={20} color="var(--primary)" /> إعدادات ملف الاختبار
               </h2>
@@ -328,7 +328,7 @@ export default function CreateQuizClient({ courses }: { courses: any[] }) {
                 </div>
                 
                 {questions.map((q, qIndex) => (
-                  <div key={qIndex} style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '1.5rem', position: 'relative' }}>
+                  <div key={qIndex} style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '1.5rem', position: 'relative' }}>
                     <button 
                       type="button" 
                       onClick={() => handleRemoveQuestion(qIndex)}

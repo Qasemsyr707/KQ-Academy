@@ -86,7 +86,7 @@ export default function CommunityPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '4rem 2rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', padding: '4rem 2rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         
         {/* Header */}
@@ -104,7 +104,7 @@ export default function CommunityPage() {
 
         {/* Create Post Box */}
         {session ? (
-          <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '3rem' }}>
+          <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '3rem' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <MessageSquare size={20} color="var(--primary)" /> إنشاء منشور جديد
             </h3>
@@ -146,7 +146,7 @@ export default function CommunityPage() {
         {loading ? (
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '2rem' }}>جاري تحميل المنشورات...</div>
         ) : posts.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '4rem', background: '#111', borderRadius: '16px' }}>
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', padding: '4rem', background: 'var(--ink-3)', borderRadius: '16px' }}>
             <MessageCircle size={48} opacity={0.2} style={{ margin: '0 auto 1rem auto' }} />
             لا توجد منشورات حتى الآن. كن أول من يشارك!
           </div>
@@ -157,7 +157,7 @@ export default function CommunityPage() {
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   key={post.id} 
-                  style={{ background: '#111', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}
+                  style={{ background: 'var(--ink-3)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}
                 >
                   <div style={{ padding: '2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>

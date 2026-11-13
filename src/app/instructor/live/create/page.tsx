@@ -52,7 +52,7 @@ export default function CreateLivePage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', direction: 'rtl', fontFamily: "'Cairo', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', direction: 'rtl', fontFamily: "'Cairo', sans-serif" }}>
       <Navbar />
       <style>{`
         .live-container { max-width: 900px; margin: 0 auto; padding: 120px 24px 80px; }
@@ -117,7 +117,7 @@ export default function CreateLivePage() {
               العودة للاختيار
             </button>
 
-            <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: '40px' }}>
+            <div style={{ background: 'var(--ink-2)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: '40px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', padding: '16px 20px', borderRadius: '12px', background: mode === 'immediate' ? 'rgba(239,68,68,0.08)' : 'rgba(203,161,83,0.08)', border: `1px solid ${mode === 'immediate' ? 'rgba(239,68,68,0.2)' : 'rgba(203,161,83,0.2)'}` }}>
                 {mode === 'immediate' ? <Radio size={24} color="#ef4444" /> : <Calendar size={24} color="var(--primary)" />}
                 <div>

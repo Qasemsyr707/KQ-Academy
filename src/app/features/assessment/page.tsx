@@ -49,10 +49,10 @@ export default function AssessmentPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
       {/* Navbar */}
-      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ padding: '1.5rem 2rem', background: 'var(--ink-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 50 }}>
         <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
           لوحة التحكم <ChevronRight size={16} />
         </Link>
@@ -113,7 +113,7 @@ export default function AssessmentPage() {
                 </div>
               </div>
 
-              <div style={{ background: '#111', padding: '3rem 2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ background: 'var(--ink-3)', padding: '3rem 2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2.5rem', lineHeight: 1.5 }}>
                   {mockQuestions[currentQuestion].text}
                 </h3>
@@ -188,7 +188,7 @@ export default function AssessmentPage() {
               </div>
 
               <div style={{ 
-                background: '#111', padding: '2rem', borderRadius: '24px', 
+                background: 'var(--ink-3)', padding: '2rem', borderRadius: '24px', 
                 border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' 
               }}>
                 <div style={{ display: 'inline-block', padding: '0.5rem 1.5rem', borderRadius: '20px', background: `${getLevelInfo().color}20`, color: getLevelInfo().color, fontWeight: 'bold', marginBottom: '1rem' }}>

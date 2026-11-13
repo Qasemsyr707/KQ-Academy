@@ -27,7 +27,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: 'clamp(1.5rem, 4vw, 4rem) clamp(1rem, 5%, 5%)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', padding: 'clamp(1.5rem, 4vw, 4rem) clamp(1rem, 5%, 5%)' }}>
       <style dangerouslySetInnerHTML={{__html: `
         .profile-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start; }
         .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }

@@ -51,14 +51,14 @@ export function LessonMediaPlayer({ lessonId, title, onEnded, directUrl }: {
   const isImage = /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(safeSource);
   const isOwnFile = /^\/api\/files\/[^/?#]+(?:\?[^#]*)?$/.test(safeSource);
   const isPdf = /\.pdf(\?.*)?$/i.test(safeSource) || isOwnFile;
-  if (isAudio) return <div style={{ ...fill, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}><audio src={safeSource} controls preload="none" onEnded={onEnded} style={{ width: '80%' }} /></div>;
+  if (isAudio) return <div style={{ ...fill, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ink-3)' }}><audio src={safeSource} controls preload="none" onEnded={onEnded} style={{ width: '80%' }} /></div>;
   // eslint-disable-next-line @next/next/no-img-element
   if (isImage) return <img src={safeSource} alt={title} style={{ ...fill, objectFit: 'contain' }} />;
   if (isPdf && !isOwnFile) return <div role="status" style={{ ...fill, padding: '1.5rem', color: '#fff' }}>ملف الدرس الأصلي غير متوفر في التخزين المحمي. يجب على المدرّب إعادة رفع ملف PDF الأصلي؛ لا يمكن استعادة صفحاته من رابط صورة.</div>;
   if (isPdf) return (
     <div style={{ ...fill, display: 'flex', flexDirection: 'column' }}>
       <iframe src={safeSource} title={title} style={{ width: '100%', flex: 1, border: 0, background: '#fff' }} />
-      <div style={{ padding: '0.6rem 1rem', background: '#0a0a0a', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'space-between', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
+      <div style={{ padding: '0.6rem 1rem', background: 'var(--ink-2)', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'space-between', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
         <span>إذا لم يظهر المستند كاملاً، افتحه في نافذة جديدة أو حمّله.</span>
         <a href={safeSource} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>فتح الملف بنافذة كاملة</a>
         <a href={`${safeSource}${safeSource.includes('?') ? '&' : '?'}download=1`} download style={{ color: 'var(--primary)' }}>تحميل الملف</a>

@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Mail, Lock, User, UserPlus, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Mail, Lock, User, UserPlus, Eye, EyeOff, Loader2, CheckCircle2, XCircle, ShieldCheck } from 'lucide-react';
+import AuthShell, { authStyles as styles } from '@/components/auth/AuthShell';
+import { toast } from '@/lib/motion';
+import { authHref } from '@/lib/safe-redirect';
+import { useAuthRedirectParams } from '@/lib/use-callback-url';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { callbackUrl } = useAuthRedirectParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,13 +23,8 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Password Strength State
-  const [strengthScore, setStrengthScore] = useState(0);
-  const [strengthLabel, setStrengthLabel] = useState('');
-  const [strengthColor, setStrengthColor] = useState('rgba(255,255,255,0.1)');
-
-  // Calculate Password Strength
-  useEffect(() => {
+  // Password strength is derived directly from the password (same scoring as before).
+  const strengthScore = (() => {
     let score = 0;
     if (password.length > 0) {
       if (password.length > 5) score += 1;
@@ -32,34 +32,17 @@ export default function RegisterPage() {
       if (password.match(/\d/)) score += 1;
       if (password.match(/[^a-zA-Z\d]/)) score += 1;
     }
+    return score;
+  })();
 
-    setStrengthScore(score);
-
-    switch(score) {
-      case 0:
-        setStrengthLabel('');
-        setStrengthColor('rgba(255,255,255,0.1)');
-        break;
-      case 1:
-        setStrengthLabel('ضعيفة');
-        setStrengthColor('#ef4444'); // Red
-        break;
-      case 2:
-        setStrengthLabel('متوسطة');
-        setStrengthColor('#f59e0b'); // Orange
-        break;
-      case 3:
-        setStrengthLabel('جيدة');
-        setStrengthColor('#eab308'); // Yellow
-        break;
-      case 4:
-        setStrengthLabel('قوية جداً');
-        setStrengthColor('#22c55e'); // Green
-        break;
-      default:
-        break;
-    }
-  }, [password]);
+  const STRENGTH_LEVELS: Record<number, { label: string; color: string }> = {
+    0: { label: '', color: 'rgba(255,255,255,0.1)' },
+    1: { label: 'ضعيفة', color: '#ef4444' }, // Red
+    2: { label: 'متوسطة', color: '#f59e0b' }, // Orange
+    3: { label: 'جيدة', color: '#eab308' }, // Yellow
+    4: { label: 'قوية جداً', color: '#22c55e' }, // Green
+  };
+  const { label: strengthLabel, color: strengthColor } = STRENGTH_LEVELS[strengthScore];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,228 +75,178 @@ export default function RegisterPage() {
         throw new Error(data.error || 'حدث خطأ أثناء التسجيل');
       }
 
-      router.push('/login?registered=true');
-    } catch (err: any) {
-      setError(err.message);
+      router.push(callbackUrl
+        ? `/login?registered=true&callbackUrl=${encodeURIComponent(callbackUrl)}`
+        : '/login?registered=true');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء التسجيل');
       setIsLoading(false);
     }
   };
 
+  const canSubmit = !(isLoading || strengthScore < 2 || password !== confirmPassword);
+  const confirmState = confirmPassword.length > 0 ? (password === confirmPassword ? styles.inputValid : styles.inputInvalid) : '';
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: '#050505' }}>
-      
-      {/* Right Side - Register Form */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          style={{ width: '100%', maxWidth: '400px' }}
-        >
-          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <Link href="/" style={{ display: 'inline-block', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ color: '#000', fontWeight: 'bold', fontSize: '1.5rem' }}>K</span>
-                </div>
-                <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff', letterSpacing: '2px' }}>&Q</span>
-              </div>
-            </Link>
-            <h2 style={{ fontSize: '1.8rem', color: '#fff', marginBottom: '0.5rem' }}>إنشاء حساب جديد</h2>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>انضم إلى نخبة المتعلمين في الأكاديمية</p>
-          </div>
-
-          {error && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-              <XCircle size={18} /> {error}
-            </motion.div>
-          )}
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            <div>
-              <label style={{ display: 'block', color: '#fff', marginBottom: '0.5rem', fontSize: '0.85rem' }}>الاسم الكامل</label>
-              <div style={{ position: 'relative' }}>
-                <User size={18} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
-                  type="text" 
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="الاسم الأول والأخير"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.9rem 2.8rem 0.9rem 1rem', borderRadius: '12px', color: '#fff', fontSize: '0.95rem', transition: 'all 0.3s' }}
-                  className="focus:border-primary focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', color: '#fff', marginBottom: '0.5rem', fontSize: '0.85rem' }}>البريد الإلكتروني</label>
-              <div style={{ position: 'relative' }}>
-                <Mail size={18} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
-                  type="email" 
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.9rem 2.8rem 0.9rem 1rem', borderRadius: '12px', color: '#fff', fontSize: '0.95rem', transition: 'all 0.3s' }}
-                  className="focus:border-primary focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', color: '#fff', marginBottom: '0.5rem', fontSize: '0.85rem' }}>كلمة المرور</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={18} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.9rem 1rem 0.9rem 2.8rem', borderRadius: '12px', color: '#fff', fontSize: '0.95rem', transition: 'all 0.3s' }}
-                  className="focus:border-primary focus:outline-none"
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}
-                  className="hover:text-primary"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              
-              {/* Password Strength Indicator */}
-              {password.length > 0 && (
-                <div style={{ marginTop: '0.8rem' }}>
-                  <div style={{ display: 'flex', gap: '4px', height: '4px', marginBottom: '0.4rem' }}>
-                    {[1, 2, 3, 4].map((level) => (
-                      <div 
-                        key={level} 
-                        style={{ 
-                          flex: 1, 
-                          borderRadius: '2px', 
-                          background: level <= strengthScore ? strengthColor : 'rgba(255,255,255,0.1)',
-                          transition: 'all 0.3s ease'
-                        }} 
-                      />
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: strengthColor }}>
-                    <span>{strengthLabel}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>يفضل استخدام أرقام ورموز</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label style={{ display: 'block', color: '#fff', marginBottom: '0.5rem', fontSize: '0.85rem' }}>تأكيد كلمة المرور</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={18} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
-                  type={showConfirmPassword ? "text" : "password"}
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={{ 
-                    width: '100%', 
-                    background: 'rgba(255,255,255,0.03)', 
-                    border: `1px solid ${confirmPassword.length > 0 ? (password === confirmPassword ? 'var(--success)' : '#ef4444') : 'rgba(255,255,255,0.1)'}`, 
-                    padding: '0.9rem 1rem 0.9rem 2.8rem', 
-                    borderRadius: '12px', 
-                    color: '#fff', 
-                    fontSize: '0.95rem', 
-                    transition: 'all 0.3s' 
-                  }}
-                  className="focus:outline-none"
-                />
-                
-                {/* Match Indicator or Eye Toggle */}
-                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {confirmPassword.length > 0 && password === confirmPassword && (
-                    <CheckCircle2 size={18} color="var(--success)" />
-                  )}
-                  <button 
-                    type="button" 
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 0 }}
-                    className="hover:text-primary"
-                  >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              disabled={isLoading || strengthScore < 2 || password !== confirmPassword}
-              className="btn btn-solid" 
-              style={{ 
-                width: '100%', 
-                padding: '1rem', 
-                fontSize: '1rem', 
-                marginTop: '0.5rem', 
-                display: 'flex', 
-                justifyContent: 'center', 
-                gap: '0.5rem',
-                opacity: (isLoading || strengthScore < 2 || password !== confirmPassword) ? 0.5 : 1,
-                cursor: (isLoading || strengthScore < 2 || password !== confirmPassword) ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={20} className="spin" />
-                  جاري إنشاء الحساب...
-                </>
-              ) : (
-                <>
-                  إنشاء الحساب <UserPlus size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          <div style={{ marginTop: '2.5rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>
-            لديك حساب مسبقاً؟{' '}
-            <Link href="/login" style={{ color: '#fff', fontWeight: 'bold', textDecoration: 'none', transition: 'color 0.3s' }} className="hover:text-primary">
-              تسجيل الدخول
-            </Link>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Left Side - Image/Branding */}
-      <div style={{ flex: 1, display: 'none', position: 'relative', overflow: 'hidden' }} className="md:flex">
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to left, rgba(0,0,0,0.9), transparent)', zIndex: 1 }} />
-        <img 
-          src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop" 
-          alt="Student Success"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }}
-        />
-        <div style={{ position: 'absolute', top: '10%', right: '10%', zIndex: 2, maxWidth: '500px', textAlign: 'right' }}>
-          <h1 style={{ fontSize: '3rem', fontWeight: 'bold', color: '#fff', marginBottom: '1rem', lineHeight: '1.2' }}>
-            استثمر في <span style={{ color: 'var(--primary)' }}>مستقبلك</span>
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', lineHeight: '1.6' }}>
-            انضم إلى آلاف الطلاب الذين غيروا مسار حياتهم المهنية من خلال دوراتنا الاحترافية.
-          </p>
+    <AuthShell
+      title="إنشاء حساب جديد"
+      subtitle="انضم إلى نخبة المتعلمين في الأكاديمية"
+      brand={{
+        title: <>استثمر في <span className="text-gold">مستقبلك</span></>,
+        text: 'انضم إلى آلاف الطلاب الذين غيروا مسار حياتهم المهنية من خلال دوراتنا الاحترافية.',
+      }}
+    >
+      {callbackUrl?.startsWith('/checkout') && !error ? (
+        <div className={`${styles.alert} ${styles.alertInfo}`} role="status">
+          <ShieldCheck size={18} aria-hidden="true" /> أنشئ حسابك لإتمام عملية الشراء، وستعود مباشرة إلى صفحة الدفع
         </div>
-      </div>
+      ) : null}
+      <AnimatePresence>
+        {error && (
+          <motion.div key="error" className={styles.alert} role="alert" variants={toast} initial="hidden" animate="visible" exit="exit">
+            <XCircle size={18} aria-hidden="true" /> {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <style jsx global>{`
-        @media (min-width: 768px) {
-          .md\\:flex { display: flex !important; }
-        }
-        .hover\\:border-primary:focus { border-color: var(--primary) !important; }
-        .hover\\:text-primary:hover { color: var(--primary) !important; }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-      `}</style>
-    </div>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.field}>
+          <label htmlFor="register-name" className={styles.label}>الاسم الكامل</label>
+          <div className={styles.control}>
+            <User size={18} className={styles.icon} aria-hidden="true" />
+            <input
+              id="register-name"
+              type="text"
+              required
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="الاسم الأول والأخير"
+              className={styles.input}
+            />
+          </div>
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="register-email" className={styles.label}>البريد الإلكتروني</label>
+          <div className={styles.control}>
+            <Mail size={18} className={styles.icon} aria-hidden="true" />
+            <input
+              id="register-email"
+              type="email"
+              required
+              autoComplete="email"
+              inputMode="email"
+              dir="ltr"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+              className={styles.input}
+              style={{ textAlign: 'right' }}
+            />
+          </div>
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="register-password" className={styles.label}>كلمة المرور</label>
+          <div className={styles.control}>
+            <Lock size={18} className={styles.icon} aria-hidden="true" />
+            <input
+              id="register-password"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              aria-describedby="register-password-strength"
+              className={`${styles.input} ${styles.inputWithTrailing}`}
+            />
+            <div className={styles.trailing}>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className={styles.toggle}
+                aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Password Strength Indicator */}
+          {password.length > 0 && (
+            <div className={styles.strength} id="register-password-strength" aria-live="polite">
+              <div className={styles.strengthBars} aria-hidden="true">
+                {[1, 2, 3, 4].map((level) => (
+                  <span key={level} style={{ background: level <= strengthScore ? strengthColor : undefined }} />
+                ))}
+              </div>
+              <div className={styles.strengthMeta}>
+                <span style={{ color: strengthColor }}>{strengthLabel}</span>
+                <span className={styles.hint}>يفضل استخدام أرقام ورموز</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="register-confirm" className={styles.label}>تأكيد كلمة المرور</label>
+          <div className={styles.control}>
+            <Lock size={18} className={styles.icon} aria-hidden="true" />
+            <input
+              id="register-confirm"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              aria-invalid={confirmPassword.length > 0 && password !== confirmPassword}
+              className={`${styles.input} ${styles.inputWithTrailing} ${confirmState}`}
+            />
+
+            {/* Match Indicator or Eye Toggle */}
+            <div className={styles.trailing}>
+              {confirmPassword.length > 0 && password === confirmPassword && (
+                <CheckCircle2 size={18} color="var(--success)" aria-label="كلمتا المرور متطابقتان" />
+              )}
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className={styles.toggle}
+                aria-label={showConfirmPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                aria-pressed={showConfirmPassword}
+              >
+                {showConfirmPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className={`btn btn-solid btn-lg ${styles.submit}`}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 size={20} className="spin" aria-hidden="true" />
+              جاري إنشاء الحساب...
+            </>
+          ) : (
+            <>
+              إنشاء الحساب <UserPlus size={18} aria-hidden="true" />
+            </>
+          )}
+        </button>
+      </form>
+
+      <p className={styles.switch}>
+        لديك حساب مسبقاً؟{' '}
+        <Link href={authHref('/login', callbackUrl)}>تسجيل الدخول</Link>
+      </p>
+    </AuthShell>
   );
 }

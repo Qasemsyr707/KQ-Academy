@@ -57,7 +57,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: 'var(--primary)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: 'var(--primary)' }}>
         <Loader2 className="animate-spin" size={40} />
       </div>
     );
@@ -65,7 +65,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
 
   if (!quiz) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#ef4444' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: '#ef4444' }}>
         <h2>لم يتم العثور على الاختبار</h2>
       </div>
     );
@@ -73,7 +73,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
 
   if (result) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', padding: '2rem' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', padding: '2rem' }}>
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -115,7 +115,7 @@ export default function QuizPage({ params }: { params: Promise<{ quizId: string 
   const isAnswered = answers[currentQuestion.id] !== undefined;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4rem 2rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4rem 2rem' }}>
       
       <div style={{ width: '100%', maxWidth: '800px', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>

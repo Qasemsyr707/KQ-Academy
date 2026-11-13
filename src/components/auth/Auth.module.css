@@ -1,0 +1,364 @@
+/* ==========================================================================
+   Authentication screens
+   ========================================================================== */
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: calc(100vh - var(--nav-h));
+}
+
+.shellCentered {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ----- Form side ----- */
+.formSide {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2rem, 5vw, 4rem) var(--gutter);
+}
+
+.panel {
+  width: 100%;
+  max-width: 440px;
+}
+
+.panelCard {
+  padding: clamp(1.75rem, 4vw, 2.75rem);
+  border-radius: var(--r-xl);
+  border: 1px solid var(--line-1);
+  background: linear-gradient(180deg, #383d45, #343941);
+  box-shadow: var(--shadow-lg), var(--inner-highlight);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.logoLink {
+  display: inline-flex;
+  margin-bottom: 0.75rem;
+  border-radius: 50%;
+}
+
+.logo {
+  filter: drop-shadow(0 4px 14px rgba(201, 164, 92, 0.18));
+}
+
+.title {
+  color: var(--text-1);
+  font-size: clamp(1.6rem, 1.3rem + 1vw, 2rem);
+  font-weight: 900;
+}
+
+.subtitle {
+  color: var(--text-3);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.label {
+  color: var(--text-1);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.inlineLink {
+  color: var(--gold-300);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.inlineLink:hover {
+  color: var(--gold-100);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.control {
+  position: relative;
+}
+
+.icon {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+  transition: color var(--dur-2) var(--ease-out);
+}
+
+.control:focus-within .icon {
+  color: var(--gold-300);
+}
+
+.input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.9rem 2.9rem 0.9rem 1rem !important;
+  border-radius: var(--r-md) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  font-size: 0.98rem !important;
+}
+
+.inputWithTrailing {
+  padding-left: 3.4rem !important;
+}
+
+.inputValid {
+  border-color: rgba(47, 191, 113, 0.6) !important;
+}
+
+.inputInvalid {
+  border-color: rgba(239, 83, 80, 0.6) !important;
+}
+
+.trailing {
+  position: absolute;
+  top: 50%;
+  left: 0.6rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out);
+}
+
+.toggle:hover {
+  color: var(--gold-200);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.strength {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+}
+
+.strengthBars {
+  display: flex;
+  gap: 4px;
+  height: 4px;
+}
+
+.strengthBars span {
+  flex: 1;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background-color var(--dur-3) var(--ease-out);
+}
+
+.strengthMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.hint {
+  color: var(--text-3);
+}
+
+.submit {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(239, 83, 80, 0.35);
+  background: rgba(239, 83, 80, 0.08);
+  color: #ff8a80;
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.alertSuccess {
+  border-color: rgba(47, 191, 113, 0.35);
+  background: rgba(47, 191, 113, 0.08);
+  color: #7ee2a8;
+}
+
+.alertInfo {
+  border-color: var(--line-gold);
+  background: rgba(201, 164, 92, 0.1);
+  color: var(--gold-100);
+}
+
+.switch {
+  margin-top: 2rem;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 0.92rem;
+}
+
+.switch a {
+  color: var(--text-1);
+  font-weight: 700;
+}
+
+.switch a:hover {
+  color: var(--gold-200);
+}
+
+.successIcon {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  background: rgba(47, 191, 113, 0.1);
+  border: 1px solid rgba(47, 191, 113, 0.25);
+  color: var(--success);
+}
+
+/* ----- Brand side ----- */
+.brandSide {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  padding: clamp(2.5rem, 5vw, 4.5rem);
+  border-inline-start: 1px solid var(--line-1);
+  background:
+    radial-gradient(90% 70% at 20% 10%, rgba(218, 187, 126, 0.1), transparent 60%),
+    radial-gradient(70% 60% at 90% 100%, rgba(201, 164, 92, 0.05), transparent 60%),
+    linear-gradient(160deg, #3a3832, #2b2f36 60%);
+}
+
+.brandSide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse at 30% 20%, #000 10%, transparent 70%);
+  mask-image: radial-gradient(ellipse at 30% 20%, #000 10%, transparent 70%);
+}
+
+.brandMark {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  width: min(360px, 60%);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  z-index: -1;
+  opacity: 0.16;
+  filter: drop-shadow(0 0 40px rgba(218, 187, 126, 0.2));
+}
+
+.brandContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 520px;
+}
+
+.brandTitle {
+  color: var(--text-1);
+  font-size: clamp(2rem, 1.4rem + 2vw, 3rem);
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.brandText {
+  color: var(--text-2);
+  font-size: 1.12rem;
+  line-height: 1.85;
+}
+
+.benefits {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.benefits li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.benefitIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: rgba(201, 164, 92, 0.12);
+  border: 1px solid rgba(201, 164, 92, 0.28);
+  color: var(--gold-200);
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .brandSide {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .panelCard {
+    padding: 1.5rem 1.15rem;
+    border-radius: var(--r-lg);
+  }
+}

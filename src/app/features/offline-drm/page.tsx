@@ -15,10 +15,10 @@ export default function OfflineDRMPage() {
   const [downloads, setDownloads] = useState(mockDownloads);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
       {/* Navbar */}
-      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ padding: '1.5rem 2rem', background: 'var(--ink-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 50 }}>
         <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
           لوحة التحكم <ChevronRight size={16} />
         </Link>
@@ -45,7 +45,7 @@ export default function OfflineDRMPage() {
         </div>
 
         {/* Storage Info */}
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.05)', padding: '2rem', borderRadius: '24px', marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <div style={{ background: 'var(--ink-3)', border: '1px solid rgba(255,255,255,0.05)', padding: '2rem', borderRadius: '24px', marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '2rem' }}>
           <HardDrive size={48} color="rgba(255,255,255,0.2)" />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -72,7 +72,7 @@ export default function OfflineDRMPage() {
                 transition={{ delay: index * 0.1 }}
                 key={item.id}
                 style={{ 
-                  background: '#111', 
+                  background: 'var(--ink-3)', 
                   borderRadius: '16px', 
                   border: '1px solid rgba(255,255,255,0.05)',
                   padding: '1.5rem',

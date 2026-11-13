@@ -133,7 +133,7 @@ export default function ShortsClient({ initialShorts }: { initialShorts: any[] }
         <div 
           style={{ 
             width: '100%', maxWidth: '450px', height: '100vh', 
-            position: 'relative', background: '#111', 
+            position: 'relative', background: 'var(--ink-3)', 
             boxShadow: '0 0 50px rgba(0,0,0,0.5)' 
           }}
         >
@@ -243,7 +243,7 @@ export default function ShortsClient({ initialShorts }: { initialShorts: any[] }
             style={{ 
               position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', 
               width: '100%', maxWidth: '450px', height: '60vh', 
-              background: '#111', borderRadius: '20px 20px 0 0', zIndex: 100,
+              background: 'var(--ink-3)', borderRadius: '20px 20px 0 0', zIndex: 100,
               boxShadow: '0 -10px 40px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column'
             }}
           >

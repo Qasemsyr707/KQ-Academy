@@ -44,8 +44,8 @@ export default function LiveClassPage({ params }: { params: Promise<{ roomId: st
 
   if (error) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#ef4444' }}>
-        <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: '#ef4444' }}>
+        <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>خطأ في الدخول للغرفة</h2>
           <p>{error}</p>
         </div>
@@ -55,7 +55,7 @@ export default function LiveClassPage({ params }: { params: Promise<{ roomId: st
 
   if (!token) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', color: '#fff' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', color: '#fff' }}>
         <Loader2 className="animate-spin" size={40} color="var(--primary)" />
         <span style={{ marginLeft: '1rem' }}>جاري التحضير للدخول إلى قاعة البث المباشر...</span>
         <style jsx global>{`

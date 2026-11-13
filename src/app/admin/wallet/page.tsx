@@ -26,7 +26,7 @@ export default async function AdminWalletPage() {
   const exchangeRate = exchangeRateSetting?.value || '14500';
 
   return (
-    <div style={{ padding: '2rem 5%', minHeight: '100vh', background: '#050505', color: '#fff' }}>
+    <div style={{ padding: '2rem 5%', minHeight: '100vh', background: 'var(--background)', color: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>إدارة المحافظ (شحن الرصيد)</h1>
         <Link href="/admin" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold' }}>

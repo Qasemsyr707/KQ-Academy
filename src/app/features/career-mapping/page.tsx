@@ -35,7 +35,7 @@ export default function CareerMappingPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '4rem 2rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', padding: '4rem 2rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* Header */}
@@ -68,7 +68,7 @@ export default function CareerMappingPage() {
                       whileHover={{ scale: 1.03 }}
                       key={path.id} 
                       onClick={() => setSelectedPath(path)}
-                      style={{ background: '#111', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+                      style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
                     >
                       <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', background: 'var(--primary)', filter: 'blur(80px)', opacity: 0.2 }} />
                       
@@ -102,7 +102,7 @@ export default function CareerMappingPage() {
                    العودة للمسارات
                 </button>
 
-                <div style={{ background: '#111', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' }}>
+                <div style={{ background: 'var(--ink-3)', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2rem' }}>
                   <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>{selectedPath.title}</h2>
                   <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.6)', maxWidth: '800px' }}>{selectedPath.description}</p>
                 </div>

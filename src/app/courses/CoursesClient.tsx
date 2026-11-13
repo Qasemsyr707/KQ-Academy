@@ -1,12 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, BookOpen, Star, User, Clock, X, SlidersHorizontal, ArrowUpDown, DollarSign, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { Search, Filter, BookOpen, Star, User, X, SlidersHorizontal, ArrowUpDown, Tag } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import CourseCard from '@/components/ui/CourseCard';
+import { backdrop, drawerFromStart, fadeUp } from '@/lib/motion';
+import styles from './Courses.module.css';
+import { formatNumber } from '@/lib/format';
 
-export default function CoursesClient({ initialCourses, featuredCourses = [], categories = [], instructors = [] }: { initialCourses: any[], featuredCourses?: any[], categories?: string[], instructors?: string[] }) {
+type CatalogCourse = {
+  id: string;
+  title: string;
+  description?: string | null;
+  category?: string | null;
+  thumbnail?: string | null;
+  priceSYP: number;
+  rating: number;
+  instructor: { name: string | null; image?: string | null };
+};
+
+type Props = {
+  initialCourses: CatalogCourse[];
+  featuredCourses?: CatalogCourse[];
+  categories?: string[];
+  instructors?: string[];
+  /** Optional page heading overrides (used by /curriculum). */
+  eyebrow?: ReactNode;
+  heading?: ReactNode;
+  description?: ReactNode;
+};
+
+export default function CoursesClient({
+  initialCourses,
+  featuredCourses = [],
+  categories = [],
+  instructors = [],
+  eyebrow = 'اكتشف كورسك القادم',
+  heading = <>البحث <span className="text-gold">المتقدم</span></>,
+  description,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,38 +57,53 @@ export default function CoursesClient({ initialCourses, featuredCourses = [], ca
   const [instructor, setInstructor] = useState(searchParams.get('instructor') || 'الكل');
   const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
 
-  // Trigger search when filters change
+  // Trigger search when filters change (400ms debounce)
   useEffect(() => {
+    const fetchCourses = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (category && category !== 'الكل') params.set('category', category);
+        if (type && type !== 'الكل') params.set('type', type);
+        if (price && price !== 'الكل') params.set('price', price);
+        if (rating && rating !== 'الكل') params.set('rating', rating);
+        if (instructor && instructor !== 'الكل') params.set('instructor', instructor);
+        if (sort && sort !== 'newest') params.set('sort', sort);
+
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+
+        const res = await fetch(`/api/courses/search?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setCourses(data.courses);
+        }
+      } catch (error) {
+        console.error('Failed to fetch courses:', error);
+      }
+      setLoading(false);
+    };
+
     const delayDebounceFn = setTimeout(() => {
       fetchCourses();
-    }, 400); // 400ms debounce
+    }, 400);
     return () => clearTimeout(delayDebounceFn);
-  }, [q, category, type, price, rating, instructor, sort]);
+  }, [q, category, type, price, rating, instructor, sort, router, pathname]);
 
-  const fetchCourses = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (q) params.set('q', q);
-      if (category && category !== 'الكل') params.set('category', category);
-      if (type && type !== 'الكل') params.set('type', type);
-      if (price && price !== 'الكل') params.set('price', price);
-      if (rating && rating !== 'الكل') params.set('rating', rating);
-      if (instructor && instructor !== 'الكل') params.set('instructor', instructor);
-      if (sort && sort !== 'newest') params.set('sort', sort);
-
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-
-      const res = await fetch(`/api/courses/search?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCourses(data.courses);
-      }
-    } catch (error) {
-      console.error('Failed to fetch courses:', error);
-    }
-    setLoading(false);
-  };
+  // Escape closes the mobile filters; page scroll is locked while open.
+  useEffect(() => {
+    if (!isMobileFiltersOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMobileFiltersOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileFiltersOpen]);
 
   const clearFilters = () => {
     setQ('');
@@ -67,249 +115,204 @@ export default function CoursesClient({ initialCourses, featuredCourses = [], ca
     setSort('newest');
   };
 
-  const SidebarContent = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <BookOpen size={18} color="var(--primary)" /> القسم
-        </h3>
-        <select value={category} onChange={e => setCategory(e.target.value)} className="input-field" style={{ padding: '0.8rem', cursor: 'pointer' }}>
+  const renderFilters = (idPrefix: string) => (
+    <div className={styles.filters}>
+      <div className={styles.filterGroup}>
+        <label className={styles.filterLabel} htmlFor={`${idPrefix}-category`}>
+          <BookOpen size={18} aria-hidden="true" /> القسم
+        </label>
+        <select id={`${idPrefix}-category`} value={category} onChange={e => setCategory(e.target.value)} className="input-field" style={{ cursor: 'pointer' }}>
           <option value="الكل">جميع الأقسام</option>
           {categories.map((c, i) => <option key={i} value={c}>{c}</option>)}
         </select>
       </div>
 
-      <div>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <User size={18} color="var(--primary)" /> المدرب
-        </h3>
-        <select value={instructor} onChange={e => setInstructor(e.target.value)} className="input-field" style={{ padding: '0.8rem', cursor: 'pointer' }}>
+      <div className={styles.filterGroup}>
+        <label className={styles.filterLabel} htmlFor={`${idPrefix}-instructor`}>
+          <User size={18} aria-hidden="true" /> المدرب
+        </label>
+        <select id={`${idPrefix}-instructor`} value={instructor} onChange={e => setInstructor(e.target.value)} className="input-field" style={{ cursor: 'pointer' }}>
           <option value="الكل">جميع المدربين</option>
           {instructors.map((ins, i) => <option key={i} value={ins}>{ins}</option>)}
         </select>
       </div>
 
-      <div>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Filter size={18} color="var(--primary)" /> نوع الكورس
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          {['الكل', 'SKILL', 'CURRICULUM'].map((t) => (
-            <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-              <input type="radio" name="type" checked={type === t} onChange={() => setType(t)} style={{ accentColor: 'var(--primary)', width: '18px', height: '18px' }} />
-              <span style={{ color: type === t ? '#fff' : 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
-                {t === 'الكل' ? 'الجميع' : t === 'SKILL' ? 'كورس مهاري عام' : 'منهاج دراسي'}
-              </span>
+      <fieldset className={styles.filterGroup}>
+        <legend className={styles.filterLabel} style={{ marginBottom: '0.75rem' }}>
+          <Filter size={18} aria-hidden="true" /> نوع الكورس
+        </legend>
+        <div className={styles.pills}>
+          {['الكل', 'SKILL', 'CURRICULUM'].map(t => (
+            <label key={t} className={styles.pill} data-checked={type === t ? 'true' : undefined}>
+              <input type="radio" name={`${idPrefix}-type`} checked={type === t} onChange={() => setType(t)} />
+              {t === 'الكل' ? 'الجميع' : t === 'SKILL' ? 'كورس مهاري عام' : 'منهاج دراسي'}
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
-      <div>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-           التسعير
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          {['الكل', 'free', 'paid'].map((p) => (
-            <label key={p} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-              <input type="radio" name="price" checked={price === p} onChange={() => setPrice(p)} style={{ accentColor: 'var(--primary)', width: '18px', height: '18px' }} />
-              <span style={{ color: price === p ? '#fff' : 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
-                {p === 'الكل' ? 'الجميع' : p === 'free' ? 'مجاني' : 'مدفوع'}
-              </span>
+      <fieldset className={styles.filterGroup}>
+        <legend className={styles.filterLabel} style={{ marginBottom: '0.75rem' }}>
+          <Tag size={18} aria-hidden="true" /> التسعير
+        </legend>
+        <div className={styles.pills}>
+          {['الكل', 'free', 'paid'].map(p => (
+            <label key={p} className={styles.pill} data-checked={price === p ? 'true' : undefined}>
+              <input type="radio" name={`${idPrefix}-price`} checked={price === p} onChange={() => setPrice(p)} />
+              {p === 'الكل' ? 'الجميع' : p === 'free' ? 'مجاني' : 'مدفوع'}
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
-      <div>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Star size={18} color="var(--primary)" /> التقييم
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          {['الكل', '4.5', '4.0', '3.5'].map((r) => (
-            <label key={r} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-              <input type="radio" name="rating" checked={rating === r} onChange={() => setRating(r)} style={{ accentColor: 'var(--primary)', width: '18px', height: '18px' }} />
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: rating === r ? '#fff' : 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
-                {r === 'الكل' ? 'أي تقييم' : <><Star size={14} fill="var(--warning)" color="var(--warning)" /> {r} فما فوق</>}
-              </span>
+      <fieldset className={styles.filterGroup}>
+        <legend className={styles.filterLabel} style={{ marginBottom: '0.75rem' }}>
+          <Star size={18} aria-hidden="true" /> التقييم
+        </legend>
+        <div className={styles.pills}>
+          {['الكل', '4.5', '4.0', '3.5'].map(r => (
+            <label key={r} className={styles.pill} data-checked={rating === r ? 'true' : undefined}>
+              <input type="radio" name={`${idPrefix}-rating`} checked={rating === r} onChange={() => setRating(r)} />
+              {r === 'الكل' ? 'أي تقييم' : <><Star size={13} fill="currentColor" aria-hidden="true" /> {r} فما فوق</>}
             </label>
           ))}
         </div>
-      </div>
-      
-      <button onClick={clearFilters} className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '0.8rem', width: '100%' }}>
+      </fieldset>
+
+      <button type="button" onClick={clearFilters} className={`btn ${styles.clear}`}>
         مسح جميع الفلاتر
       </button>
     </div>
   );
 
+  const showFeatured = featuredCourses.length > 0 && !q && category === 'الكل' && type === 'الكل';
+
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', paddingBottom: '5rem' }}>
-      
+    <div className={styles.page}>
       {/* Search Header */}
-      <div style={{ background: 'linear-gradient(to bottom, rgba(203,161,83,0.1) 0%, transparent 100%)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '3rem 5% 2rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
-          البحث <span style={{ color: 'var(--primary)' }}>المتقدم</span>
+      <header className={styles.hero}>
+        <span className="eyebrow" data-enter="" style={{ '--enter-i': 0 } as React.CSSProperties}>
+          <Search size={14} aria-hidden="true" /> {eyebrow}
+        </span>
+        <h1 className={styles.heroTitle} data-enter="" style={{ '--enter-i': 1 } as React.CSSProperties}>
+          {heading}
         </h1>
-        <div style={{ 
-          display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.5)', 
-          maxWidth: '700px', margin: '0 auto', padding: '0.5rem', borderRadius: '30px', 
-          border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)'
-        }}>
-          <div style={{ padding: '0 1rem', color: 'rgba(255,255,255,0.5)' }}>
-            <Search size={24} />
-          </div>
-          <input 
-            type="text" 
-            placeholder="ابحث عن كورس، مدرب، أو مهارة..." 
+        {description ? (
+          <p className={styles.heroText} data-enter="" style={{ '--enter-i': 2 } as React.CSSProperties}>{description}</p>
+        ) : null}
+        <div className={styles.search} role="search" data-enter="" style={{ '--enter-i': 2 } as React.CSSProperties}>
+          <span className={styles.searchIcon} aria-hidden="true">
+            <Search size={22} />
+          </span>
+          <label htmlFor="catalog-search" className="sr-only">ابحث عن كورس، مدرب، أو مهارة</label>
+          <input
+            id="catalog-search"
+            type="search"
+            placeholder="ابحث عن كورس، مدرب، أو مهارة..."
             value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={{ 
-              flex: 1, background: 'transparent', border: 'none', color: '#fff', 
-              fontSize: '1.1rem', padding: '1rem 1rem 1rem 0', outline: 'none'
-            }} 
+            onChange={e => setQ(e.target.value)}
+            className={styles.searchInput}
+            autoComplete="off"
+            enterKeyHint="search"
           />
+          {q ? (
+            <button type="button" className={styles.clearSearch} onClick={() => setQ('')} aria-label="مسح البحث">
+              <X size={18} aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
-      </div>
+      </header>
 
       {/* Featured Courses Section */}
-      {featuredCourses.length > 0 && !q && category === 'الكل' && type === 'الكل' && (
-        <section style={{ padding: '0 5% 4rem', maxWidth: '1400px', margin: '2rem auto 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-            <div style={{ padding: '0.6rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '10px' }}>
-              <Star size={24} color="#f59e0b" fill="#f59e0b" />
-            </div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff' }}>دورات مميزة ننصح بها</h2>
-          </div>
-
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
-            gap: '2rem' 
-          }}>
-            {featuredCourses.map(course => (
-              <Link href={`/courses/${course.id}`} key={course.id} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  background: 'linear-gradient(145deg, rgba(203,161,83,0.08) 0%, rgba(20,20,20,1) 100%)',
-                  border: '1px solid rgba(203,161,83,0.3)',
-                  borderRadius: '24px',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  position: 'relative',
-                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                  boxShadow: '0 10px 40px -10px rgba(203,161,83,0.15)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 20px 50px -10px rgba(203,161,83,0.3)';
-                  e.currentTarget.style.border = '1px solid rgba(203,161,83,0.6)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 10px 40px -10px rgba(203,161,83,0.15)';
-                  e.currentTarget.style.border = '1px solid rgba(203,161,83,0.3)';
-                }}
-                >
-                  <div style={{
-                    position: 'absolute', top: '15px', right: '15px', zIndex: 10,
-                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                    color: '#fff', fontSize: '0.8rem', fontWeight: 'bold',
-                    padding: '0.4rem 1rem', borderRadius: '20px',
-                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
-                  }}>
-                    <Star size={14} fill="#fff" /> موصى به
-                  </div>
-                  <div style={{ position: 'relative', paddingTop: '56.25%', background: '#1a1a1a', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    {course.thumbnail ? (
-                      <img 
-                        src={course.thumbnail} 
-                        alt={course.title} 
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <BookOpen size={40} color="rgba(255,255,255,0.1)" />
-                      </div>
-                    )}
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '50%', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
-                  </div>
-                  
-                  <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)', display: 'inline-block' }}></span>
-                      {course.category}
-                    </div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.75rem', lineHeight: 1.4 }}>
-                      {course.title}
-                    </h3>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '1.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {course.description || 'دورة احترافية شاملة تأخذك خطوة بخطوة.'}
-                    </p>
-                    
-                    <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(203,161,83,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <User size={14} color="var(--primary)" />
-                        </div>
-                        <span style={{ fontSize: '0.85rem', color: '#fff', opacity: 0.8 }}>{(course.instructor as any)?.name}</span>
-                      </div>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>
-                        ${course.price.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
+      {showFeatured && (
+        <section className={`${styles.container} ${styles.featured} kq-section-light`} aria-labelledby="catalog-featured-title">
+          <h2 id="catalog-featured-title" className={styles.sectionTitle}>
+            <span className={styles.sectionIcon} aria-hidden="true"><Star size={22} fill="currentColor" /></span>
+            دورات مميزة ننصح بها
+          </h2>
+          <div className={styles.featuredGrid}>
+            {featuredCourses.map((course, index) => (
+              <CourseCard
+                key={course.id}
+                href={`/courses/${course.id}`}
+                variant="featured"
+                featuredLabel="موصى به"
+                index={index}
+                priority={index < 2}
+                title={course.title}
+                category={course.category}
+                description={course.description || 'دورة احترافية شاملة تأخذك خطوة بخطوة.'}
+                thumbnail={course.thumbnail}
+                instructorName={course.instructor?.name}
+                instructorImage={course.instructor?.image}
+                rating={course.rating}
+                price={course.priceSYP > 0 ? `${formatNumber(course.priceSYP)} ل.س` : null}
+              />
             ))}
           </div>
         </section>
       )}
 
-      <div style={{ maxWidth: '1400px', margin: '2rem auto', padding: '0 5%', display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-        
+      <div className={`${styles.container} ${styles.layout} kq-section-light`}>
         {/* Desktop Sidebar */}
-        <aside style={{ width: '280px', flexShrink: 0, background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', position: 'sticky', top: '100px' }} className="hide-on-mobile">
-          <SidebarContent />
+        <aside className={styles.sidebar} aria-label="فلاتر البحث">
+          {renderFilters('desktop')}
         </aside>
 
-        {/* Mobile Filters Modal */}
-        {isMobileFiltersOpen && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex' }} className="show-on-mobile">
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)' }} onClick={() => setIsMobileFiltersOpen(false)}></div>
-            <motion.div 
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              style={{ position: 'relative', background: '#0a0a0a', width: '85%', maxWidth: '350px', height: '100%', overflowY: 'auto', padding: '2rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold' }}>الفلاتر المتقدمة</h2>
-                <button onClick={() => setIsMobileFiltersOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={24} /></button>
-              </div>
-              <SidebarContent />
-            </motion.div>
-          </div>
-        )}
+        {/* Mobile Filters Drawer */}
+        <AnimatePresence>
+          {isMobileFiltersOpen && (
+            <div className={styles.drawerRoot} role="dialog" aria-modal="true" aria-labelledby="mobile-filters-title">
+              <motion.div
+                className={styles.drawerBackdrop}
+                variants={backdrop}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onClick={() => setIsMobileFiltersOpen(false)}
+              />
+              <motion.div className={styles.drawer} variants={drawerFromStart} initial="hidden" animate="visible" exit="exit">
+                <div className={styles.drawerHeader}>
+                  <h2 id="mobile-filters-title" className={styles.drawerTitle}>الفلاتر المتقدمة</h2>
+                  <button type="button" onClick={() => setIsMobileFiltersOpen(false)} className={styles.iconButton} aria-label="إغلاق الفلاتر" autoFocus>
+                    <X size={22} aria-hidden="true" />
+                  </button>
+                </div>
+                {renderFilters('mobile')}
+                <button type="button" className={`btn btn-solid ${styles.drawerApply}`} onClick={() => setIsMobileFiltersOpen(false)}>
+                  عرض النتائج ({courses.length})
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Main Content Area */}
-        <div style={{ flex: 1, width: '100%' }}>
-          
+        <div className={styles.main}>
           {/* Top Bar: Results count & Sort */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <button className="btn show-on-mobile" onClick={() => setIsMobileFiltersOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem' }}>
-                <SlidersHorizontal size={18} /> الفلاتر
+          <div className={styles.toolbar}>
+            <div className={styles.toolbarStart}>
+              <button
+                type="button"
+                className={`btn btn-outline btn-sm ${styles.filterToggle}`}
+                onClick={() => setIsMobileFiltersOpen(true)}
+                aria-expanded={isMobileFiltersOpen}
+              >
+                <SlidersHorizontal size={17} aria-hidden="true" /> الفلاتر
               </button>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.8)' }}>
-                {loading ? 'جاري البحث...' : `وجدنا ${courses.length} كورس`}
+              <h2 className={styles.count} aria-live="polite">
+                {loading ? (
+                  <><span className="loader" style={{ width: 16, height: 16 }} aria-hidden="true" /> جاري البحث...</>
+                ) : (
+                  <>وجدنا <strong className="num">{courses.length}</strong> كورس</>
+                )}
               </h2>
             </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <ArrowUpDown size={18} color="rgba(255,255,255,0.5)" />
-              <span style={{ color: 'rgba(255,255,255,0.5)' }}>ترتيب حسب:</span>
-              <select value={sort} onChange={e => setSort(e.target.value)} className="input-field" style={{ padding: '0.6rem 1rem', width: 'auto', background: 'rgba(255,255,255,0.02)', border: 'none', fontWeight: 'bold' }}>
+
+            <div className={styles.sort}>
+              <ArrowUpDown size={18} aria-hidden="true" />
+              <label htmlFor="catalog-sort" className={styles.sortLabel}>ترتيب حسب:</label>
+              <select id="catalog-sort" value={sort} onChange={e => setSort(e.target.value)} className={`input-field ${styles.sortSelect}`}>
                 <option value="newest">الأحدث إضافة</option>
                 <option value="rating">الأعلى تقييماً</option>
                 <option value="price_asc">السعر: الأقل للأعلى</option>
@@ -318,89 +321,42 @@ export default function CoursesClient({ initialCourses, featuredCourses = [], ca
             </div>
           </div>
 
+          {loading && <div className={styles.progress} role="presentation" />}
+
           {/* Courses Grid */}
           {courses.length === 0 && !loading ? (
-            <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-              <BookOpen size={64} color="rgba(255,255,255,0.2)" style={{ margin: '0 auto 1.5rem auto' }} />
-              <h3 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>لم نجد أي كورسات تطابق بحثك</h3>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem' }}>جرب تخفيف الفلاتر أو تغيير مصطلحات البحث.</p>
-              <button onClick={clearFilters} className="btn btn-solid" style={{ marginTop: '1.5rem' }}>إظهار كل الكورسات</button>
+            <div className={styles.empty}>
+              <span className={styles.emptyIcon} aria-hidden="true"><BookOpen size={40} /></span>
+              <h3 className={styles.emptyTitle}>لم نجد أي كورسات تطابق بحثك</h3>
+              <p className={styles.emptyText}>جرب تخفيف الفلاتر أو تغيير مصطلحات البحث.</p>
+              <button type="button" onClick={clearFilters} className="btn btn-solid" style={{ marginTop: '0.75rem' }}>إظهار كل الكورسات</button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', opacity: loading ? 0.5 : 1, transition: 'opacity 0.3s' }}>
-              <AnimatePresence>
+            <div className={styles.grid} aria-busy={loading}>
+              <AnimatePresence initial={false}>
                 {courses.map((course, idx) => (
                   <motion.div
                     key={course.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.3, delay: idx * 0.05 }}
-                    className="glass-card"
-                    style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0, cursor: 'pointer', borderRadius: '16px' }}
+                    variants={fadeUp}
+                    custom={idx % 6}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    style={{ height: '100%' }}
                   >
-                    <Link href={`/courses/${course.id}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                      <div style={{ width: '100%', paddingTop: '56.25%', background: course.thumbnail ? `url(${course.thumbnail}) center/cover` : 'linear-gradient(45deg, #1e3a8a, #0f172a)', position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', opacity: 0.6 }} className="thumb-overlay" />
-                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(10,10,10,0.8)', padding: '0.3rem 0.8rem', borderRadius: '30px', fontSize: '0.8rem', fontWeight: 'bold', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--primary)' }}>
-                          {course.category}
-                        </div>
-                      </div>
-                      
-                      <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1, background: 'rgba(25,25,25,0.3)' }}>
-                        <h3 style={{ 
-                          fontSize: '1.2rem', 
-                          fontWeight: 'bold', 
-                          marginBottom: '0.8rem', 
-                          lineHeight: 1.4, 
-                          color: '#fff',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          height: '5.04rem' /* Exactly 3 lines */
-                        }}>
-                          {course.title}
-                        </h3>
-                        
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6 }}>
-                          {course.description}
-                        </p>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                              {course.instructor.image ? (
-                                <img src={course.instructor.image} alt={course.instructor.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                <User size={14} color="var(--primary)" />
-                              )}
-                            </div>
-                            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>{course.instructor.name}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(245,158,11,0.1)', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
-                            <Star size={12} color="var(--warning)" fill="var(--warning)" /> 
-                            <span style={{ fontWeight: 'bold', color: 'var(--warning)', fontSize: '0.85rem' }}>{course.rating.toFixed(1)}</span>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            {course.priceSYP > 0 ? (
-                              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{course.priceSYP.toLocaleString()} ل.س</span>
-                              </div>
-                            ) : (
-                              <span></span>
-                            )}
-                          </div>
-                          <div style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                            التفاصيل <ChevronRight size={16} />
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
+                    <CourseCard
+                      href={`/courses/${course.id}`}
+                      reveal={false}
+                      title={course.title}
+                      category={course.category}
+                      description={course.description}
+                      thumbnail={course.thumbnail}
+                      instructorName={course.instructor?.name}
+                      instructorImage={course.instructor?.image}
+                      rating={course.rating}
+                      priority={idx < 3 && !showFeatured}
+                      price={course.priceSYP > 0 ? `${formatNumber(course.priceSYP)} ل.س` : null}
+                    />
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -408,17 +364,6 @@ export default function CoursesClient({ initialCourses, featuredCourses = [], ca
           )}
         </div>
       </div>
-      
-      {/* Mobile styles logic */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @media (max-width: 900px) {
-          .hide-on-mobile { display: none !important; }
-          .courses-grid { grid-template-columns: 1fr !important; }
-        }
-        @media (min-width: 901px) {
-          .show-on-mobile { display: none !important; }
-        }
-      `}} />
     </div>
   );
 }

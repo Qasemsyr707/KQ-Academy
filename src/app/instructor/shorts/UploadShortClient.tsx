@@ -59,7 +59,7 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
       
       {/* Upload Form */}
-      <div style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', height: 'fit-content' }}>
+      <div style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', height: 'fit-content' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <UploadCloud color="var(--primary)" /> رفع فيديو تسويقي جديد
         </h2>
@@ -88,9 +88,9 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
                 onChange={e => setCourseId(e.target.value)}
                 style={{ width: '100%', padding: '1rem 3rem 1rem 1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', outline: 'none', appearance: 'none' }}
               >
-                <option value="" style={{ background: '#111' }}>-- لا تريط بكورس --</option>
+                <option value="" style={{ background: 'var(--ink-3)' }}>-- لا تريط بكورس --</option>
                 {courses.map(c => (
-                  <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.title}</option>
+                  <option key={c.id} value={c.id} style={{ background: 'var(--ink-3)' }}>{c.title}</option>
                 ))}
               </select>
             </div>
@@ -140,7 +140,7 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {shorts.map(short => (
-              <div key={short.id} style={{ display: 'flex', gap: '1rem', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
+              <div key={short.id} style={{ display: 'flex', gap: '1rem', background: 'var(--ink-3)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
                 <div style={{ width: '60px', height: '100px', background: '#000', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
                   {/* eslint-disable-next-line jsx-a11y/iframe-has-title */}
                   <iframe src={short.videoUrl} style={{ width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }} />

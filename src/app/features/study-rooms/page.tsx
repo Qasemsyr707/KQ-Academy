@@ -79,10 +79,10 @@ export default function StudyRoomsPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
       {/* Navbar */}
-      <div style={{ padding: '1.5rem 2rem', background: '#111', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ padding: '1.5rem 2rem', background: 'var(--ink-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
             لوحة التحكم <ChevronRight size={16} />
@@ -126,7 +126,7 @@ export default function StudyRoomsPage() {
                     key={room.id}
                     onClick={() => joinRoom(room)}
                     style={{ 
-                      background: '#111', borderRadius: '24px', padding: '1.5rem', 
+                      background: 'var(--ink-3)', borderRadius: '24px', padding: '1.5rem', 
                       border: activeRoom?.id === room.id ? `1px solid ${room.themeColor || '#a855f7'}` : '1px solid rgba(255,255,255,0.05)',
                       cursor: 'pointer', transition: 'all 0.2s', position: 'relative', overflow: 'hidden'
                     }}
@@ -158,7 +158,7 @@ export default function StudyRoomsPage() {
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 380, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
-              style={{ background: '#111', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+              style={{ background: 'var(--ink-3)', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             >
               <LiveKitRoom
                 video={false}
@@ -203,7 +203,7 @@ export default function StudyRoomsPage() {
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            style={{ background: '#111', padding: '2rem', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '24px', width: '90%', maxWidth: '400px', border: '1px solid rgba(255,255,255,0.1)' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>إنشاء غرفة دراسة</h2>

@@ -73,7 +73,7 @@ export default function LiveScheduleClient({ courses }: { courses: any[] }) {
           <Link href="/instructor/courses/create" className="btn btn-solid" style={{ textDecoration: 'none', display: 'inline-block' }}>أنشئ كورسك الأول الآن</Link>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} style={{ background: '#111', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <form onSubmit={handleSubmit} style={{ background: 'var(--ink-3)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
           
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>اختيار الكورس</label>
@@ -86,7 +86,7 @@ export default function LiveScheduleClient({ courses }: { courses: any[] }) {
               style={{ width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', fontSize: '1.05rem' }}
             >
               {courses.map(c => (
-                <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.title}</option>
+                <option key={c.id} value={c.id} style={{ background: 'var(--ink-3)' }}>{c.title}</option>
               ))}
             </select>
           </div>
@@ -104,9 +104,9 @@ export default function LiveScheduleClient({ courses }: { courses: any[] }) {
                 style={{ width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', fontSize: '1.05rem' }}
                 required
               >
-                <option value="" disabled style={{ background: '#111' }}>-- اختر الفصل --</option>
+                <option value="" disabled style={{ background: 'var(--ink-3)' }}>-- اختر الفصل --</option>
                 {chapters.map((ch: any) => (
-                  <option key={ch.id} value={ch.id} style={{ background: '#111' }}>{ch.title}</option>
+                  <option key={ch.id} value={ch.id} style={{ background: 'var(--ink-3)' }}>{ch.title}</option>
                 ))}
               </select>
             )}
