@@ -8,6 +8,11 @@ import styles from './Home.module.css';
  * groups scroll by exactly one group's width, which makes the loop seamless.
  * The strip is always laid out left-to-right (dir="ltr") so the page's RTL
  * direction cannot reverse or offset it.
+ *
+ * Logo files are served by the platform itself (public/logos), so the strip does
+ * not depend on, or report visitors to, third-party image hosts. The heading
+ * describes the skills, not a relationship: no partnership or endorsement is
+ * implied. The logos are trademarks of their owners.
  */
 type ImageLogo = { name: string; src: string; height: number };
 type DrawnLogo = { name: string; node: ReactNode };
@@ -17,8 +22,8 @@ const image = (name: string, src: string, height: number): ImageLogo => ({ name,
 const ink = 'currentColor';
 
 const logos: (ImageLogo | DrawnLogo)[] = [
-  image('Google', 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg', 30),
-  image('Amazon', 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg', 28),
+  image('Google', '/logos/google.svg', 30),
+  image('Amazon', '/logos/amazon.svg', 28),
   {
     name: 'Microsoft',
     node: (
@@ -30,11 +35,11 @@ const logos: (ImageLogo | DrawnLogo)[] = [
       </span>
     ),
   },
-  image('Netflix', 'https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg', 26),
-  image('Spotify', 'https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg', 32),
-  image('Stripe', 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg', 30),
-  image('Cisco', 'https://upload.wikimedia.org/wikipedia/commons/0/08/Cisco_logo_blue_2016.svg', 36),
-  image('Ericsson', 'https://cdn.simpleicons.org/ericsson', 30),
+  image('Netflix', '/logos/netflix.svg', 26),
+  image('Spotify', '/logos/spotify.svg', 32),
+  image('Stripe', '/logos/stripe.svg', 30),
+  image('Cisco', '/logos/cisco.svg', 36),
+  image('Ericsson', '/logos/ericsson.svg', 30),
   {
     name: 'Citi',
     // One self-contained SVG: the arc can no longer spill onto the next logo.
@@ -62,9 +67,9 @@ const logos: (ImageLogo | DrawnLogo)[] = [
       </span>
     ),
   },
-  image('Vimeo', 'https://cdn.simpleicons.org/vimeo', 30),
-  image('Samsung', 'https://cdn.simpleicons.org/samsung', 40),
-  image('Volkswagen', 'https://cdn.simpleicons.org/volkswagen', 36),
+  image('Vimeo', '/logos/vimeo.svg', 30),
+  image('Samsung', '/logos/samsung.svg', 40),
+  image('Volkswagen', '/logos/volkswagen.svg', 36),
 ];
 
 function LogoGroup({ duplicate }: { duplicate?: boolean }) {
@@ -98,7 +103,7 @@ export default function TrustedBy() {
   return (
     <section className={`${styles.trusted} kq-section-light`} aria-labelledby="trusted-title">
       <h2 id="trusted-title" className={styles.trustedTitle} data-reveal="fade">
-        تحظى <span className="text-gold" style={{ fontWeight: 800 }}>KQ Academy</span> بثقة أكثر من 17,000 شركة ومتعلم حول العالم
+        مهارات تطلبها <span className="text-gold" style={{ fontWeight: 800 }}>كبرى الشركات</span> حول العالم
       </h2>
       <div className={styles.marquee} dir="ltr">
         <div className={styles.marqueeTrack}>
@@ -107,7 +112,7 @@ export default function TrustedBy() {
         </div>
       </div>
       <p className={styles.trustedNote}>
-        أمثلة على شركات تعتمد المهارات التي نقدّمها. عرض الشعارات للتوضيح فقط ولا يعني شراكة أو اعتماداً رسمياً.
+        الشعارات علامات تجارية لأصحابها، تُعرض للتوضيح فقط ولا تعني شراكة أو رعاية أو اعتماداً رسمياً.
       </p>
     </section>
   );
