@@ -1,61 +1,7 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { generateCertificateBuffer } from '@/lib/certificate';
+import { certificateDocument } from '@/lib/certificate-render';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ certId: string }> }
-) {
-  try {
-    const { certId } = await params;
+export const runtime = 'nodejs';
 
-    // certId can be the DB id or the certificateNumber
-    const certificate = await prisma.certificate.findFirst({
-      where: {
-        OR: [
-          { id: certId },
-          { certificateNumber: certId }
-        ]
-      },
-      include: {
-        course: true
-      }
-    });
-
-    if (!certificate) {
-      return NextResponse.json({ error: 'Certificate not found' }, { status: 404 });
-    }
-
-    // The student's own start: their enrollment date (course creation only as a fallback for old records).
-    const enrollment = await prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId: certificate.userId, courseId: certificate.courseId } }, select: { createdAt: true },
-    });
-    const startDate = new Date(enrollment?.createdAt ?? certificate.course.createdAt).toLocaleDateString('en-GB');
-    const endDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB');
-    const issueDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB');
-
-    // Generate PNG buffer on the fly
-    const pngBuffer = await generateCertificateBuffer({
-      studentName: certificate.studentName,
-      courseName: certificate.courseName,
-      startDate: startDate,
-      endDate: endDate,
-      durationHours: certificate.courseDuration,
-      issueDate: issueDate,
-      certificateNumber: certificate.certificateNumber || certificate.id
-    });
-
-    // Return the image as a response
-    return new NextResponse(pngBuffer as any, {
-      status: 200,
-      headers: {
-        'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=31536000, immutable'
-      }
-    });
-
-  } catch (error) {
-    console.error('Dynamic PNG Generation Error:', error);
-    return NextResponse.json({ error: 'Failed to generate certificate' }, { status: 500 });
-  }
+export async function GET(req: Request, { params }: { params: Promise<{ certId: string }> }) {
+  return certificateDocument(req, (await params).certId, 'png');
 }

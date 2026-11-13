@@ -74,6 +74,9 @@ model Course {
   rating          Float    @default(0.0)
   isFeatured      Boolean  @default(false) // Admin can pin this course to the top
   status          String   @default("PUBLISHED") // PENDING, PUBLISHED, REJECTED
+  // Real course length in hours, set by the instructor/admin. Null = unknown:
+  // nothing is printed on certificates rather than an invented number.
+  durationHours   Float?
   createdAt       DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -256,6 +259,9 @@ model Certificate {
   manager1          String   @default("Qasem Alsokhny")
   manager2          String   @default("Khaled Alrefay")
   templateVersion   String   @default("1.0")
+  // Unguessable public reference used in QR codes and share links. Sequential
+  // certificate numbers stay on the document but no longer expose its holder.
+  verifyToken       String?  @unique
   pdfUrl            String?
   pngUrl            String?
   issuedAt          DateTime @default(now())

@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { CheckCircle, XCircle, Settings } from 'lucide-react';
 import ReceiptViewer from '../payments/ReceiptViewer';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
 export default function AdminWalletClient({ initialTransactions, initialRate }: { initialTransactions: any[], initialRate: string }) {
   const [transactions, setTransactions] = useState(initialTransactions);
@@ -88,12 +89,12 @@ export default function AdminWalletClient({ initialTransactions, initialRate }: 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', marginTop: '1rem' }}>
                   <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{tx.user.name}</span>
                   <span style={{ color: tx.type === 'WITHDRAW' ? '#ef4444' : (tx.currency === 'USD' ? '#22c55e' : 'var(--primary)'), fontWeight: 'bold', fontSize: '1.2rem' }}>
-                    {tx.type === 'WITHDRAW' ? '-' : '+'}{tx.amount.toLocaleString()} {tx.currency === 'USD' ? '$' : 'ل.س'}
+                    {tx.type === 'WITHDRAW' ? '-' : '+'}{formatNumber(tx.amount)} {tx.currency === 'USD' ? '$' : 'ل.س'}
                   </span>
                 </div>
                 <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1rem' }}>
                   البريد: {tx.user.email} <br/>
-                  تاريخ الطلب: {new Date(tx.createdAt).toLocaleDateString('ar-SY')}
+                  تاريخ الطلب: {formatDate(tx.createdAt)}
                 </div>
                 
                 {tx.type === 'WITHDRAW' && tx.provider && (

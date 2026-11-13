@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Search, Edit, Trash2, CheckCircle, XCircle, Book, DollarSign, Image as ImageIcon, Users } from 'lucide-react';
 import Image from 'next/image';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
 export default function CoursesClient({ initialCourses, instructors }: { initialCourses: any[], instructors: any[] }) {
   const [courses, setCourses] = useState(initialCourses);
@@ -17,6 +18,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
   const [editInstructorId, setEditInstructorId] = useState('');
   const [editType, setEditType] = useState('SKILL');
   const [editIsFeatured, setEditIsFeatured] = useState(false);
+  const [editDurationHours, setEditDurationHours] = useState('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
@@ -37,6 +39,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
     setEditInstructorId(course.instructor?.id || course.instructorId);
     setEditType(course.type || 'SKILL');
     setEditIsFeatured(course.isFeatured || false);
+    setEditDurationHours(course.durationHours ? String(course.durationHours) : '');
     setMsg({ type: '', text: '' });
   };
 
@@ -56,7 +59,8 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
           priceSYP: editPriceSYP,
           instructorId: editInstructorId,
           type: editType,
-          isFeatured: editIsFeatured
+          isFeatured: editIsFeatured,
+          durationHours: editDurationHours
         }),
       });
 
@@ -162,8 +166,8 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>{course.instructor.email}</div>
                 </td>
                 <td style={{ padding: '1rem', fontSize: '0.9rem' }}>
-                  <div><strong>SYP:</strong> {course.priceSYP.toLocaleString()}</div>
-                  <div><strong>USD:</strong> ${course.price.toLocaleString()}</div>
+                  <div><strong>SYP:</strong> {formatNumber(course.priceSYP)}</div>
+                  <div><strong>USD:</strong> ${formatNumber(course.price)}</div>
                 </td>
                 <td style={{ padding: '1rem' }}>
                   <span style={{ 
@@ -181,10 +185,10 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                 </td>
                 <td style={{ padding: '1rem', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                    <button onClick={() => handleEditClick(course)} style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: '#3b82f6', borderRadius: '8px', cursor: 'pointer', padding: '0.5rem' }}>
+                    <button type="button" aria-label={`تعديل الكورس: ${course.title}`} title="تعديل الكورس" onClick={() => handleEditClick(course)} style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: '#3b82f6', borderRadius: '8px', cursor: 'pointer', padding: '0.5rem' }}>
                       <Edit size={16} />
                     </button>
-                    <button onClick={() => handleDelete(course.id, course.title)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', borderRadius: '8px', cursor: 'pointer', padding: '0.5rem' }}>
+                    <button type="button" aria-label={`حذف الكورس: ${course.title}`} title="حذف الكورس" onClick={() => handleDelete(course.id, course.title)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', borderRadius: '8px', cursor: 'pointer', padding: '0.5rem' }}>
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -244,6 +248,18 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   <option value="SKILL" style={{ background: 'var(--ink-3)' }}>كورس مهاري عام (برمجة، لغات، أعمال...)</option>
                   <option value="CURRICULUM" style={{ background: 'var(--ink-3)' }}>منهاج دراسي (بكالوريا، تاسع...)</option>
                 </select>
+              </div>
+
+              <div>
+                <label htmlFor="edit-duration-hours" style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>مدة الكورس بالساعات (اختياري، تظهر على الشهادة)</label>
+                <input
+                  id="edit-duration-hours"
+                  type="number" min="0" max="2000" step="0.5" inputMode="decimal"
+                  value={editDurationHours}
+                  onChange={e => setEditDurationHours(e.target.value)}
+                  placeholder="اتركه فارغاً إن لم تكن المدة محددة"
+                  style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', outline: 'none' }}
+                />
               </div>
 
               <div>

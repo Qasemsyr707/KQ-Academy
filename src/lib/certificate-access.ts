@@ -1,0 +1,69 @@
+import { randomBytes } from 'node:crypto';
+import type { Certificate } from '@prisma/client';
+import { prisma } from '@/lib/db';
+
+export interface CertificateViewer { id: string; role: string }
+
+/**
+ * `full`: the reference proves the holder shared it (unguessable token or record
+ * id) or the viewer owns/administers the certificate.
+ * `limited`: only a sequential certificate number was presented. The number is
+ * printed on older certificates, so it must keep confirming validity, but it can
+ * be guessed, so it never reveals the full name or the document itself.
+ */
+export type CertificateAccess = 'full' | 'limited';
+
+const TOKEN = /^[A-Za-z0-9_-]{20,64}$/;
+const NUMBER = /^KQ\d{4}-\d{1,9}$/i;
+
+export const newVerifyToken = () => randomBytes(16).toString('base64url');
+
+export async function resolveCertificate(reference: unknown, viewer?: CertificateViewer | null):
+  Promise<{ certificate: Certificate & { course: { instructorId: string; durationHours: number | null; createdAt: Date } }; access: CertificateAccess } | null> {
+  if (typeof reference !== 'string' || !reference || reference.length > 64) return null;
+  const include = { course: { select: { instructorId: true, durationHours: true, createdAt: true } } } as const;
+
+  if (NUMBER.test(reference)) {
+    const certificate = await prisma.certificate.findUnique({ where: { certificateNumber: reference.toUpperCase() }, include });
+    if (!certificate) return null;
+    const trusted = !!viewer && (viewer.id === certificate.userId || ['ADMIN', 'OWNER'].includes(viewer.role)
+      || (viewer.role === 'INSTRUCTOR' && viewer.id === certificate.course.instructorId));
+    return { certificate, access: trusted ? 'full' : 'limited' };
+  }
+  if (!TOKEN.test(reference)) return null;
+  const certificate = await prisma.certificate.findFirst({
+    where: { OR: [{ verifyToken: reference }, { id: reference }] }, include,
+  });
+  return certificate ? { certificate, access: 'full' } : null;
+}
+
+/** The public reference for links and QR codes; older certificates get one on first use. */
+export async function publicReference(certificate: Pick<Certificate, 'id' | 'verifyToken'>): Promise<string> {
+  if (certificate.verifyToken) return certificate.verifyToken;
+  const token = newVerifyToken();
+  await prisma.certificate.updateMany({ where: { id: certificate.id, verifyToken: null }, data: { verifyToken: token } });
+  const saved = await prisma.certificate.findUnique({ where: { id: certificate.id }, select: { verifyToken: true } });
+  return saved?.verifyToken ?? certificate.id;
+}
+
+/** "محمد عبد الرحمن" -> "م••• ع••• ا•••": enough to recognise, not to harvest. */
+export function maskName(name: string): string {
+  return name.trim().split(/\s+/).filter(Boolean).map(word => `${[...word][0]}•••`).join(' ');
+}
+
+/**
+ * Hours to print, or null to print nothing. Certificates issued before course
+ * durations existed all carry the old hard-coded default (16), which was never
+ * a real value, so for them only the course's own duration counts.
+ */
+export function certificateHours(certificate: Pick<Certificate, 'courseDuration' | 'templateVersion'>, course: { durationHours: number | null }): number | null {
+  const stored = certificate.templateVersion === '1.0' ? null : certificate.courseDuration;
+  const hours = stored && stored > 0 ? stored : course.durationHours;
+  return typeof hours === 'number' && Number.isFinite(hours) && hours > 0 ? Math.round(hours * 10) / 10 : null;
+}
+
+export const certificateUrls = (reference: string) => ({
+  verify: `/verify/${reference}`,
+  png: `/api/certificates/${reference}/png`,
+  pdf: `/api/certificates/${reference}/pdf`,
+});

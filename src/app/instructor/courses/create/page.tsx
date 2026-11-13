@@ -14,6 +14,7 @@ export default function CreateCoursePage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceSYP, setPriceSYP] = useState('');
+  const [durationHours, setDurationHours] = useState('');
   const [priceUSD, setPriceUSD] = useState('');
   const [category, setCategory] = useState('');
   const [customCategory, setCustomCategory] = useState('');
@@ -113,7 +114,8 @@ export default function CreateCoursePage() {
           priceSYP: priceSYP,
           category: finalCategory,
           thumbnail: uploadedThumbnailUrl,
-          includes: includes
+          includes: includes,
+          durationHours
         })
       });
 
@@ -165,6 +167,11 @@ export default function CreateCoursePage() {
                 <option value="CURRICULUM">منهاج دراسي (بكالوريا، تاسع...)</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="course-duration-hours" style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>مدة الكورس بالساعات (اختياري)</label>
+            <input id="course-duration-hours" type="number" min="0" max="2000" step="0.5" inputMode="decimal" value={durationHours} onChange={e => setDurationHours(e.target.value)} placeholder="تظهر على شهادة الإتمام. اتركها فارغة إن لم تكن محددة" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>

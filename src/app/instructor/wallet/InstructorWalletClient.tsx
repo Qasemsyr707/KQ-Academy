@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Wallet, DollarSign, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
 interface Transaction {
   id: string;
@@ -94,14 +95,14 @@ export default function InstructorWalletClient({ walletUSD, walletSYP, transacti
           <motion.div className="glass-card" style={{ padding: '1.5rem', background: 'linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(0,0,0,0.8) 100%)' }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', opacity: 0.8 }}>الرصيد القابل للسحب (USD)</h3>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <DollarSign size={32} /> {walletUSD.toLocaleString()}
+              <DollarSign size={32} /> {formatNumber(walletUSD)}
             </div>
           </motion.div>
 
           <motion.div className="glass-card" style={{ padding: '1.5rem' }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', opacity: 0.8 }}>الرصيد القابل للسحب (SYP)</h3>
             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#fff' }}>
-              {walletSYP.toLocaleString()} ل.س
+              {formatNumber(walletSYP)} ل.س
             </div>
           </motion.div>
 
@@ -179,12 +180,12 @@ export default function InstructorWalletClient({ walletUSD, walletSYP, transacti
                       <p style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
                         {tx.type === 'WITHDRAW' ? 'طلب سحب رصيد' : 'إيداع أرباح'}
                       </p>
-                      <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>{new Date(tx.createdAt).toLocaleString('ar-EG')}</p>
+                      <p style={{ fontSize: '0.8rem', opacity: 0.6 }}>{formatDateTime(tx.createdAt)}</p>
                     </div>
                   </div>
                   <div style={{ textAlign: 'left' }}>
                     <p style={{ fontWeight: 'bold', fontSize: '1.2rem', color: tx.type === 'WITHDRAW' ? '#fff' : 'var(--success)' }}>
-                      {tx.type === 'WITHDRAW' ? '-' : '+'}{tx.amount.toLocaleString()} {tx.currency}
+                      {tx.type === 'WITHDRAW' ? '-' : '+'}{formatNumber(tx.amount)} {tx.currency}
                     </p>
                     <div style={{ marginTop: '0.3rem' }}>
                       {getStatusBadge(tx.status)}

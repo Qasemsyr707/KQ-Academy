@@ -10,6 +10,7 @@ const EVENT_STUBS = {
   },
   '@/lib/course-progress': {
     syncEnrollmentProgress: async () => ({ completedItemIds: [], totalItems: 0, progress: 0, complete: false }),
+    enrollInFreeCourse: async () => false,
   },
 };
 

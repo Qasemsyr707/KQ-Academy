@@ -5,6 +5,7 @@ import { protectCourseAttachmentLinks } from '@/lib/attachment-links';
 import { protectLessonSource } from '@/lib/lesson-links';
 import { isPublicLesson } from '@/lib/lesson-playback';
 import { getCourseAccess, getCourseViewer, managesCourse } from '@/lib/course-access';
+import { enrollInFreeCourse } from '@/lib/course-progress';
 
 export default async function CourseLearnPage(props: { params: Promise<{ courseId: string }>, searchParams: Promise<{ lessonId?: string }> }) {
   const viewer = await getCourseViewer();
@@ -34,6 +35,8 @@ export default async function CourseLearnPage(props: { params: Promise<{ courseI
       },
     });
   if (!course) notFound();
+  // Starting a free course enrols the student (all conditions rechecked on the server).
+  if (viewer.role === 'STUDENT') await enrollInFreeCourse(viewer.id, course.id);
   const access = await getCourseAccess(course, viewer);
   if (!access.canView) notFound();
   const hasAccess = access.isEnrolled || managesCourse(course, viewer) || isPublicLesson(course, false);

@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getCourseCompletion } from '@/lib/course-progress';
 import { notify } from '@/lib/notifications';
+import { certificateUrls, newVerifyToken } from '@/lib/certificate-access';
 
 export class CertificateError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
@@ -25,7 +26,7 @@ export async function issueCertificate(userId: string, courseId: unknown) {
   if (existing) return { certificate: existing, created: false };
 
   const [course, student, enrollment] = await Promise.all([
-    prisma.course.findUnique({ where: { id: courseId }, select: { id: true, title: true } }),
+    prisma.course.findUnique({ where: { id: courseId }, select: { id: true, title: true, durationHours: true } }),
     prisma.user.findUnique({ where: { id: userId }, select: { name: true, isBanned: true } }),
     prisma.enrollment.findUnique({ where: { userId_courseId: { userId, courseId } }, select: { id: true } }),
   ]);
@@ -48,14 +49,17 @@ export async function issueCertificate(userId: string, courseId: unknown) {
     });
     const next = (Number.parseInt(last?.certificateNumber.slice(prefix.length) ?? '0', 10) || 0) + 1 + attempt;
     const certificateNumber = `${prefix}${String(next).padStart(4, '0')}`;
+    const verifyToken = newVerifyToken();
     try {
       const certificate = await prisma.$transaction(async tx => {
         const created = await tx.certificate.create({
           data: {
-            userId, courseId, certificateNumber,
+            userId, courseId, certificateNumber, verifyToken, templateVersion: '2.0',
             studentName: student.name!.trim(), courseName: course.title,
-            pdfUrl: `/api/certificates/${certificateNumber}/pdf`,
-            pngUrl: `/api/certificates/${certificateNumber}/png`,
+            // The course's real duration at issue time; 0 = unknown, never an invented default.
+            courseDuration: course.durationHours && course.durationHours > 0 ? Math.round(course.durationHours) : 0,
+            pdfUrl: certificateUrls(verifyToken).pdf,
+            pngUrl: certificateUrls(verifyToken).png,
           },
         });
         await notify(tx, {

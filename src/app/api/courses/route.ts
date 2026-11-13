@@ -7,7 +7,8 @@ export async function POST(req: Request) {
     const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
     if (!authorized) return errorResponse;
 
-    const { title, description, type, price, priceSYP, category, thumbnail, includes } = await req.json();
+    const { title, description, type, price, priceSYP, category, thumbnail, includes, durationHours } = await req.json();
+    const hours = Number(durationHours);
 
     if (!title) {
       return NextResponse.json({ error: 'عنوان الكورس مطلوب' }, { status: 400 });
@@ -26,7 +27,9 @@ export async function POST(req: Request) {
         instructorId: userId,
         status: 'PUBLISHED', // Default to published so it shows up immediately
         thumbnail: thumbnail || `linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #0f172a 100%)`,
-        includes: includes || null
+        includes: includes || null,
+        // Optional; unknown stays null so certificates never print an invented duration.
+        durationHours: Number.isFinite(hours) && hours > 0 && hours <= 2000 ? hours : null
       }
     });
 

@@ -149,18 +149,76 @@ test('PostgreSQL: a certificate is issued only for real, server-recorded complet
   assert.notEqual(second.certificate.certificateNumber, certificate.certificateNumber);
 });
 
-test('PostgreSQL: free published courses enrol on first progress; paid and unpublished ones do not', { skip, timeout: 60000 }, async t => {
+test('PostgreSQL: progress never enrols; free courses enrol only through the server-checked path', { skip, timeout: 60000 }, async t => {
   const prisma = createTestPrisma();
-  const { progress } = load(prisma);
-  const { ids, cleanup } = await fixture(prisma, { quizzes: 0, price: 0 });
+  const { progress, certificates } = load(prisma);
+  const { ids, cleanup } = await fixture(prisma, { quizzes: 1, price: 0 });
+  t.after(async () => { try { await cleanup(); } finally { await prisma.$disconnect(); } });
+  const denied = status => error => error.status === status;
+
+  // A progress event alone (even for a free course) creates nothing.
+  await assert.rejects(progress.completeLessons(ids.student, ids.course, ids.lessons), denied(403));
+  assert.equal(await prisma.enrollment.count({ where: { userId: ids.student } }), 0);
+  assert.equal(await prisma.lessonProgress.count({ where: { userId: ids.student } }), 0);
+  await assert.rejects(certificates.issueCertificate(ids.student, ids.course), denied(403));
+
+  // Paid, unpublished, hidden-curriculum courses and non-students are refused.
+  assert.equal(await progress.enrollInFreeCourse(ids.student, ids.otherCourse), false);
+  assert.equal(await progress.enrollInFreeCourse(ids.teacher, ids.course), false);
+  await prisma.course.update({ where: { id: ids.course }, data: { status: 'PENDING' } });
+  assert.equal(await progress.enrollInFreeCourse(ids.student, ids.course), false);
+  await prisma.course.update({ where: { id: ids.course }, data: { status: 'PUBLISHED', type: 'CURRICULUM' } });
+  assert.equal(await progress.enrollInFreeCourse(ids.student, ids.course), false);
+  await prisma.course.update({ where: { id: ids.course }, data: { type: 'SKILL' } });
+  assert.equal(await prisma.enrollment.count({ where: { userId: { in: [ids.student, ids.teacher] } } }), 0);
+
+  // The explicit start: one enrollment and one notification, however often it runs.
+  await Promise.all(Array.from({ length: 5 }, () => progress.enrollInFreeCourse(ids.student, ids.course)));
+  assert.equal(await prisma.enrollment.count({ where: { userId: ids.student, courseId: ids.course } }), 1);
+  assert.equal(await prisma.notification.count({ where: { userId: ids.student, dedupeKey: { startsWith: 'enrolled:free:' } } }), 1);
+
+  // Importing "completed" items from a browser: quiz ids, foreign lessons and junk are ignored.
+  const imported = await progress.completeLessons(ids.student, ids.course, [...ids.lessons, ids.quiz, ids.foreignLesson, 'made-up-id']);
+  assert.deepEqual([...imported.completedItemIds].sort(), [...ids.lessons].sort());
+  assert.equal(imported.complete, false);            // the quiz still needs a real passed attempt
+  assert.equal(imported.progress, 75);
+  await assert.rejects(certificates.issueCertificate(ids.student, ids.course), denied(403));
+});
+
+test('PostgreSQL: certificate numbers can be guessed, so they reveal little; the token reveals all', { skip, timeout: 60000 }, async t => {
+  const prisma = createTestPrisma();
+  const { progress, certificates } = load(prisma);
+  const access = loadTs('../src/lib/certificate-access.ts', { '@/lib/db': { prisma } });
+  const { ids, cleanup } = await fixture(prisma, { quizzes: 0 });
   t.after(async () => { try { await cleanup(); } finally { await prisma.$disconnect(); } });
 
-  const state = await progress.completeLessons(ids.student, ids.course, [ids.lessons[0]]);
-  assert.equal(state.progress, 33);
-  assert.equal(await prisma.enrollment.count({ where: { userId: ids.student, courseId: ids.course } }), 1);
-  // The paid course gains no enrollment through the progress endpoint.
-  await assert.rejects(progress.completeLessons(ids.student, ids.otherCourse, [ids.foreignLesson]), error => error.status === 403);
-  assert.equal(await prisma.enrollment.count({ where: { userId: ids.student, courseId: ids.otherCourse } }), 0);
-  await prisma.course.update({ where: { id: ids.course }, data: { status: 'PENDING' } });
-  await assert.rejects(progress.completeLessons(ids.other, ids.course, [ids.lessons[0]]), error => error.status === 403);
+  await prisma.course.update({ where: { id: ids.course }, data: { durationHours: 12 } });
+  await prisma.enrollment.create({ data: { userId: ids.student, courseId: ids.course } });
+  await progress.completeLessons(ids.student, ids.course, ids.lessons);
+  const { certificate } = await certificates.issueCertificate(ids.student, ids.course);
+  assert.match(certificate.verifyToken, /^[A-Za-z0-9_-]{22}$/);
+  assert.equal(certificate.courseDuration, 12);       // the course's real duration, not a default
+  assert.equal(certificate.templateVersion, '2.0');
+  assert.ok(certificate.pngUrl.includes(certificate.verifyToken) && !certificate.pngUrl.includes(certificate.certificateNumber));
+
+  const byNumber = await access.resolveCertificate(certificate.certificateNumber, null);
+  assert.equal(byNumber.access, 'limited');
+  assert.equal((await access.resolveCertificate(certificate.certificateNumber, { id: ids.other, role: 'STUDENT' })).access, 'limited');
+  assert.equal((await access.resolveCertificate(certificate.certificateNumber, { id: ids.student, role: 'STUDENT' })).access, 'full');
+  assert.equal((await access.resolveCertificate(certificate.certificateNumber, { id: ids.teacher, role: 'INSTRUCTOR' })).access, 'full');
+  assert.equal((await access.resolveCertificate(certificate.certificateNumber, { id: 'someone', role: 'ADMIN' })).access, 'full');
+  assert.equal((await access.resolveCertificate(certificate.verifyToken, null)).access, 'full');
+  assert.equal((await access.resolveCertificate(certificate.id, null)).access, 'full');
+  for (const bad of ['KQ2026-99999999', 'x', '../etc/passwd', 'a'.repeat(65), '', null, 'AAAAAAAAAAAAAAAAAAAAAA']) {
+    assert.equal(await access.resolveCertificate(bad, null), null);
+  }
+
+  // A certificate issued before tokens existed gets one on first use, once.
+  await prisma.certificate.update({ where: { id: certificate.id }, data: { verifyToken: null, templateVersion: '1.0', courseDuration: 16 } });
+  const legacy = await prisma.certificate.findUniqueOrThrow({ where: { id: certificate.id } });
+  const references = await Promise.all(Array.from({ length: 5 }, () => access.publicReference(legacy)));
+  assert.equal(new Set(references).size, 1);
+  assert.equal((await access.resolveCertificate(references[0], null)).certificate.id, certificate.id);
+  // Its old number still verifies (limited), so printed certificates are not broken.
+  assert.equal((await access.resolveCertificate(legacy.certificateNumber, null)).access, 'limited');
 });

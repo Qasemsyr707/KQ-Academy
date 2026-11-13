@@ -1,5 +1,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { notifyEnrollment } from '@/lib/notifications';
+import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 
 type Db = Prisma.TransactionClient | PrismaClient;
 
@@ -59,28 +61,49 @@ export async function syncEnrollmentProgress(db: Db, userId: string, courseId: s
 }
 
 /**
- * Record completed lessons for an enrolled student. Lessons that do not belong
- * to the course are ignored, so a client cannot complete another course's
- * content. Free published courses enrol the student on their first lesson,
- * because they never pass through checkout.
+ * Join a free course. This is the only enrollment path outside checkout, and
+ * every condition is checked here on the server: the course is published,
+ * publicly offered and costs nothing in both currencies. Returns false when
+ * the course is not free (the caller then leaves access rules unchanged).
+ */
+export async function enrollInFreeCourse(userId: string, courseId: string): Promise<boolean> {
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { id: true, title: true, type: true, status: true, price: true, priceSYP: true, instructorId: true },
+  });
+  if (!course || course.status !== 'PUBLISHED' || course.price !== 0 || course.priceSYP !== 0) return false;
+  if (!isPubliclyOffered(course) || course.instructorId === userId) return false;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, isBanned: true } });
+  if (!user || user.isBanned || user.role !== 'STUDENT') return false;
+  await prisma.$transaction(async tx => {
+    const created = await tx.enrollment.createMany({ data: [{ userId, courseId }], skipDuplicates: true });
+    if (created.count === 1) {
+      await notifyEnrollment(tx, { userId, courseId, courseTitle: course.title, instructorId: course.instructorId, eventKey: `free:${courseId}` });
+    }
+  });
+  return true;
+}
+
+/**
+ * Record completed lessons for an ENROLLED student. A progress event is a
+ * claim from the browser, so it can never create an enrollment, and it only
+ * counts lessons that really belong to this course. Quizzes cannot be
+ * completed here at all: they count only through a passed, server-graded
+ * attempt. This is also the path used to upload progress an older browser
+ * kept locally, so that import can grant nothing a student could not already
+ * record by pressing "mark as completed" on each lesson.
  */
 export async function completeLessons(userId: string, courseId: string, lessonIds: string[]): Promise<CourseCompletion> {
   const course = await prisma.course.findUnique({
     where: { id: courseId },
-    select: { id: true, status: true, price: true, priceSYP: true },
+    select: { id: true },
   });
   if (!course) throw new ProgressError(404, 'الكورس غير موجود');
 
-  let enrollment = await prisma.enrollment.findUnique({
+  const enrollment = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId, courseId } }, select: { id: true },
   });
-  if (!enrollment) {
-    const free = course.status === 'PUBLISHED' && course.price === 0 && course.priceSYP === 0;
-    if (!free) throw new ProgressError(403, 'يجب الاشتراك في الكورس لحفظ التقدّم');
-    enrollment = await prisma.enrollment.upsert({
-      where: { userId_courseId: { userId, courseId } }, update: {}, create: { userId, courseId }, select: { id: true },
-    });
-  }
+  if (!enrollment) throw new ProgressError(403, 'يجب الاشتراك في الكورس لحفظ التقدّم');
 
   const wanted = [...new Set(lessonIds)].slice(0, 500);
   if (wanted.length > 0) {

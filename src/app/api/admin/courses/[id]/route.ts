@@ -8,7 +8,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     if (!authorized) return errorResponse;
 
     const params = await props.params;
-    const { status, title, price, priceSYP, instructorId, type, isFeatured } = await req.json();
+    const { status, title, price, priceSYP, instructorId, type, isFeatured, durationHours } = await req.json();
+    const hours = Number(durationHours);
 
     const course = await prisma.course.update({
       where: { id: params.id },
@@ -19,7 +20,9 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         ...(priceSYP !== undefined && { priceSYP: parseFloat(priceSYP) || 0 }),
         ...(instructorId && { instructorId }),
         ...(type && { type }),
-        ...(isFeatured !== undefined && { isFeatured })
+        ...(isFeatured !== undefined && { isFeatured }),
+        // '' or 0 clears the value; certificates then print no duration.
+        ...(durationHours !== undefined && { durationHours: Number.isFinite(hours) && hours > 0 && hours <= 2000 ? hours : null })
       },
       include: {
         instructor: { select: { id: true, name: true, email: true } },

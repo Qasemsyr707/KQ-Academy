@@ -1,44 +1,38 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { certificateHours, certificateUrls, maskName, publicReference, resolveCertificate } from '@/lib/certificate-access';
+import { getCourseViewer } from '@/lib/course-access';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ certId: string }> }
-) {
+const HEADERS = { 'Cache-Control': 'private, no-store' };
+
+/**
+ * Certificate verification for the mobile app. The holder's link (unguessable
+ * reference) returns everything; a bare certificate number confirms validity
+ * with a masked name and no document links, unless the caller owns it.
+ */
+export async function GET(request: Request, { params }: { params: Promise<{ certId: string }> }) {
   try {
     const { certId } = await params;
-
-    if (!certId) {
-      return NextResponse.json({ error: 'يرجى تزويد كود الشهادة' }, { status: 400 });
+    const found = await resolveCertificate(certId, await getCourseViewer(request).catch(() => null));
+    if (!found) {
+      return NextResponse.json({ error: 'الشهادة غير موجودة أو كود غير صالح' }, { status: 404, headers: HEADERS });
     }
-
-    const certificate = await prisma.certificate.findFirst({
-      where: {
-        OR: [
-          { id: certId },
-          { certificateNumber: certId }
-        ]
-      }
-    });
-
-    if (!certificate) {
-      return NextResponse.json({ error: 'الشهادة غير موجودة أو كود غير صالح' }, { status: 404 });
-    }
-
+    const { certificate, access } = found;
+    const full = access === 'full';
+    const urls = full ? certificateUrls(await publicReference(certificate)) : null;
     return NextResponse.json({
       certificateNumber: certificate.certificateNumber || certificate.id,
-      studentName: certificate.studentName,
+      studentName: full ? certificate.studentName : maskName(certificate.studentName),
+      nameMasked: !full,
       courseName: certificate.courseName,
-      courseDuration: certificate.courseDuration,
+      courseDuration: certificateHours(certificate, certificate.course),
       issueDate: new Date(certificate.issuedAt).toISOString().split('T')[0],
       manager: certificate.manager1,
-      pngUrl: certificate.pngUrl,
-      pdfUrl: certificate.pdfUrl,
-      status: 'موثقة'
-    });
-
+      pngUrl: urls?.png ?? null,
+      pdfUrl: urls?.pdf ?? null,
+      status: 'موثقة',
+    }, { headers: HEADERS });
   } catch (error) {
     console.error('Certificate Verification Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
+    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500, headers: HEADERS });
   }
 }

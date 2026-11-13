@@ -22,3 +22,20 @@ export function formatDate(value: string | number | Date): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : dateFormat.format(date);
 }
+
+const dateTimeFormat = new Intl.DateTimeFormat('ar-u-ca-gregory-nu-latn', {
+  timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+});
+
+/** Deterministic date and time (UTC), safe for server-rendered client components. */
+export function formatDateTime(value: string | number | Date): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : `${dateTimeFormat.format(date)} UTC`;
+}
+
+/** Price exactly as stored: the USD price, the SYP price, both, or nothing when unset. */
+export function coursePriceLabel(course: { price?: number | null; priceSYP?: number | null }): string | null {
+  const usd = course.price && course.price > 0 ? `$${formatNumber(course.price)}` : null;
+  const syp = course.priceSYP && course.priceSYP > 0 ? `${formatNumber(course.priceSYP)} ل.س` : null;
+  return usd && syp ? `${usd} · ${syp}` : usd ?? syp;
+}

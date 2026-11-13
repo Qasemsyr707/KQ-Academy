@@ -3,19 +3,21 @@ import QRCode from 'qrcode';
 import path from 'path';
 import fs from 'fs';
 
-// Positions measured on the real template (public/templates/kq-academy-certificate.png,
-// 1023 x 1080). `cx`/`cy` is the centre of the text, `maxWidth` the room it may use.
+// Positions measured on the template (public/templates/kq-academy-certificate-v2.png,
+// 1023 x 1080: the original artwork without the location line, the old domain and
+// the empty duration brackets, which are now drawn only when they have a value). `cx`/`cy` is the centre of the text, `maxWidth` the room it may use.
 const LAYOUT = {
   studentName: { cx: 512, cy: 465, maxWidth: 370, size: 30, color: '#D9A441' },
   courseName:  { cx: 511, cy: 597, maxWidth: 310, size: 24, color: '#D9A441' },
   courseDate:  { cx: 525, cy: 652, maxWidth: 300, size: 15, color: '#FFFFFF' },
-  duration:    { cx: 745, cy: 660, maxWidth: 70,  size: 14, color: '#FFFFFF' },
+  duration:    { cx: 745, cy: 660, maxWidth: 90,  size: 14, color: '#FFFFFF' },
+  website:     { cx: 512, cy: 1012, maxWidth: 220, size: 13, color: '#E8E2D4', spacing: 2 },
   issueDate:   { cx: 268, cy: 814, maxWidth: 150, size: 12, color: '#FFFFFF' },
   certNumber:  { cx: 268, cy: 839, maxWidth: 150, size: 12, color: '#FFFFFF' },
   qrCode:      { x: 60, y: 880, size: 84 },
 } as const;
 
-type TextSlot = { cx: number; cy: number; maxWidth: number; size: number; color: string };
+type TextSlot = { cx: number; cy: number; maxWidth: number; size: number; color: string; spacing?: number };
 
 // The font ships with the application: the production image has no system
 // fonts, which rendered every field as empty boxes. Amiri covers Arabic and
@@ -34,7 +36,7 @@ async function renderText(value: string, slot: TextSlot) {
   for (let size = slot.size; size >= 9; size -= 1) {
     const image = sharp({
       text: {
-        text: `<span foreground="${slot.color}">${escapeMarkup(clean)}</span>`,
+        text: `<span foreground="${slot.color}"${slot.spacing ? ` letter_spacing="${slot.spacing * 1024}"` : ''}>${escapeMarkup(clean)}</span>`,
         font: `${FONT_FAMILY} Bold ${size}`,
         fontfile: FONT_FILE,
         rgba: true,
@@ -58,12 +60,15 @@ export async function generateCertificateBuffer(data: {
   courseName: string;
   startDate: string;
   endDate: string;
-  durationHours: number;
+  /** Null when the course has no real duration: nothing is printed. */
+  durationHours: number | null;
   issueDate: string;
   certificateNumber: string;
+  /** Unguessable public reference encoded in the QR code. */
+  verifyReference: string;
 }): Promise<Buffer> {
   try {
-    const templatePath = path.join(process.cwd(), 'public', 'templates', 'kq-academy-certificate.png');
+    const templatePath = path.join(process.cwd(), 'public', 'templates', 'kq-academy-certificate-v2.png');
     if (!fs.existsSync(templatePath)) {
       throw new Error(`Certificate template not found at ${templatePath}. Please upload the clean template.`);
     }
@@ -73,13 +78,14 @@ export async function generateCertificateBuffer(data: {
       renderText(data.studentName, LAYOUT.studentName),
       renderText(data.courseName, LAYOUT.courseName),
       renderText(`${data.startDate} - ${data.endDate}`, LAYOUT.courseDate),
-      renderText(`${data.durationHours} h`, LAYOUT.duration),
+      data.durationHours ? renderText(`( ${data.durationHours} h )`, LAYOUT.duration) : null,
+      renderText('www.kqacademy.com', LAYOUT.website),
       renderText(data.issueDate, LAYOUT.issueDate),
       renderText(data.certificateNumber, LAYOUT.certNumber),
     ]);
 
     const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.kqacademy.com').replace(/\/+$/, '');
-    const qrCodeBuffer = await QRCode.toBuffer(`${base}/verify/${data.certificateNumber}`, {
+    const qrCodeBuffer = await QRCode.toBuffer(`${base}/verify/${data.verifyReference}`, {
       errorCorrectionLevel: 'H',
       margin: 1,
       width: LAYOUT.qrCode.size,

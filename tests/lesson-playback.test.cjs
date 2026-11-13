@@ -141,7 +141,7 @@ test('enrolled mobile dashboard retains enrollment and certificate metadata whil
     else process.env.NEXTAUTH_SECRET = originalSecret;
   });
   const course = { id: 'course', chapters: [{ lessons: [{ id: LESSON, title: 'Private', videoUrl: VIDEO, content: 'private notes', liveRoomName: 'private-room' }] }] };
-  const certificate = { id: 'certificate', course: { title: 'Course' } };
+  const certificate = { id: 'certificate', verifyToken: 'tok_abcdefghijklmnopqrstu', course: { title: 'Course' } };
   const mocks = {
     '@/lib/db': { prisma: {
       enrollment: { findMany: async () => [{ id: 'enrollment', course }] },
@@ -154,7 +154,9 @@ test('enrolled mobile dashboard retains enrollment and certificate metadata whil
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.enrollments[0].id, 'enrollment');
-  assert.deepEqual(body.certificates, [certificate]);
+  // Document links use the unguessable reference, never the sequential number.
+  assert.deepEqual(body.certificates, [{ ...certificate, pngUrl: '/api/certificates/tok_abcdefghijklmnopqrstu/png',
+    pdfUrl: '/api/certificates/tok_abcdefghijklmnopqrstu/pdf', verifyUrl: '/verify/tok_abcdefghijklmnopqrstu' }]);
   assert.equal(body.user.id, STUDENT.id);
   const lesson = body.enrollments[0].course.chapters[0].lessons[0];
   assert.equal(lesson.videoUrl, null);

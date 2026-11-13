@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Users, UploadCloud, Video, FileEdit, Star, TrendingUp, DollarSign, Bot, ShieldCheck, HelpCircle, Wallet, Award, PlaySquare } from 'lucide-react';
 import RevenueChart from '@/components/instructor/RevenueChart';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
 interface ActiveCourse {
   id: string;
@@ -61,7 +62,7 @@ export default function InstructorDashboardClient({
         <div style={{ display: 'flex', gap: '1.5rem', textAlign: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div>
             <div style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)', fontWeight: 800, color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-              <Users size={28} /> {totalStudents.toLocaleString()}
+              <Users size={28} /> {formatNumber(totalStudents)}
             </div>
             <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>إجمالي الطلاب</p>
           </div>
@@ -122,7 +123,7 @@ export default function InstructorDashboardClient({
               </div>
               <div>
                 <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>إجمالي الأرباح</p>
-                <h3 style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)' }}>${totalRevenue.toLocaleString()}</h3>
+                <h3 style={{ fontSize: 'clamp(1rem, 2vw, 1.5rem)' }}>${formatNumber(totalRevenue)}</h3>
               </div>
             </div>
             <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -171,7 +172,7 @@ export default function InstructorDashboardClient({
                         <td style={{ padding: '1.2rem 1rem', fontWeight: 600 }}>{course.title}</td>
                         <td style={{ padding: '1.2rem 1rem' }}>{course.students} طالب</td>
                         <td style={{ padding: '1.2rem 1rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Star size={16} fill="var(--warning)" color="var(--warning)" /> {course.rating.toFixed(1)}</td>
-                        <td style={{ padding: '1.2rem 1rem', color: 'var(--success)' }}>${course.revenue.toLocaleString()}</td>
+                        <td style={{ padding: '1.2rem 1rem', color: 'var(--success)' }}>${formatNumber(course.revenue)}</td>
                         <td style={{ padding: '1.2rem 1rem' }}>
                           <Link href={`/instructor/courses/${course.id}/chapters`} className="btn" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', textDecoration: 'none' }}>إدارة</Link>
                         </td>

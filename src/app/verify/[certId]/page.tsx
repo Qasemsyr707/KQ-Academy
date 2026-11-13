@@ -2,6 +2,11 @@ import { prisma } from '@/lib/db';
 import { XCircle, CheckCircle, ArrowRight, Download, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { certificateHours, certificateUrls, maskName, publicReference, resolveCertificate } from '@/lib/certificate-access';
+import { getCourseViewer } from '@/lib/course-access';
+
+// Personal data: keep verification pages out of search engines.
+export const metadata = { robots: { index: false, follow: false } };
 
 export const dynamic = 'force-dynamic';
 
@@ -12,14 +17,11 @@ export default async function VerifyCertificatePage({
 }) {
   const resolvedParams = await params;
 
-  const certificate = await prisma.certificate.findFirst({
-    where: {
-      OR: [
-        { id: resolvedParams.certId },
-        { certificateNumber: resolvedParams.certId }
-      ]
-    }
-  });
+  const found = await resolveCertificate(resolvedParams.certId, await getCourseViewer().catch(() => null));
+  const certificate = found?.certificate;
+  // A bare certificate number confirms validity but, because numbers can be
+  // guessed, shows a masked name and no document. The holder's link shows all.
+  const full = found?.access === 'full';
 
   if (!certificate) {
     return (
@@ -38,7 +40,9 @@ export default async function VerifyCertificatePage({
     );
   }
 
-  const issuedDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB');
+  const issuedDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB', { timeZone: 'UTC' });
+  const hours = certificateHours(certificate, certificate.course);
+  const urls = full ? certificateUrls(await publicReference(certificate)) : null;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', padding: '3rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', direction: 'ltr' }}>
@@ -64,7 +68,14 @@ export default async function VerifyCertificatePage({
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>Student Name</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{certificate.studentName}</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+              {full ? certificate.studentName : maskName(certificate.studentName)}
+              {!full && (
+                <div style={{ fontSize: '0.85rem', fontWeight: 'normal', color: 'rgba(255,255,255,0.55)', marginTop: '0.4rem' }}>
+                  Name partly hidden for privacy. Scan the QR code on the certificate or use the holder&apos;s link to see full details.
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
@@ -72,10 +83,12 @@ export default async function VerifyCertificatePage({
             <div style={{ fontSize: '1.2rem', color: '#e0e0e0' }}>{certificate.courseName}</div>
           </div>
 
+          {hours !== null && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>Duration</div>
-            <div style={{ fontSize: '1.1rem' }}>{certificate.courseDuration} Hours</div>
+            <div style={{ fontSize: '1.1rem' }}>{hours} Hours</div>
           </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center' }}>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold' }}>Issue Date</div>
@@ -83,21 +96,21 @@ export default async function VerifyCertificatePage({
           </div>
         </div>
 
-        {certificate.pngUrl && (
+        {urls && (
           <div style={{ background: '#1a1a1a', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Original Certificate Document</div>
             
-            <a href={certificate.pngUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', maxWidth: '500px', border: '1px solid rgba(203,161,83,0.3)', borderRadius: '12px', overflow: 'hidden', cursor: 'zoom-in', transition: 'all 0.3s', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} className="cert-preview">
-              <img src={certificate.pngUrl} alt="Certificate Preview" style={{ width: '100%', display: 'block' }} />
+            <a href={urls.png} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', maxWidth: '500px', border: '1px solid rgba(203,161,83,0.3)', borderRadius: '12px', overflow: 'hidden', cursor: 'zoom-in', transition: 'all 0.3s', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} className="cert-preview">
+              <img src={urls.png} alt="Certificate Preview" style={{ width: '100%', display: 'block' }} />
             </a>
 
             <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '500px', marginTop: '1rem' }}>
-              {certificate.pdfUrl && (
-                <a href={certificate.pdfUrl} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '1rem', background: 'var(--primary)', color: '#000', textDecoration: 'none', borderRadius: '12px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+              {urls.pdf && (
+                <a href={urls.pdf} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '1rem', background: 'var(--primary)', color: '#000', textDecoration: 'none', borderRadius: '12px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
                   <FileText size={20} /> Download PDF
                 </a>
               )}
-              <a href={certificate.pngUrl} download={`KQ-Certificate-${certificate.certificateNumber}.png`} style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.1)', color: '#fff', textDecoration: 'none', borderRadius: '12px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <a href={urls.png} download={`KQ-Certificate-${certificate.certificateNumber}.png`} style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.1)', color: '#fff', textDecoration: 'none', borderRadius: '12px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(255,255,255,0.2)' }}>
                 <Download size={20} /> Download PNG
               </a>
             </div>
