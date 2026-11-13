@@ -106,7 +106,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
   useEffect(() => {
     if (!isLoaded || !hasAccess || !course.id) return;
     let cancelled = false;
-    const lessonIds = new Set<string>(chapters.flatMap((c: any) => (c.lessons || []).map((l: any) => l.id)));
+    const lessonIds = new Set<string>(chapters.flatMap(c => (c.lessons || []).map((l: { id: string }) => l.id)));
     (async () => {
       try {
         let local: string[] = [];
@@ -177,7 +177,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
       setCompletedItems(items => (items.includes(itemId) ? items : [...items, itemId]));
     }
     // Quizzes are recorded by their own submission; lessons are saved here.
-    const isLesson = chapters.some((c: any) => (c.lessons || []).some((l: any) => l.id === itemId));
+    const isLesson = chapters.some(c => (c.lessons || []).some((l: { id: string }) => l.id === itemId));
     if (!isLesson || !hasAccess || !course.id) return;
     fetch(`/api/courses/${course.id}/progress`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonId: itemId }),
@@ -196,7 +196,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
     });
     if (totalItems === 0) return 0;
     // Count only items that still exist in the course, each once.
-    const existing = new Set<string>(chapters.flatMap((c: any) => [...(c.lessons || []), ...(c.quizzes || [])].map((i: any) => i.id)));
+    const existing = new Set<string>(chapters.flatMap(c => [...(c.lessons || []), ...(c.quizzes || [])].map((i: { id: string }) => i.id)));
     const done = new Set(completedItems.filter(id => existing.has(id))).size;
     return done >= totalItems ? 100 : Math.min(99, Math.round((done / totalItems) * 100));
   };

@@ -60,7 +60,7 @@ export default function CoursesClient({
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<{ type: string; label: string; href: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<{ term: string; items: { type: string; label: string; href: string }[] }>({ term: '', items: [] });
   const [suggestOpen, setSuggestOpen] = useState(false);
   // The server already rendered the results for the URL's filters.
   const firstRun = useRef(true);
@@ -119,12 +119,12 @@ export default function CoursesClient({
   // Instant suggestions while typing.
   useEffect(() => {
     const term = q.trim();
-    if (term.length < 2) { setSuggestions([]); return; }
+    if (term.length < 2) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/courses/suggest?q=${encodeURIComponent(term)}`, { signal: controller.signal });
-        if (res.ok) setSuggestions((await res.json()).suggestions || []);
+        if (res.ok) setSuggestions({ term, items: (await res.json()).suggestions || [] });
       } catch { /* aborted or offline: no suggestions */ }
     }, 180);
     return () => { clearTimeout(timer); controller.abort(); };
@@ -147,6 +147,9 @@ export default function CoursesClient({
     }
     setLoadingMore(false);
   };
+
+  // Suggestions belong to the current text only (stale ones are never shown).
+  const visibleSuggestions = suggestions.term === q.trim() && suggestions.term.length >= 2 ? suggestions.items : [];
 
   const activeFilters = [category, price, rating, instructor].filter(value => value !== 'الكل').length
     + (showTypeFilter && type !== 'الكل' ? 1 : 0) + (q.trim() ? 1 : 0);
@@ -281,7 +284,7 @@ export default function CoursesClient({
             autoComplete="off"
             enterKeyHint="search"
             role="combobox"
-            aria-expanded={suggestOpen && suggestions.length > 0}
+            aria-expanded={suggestOpen && visibleSuggestions.length > 0}
             aria-controls="catalog-suggestions"
             aria-autocomplete="list"
           />
@@ -290,9 +293,9 @@ export default function CoursesClient({
               <X size={18} aria-hidden="true" />
             </button>
           ) : null}
-          {suggestOpen && suggestions.length > 0 ? (
+          {suggestOpen && visibleSuggestions.length > 0 ? (
             <ul id="catalog-suggestions" className={styles.suggestions} role="listbox" aria-label="اقتراحات البحث">
-              {suggestions.map(item => (
+              {visibleSuggestions.map(item => (
                 <li key={item.href} role="option" aria-selected="false">
                   <Link href={item.href} className={styles.suggestion} onMouseDown={e => e.preventDefault()} onClick={() => setSuggestOpen(false)}>
                     {item.type === 'category' ? <Tag size={15} aria-hidden="true" /> : <BookOpen size={15} aria-hidden="true" />}

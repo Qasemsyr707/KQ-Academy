@@ -33,6 +33,8 @@ const baseNavLinks = [
 
 const curriculumLink = { href: '/curriculum', label: 'المنهاج الدراسي', icon: GraduationCap };
 
+const navLinksWithCurriculum = [...baseNavLinks.slice(0, 2), curriculumLink, ...baseNavLinks.slice(2)];
+
 const advancedLinks = [
   { href: '/verify', label: 'التحقق من شهادة', emoji: '📜' },
   { href: '/features/live-class', label: 'مركز البث المباشر', emoji: '🎥' },
@@ -47,7 +49,7 @@ const advancedLinks = [
 
 export default function Navbar({ showCurriculum = false }: { showCurriculum?: boolean }) {
   // The curriculum entry returns with the catalogue switch (see catalogue-visibility.ts).
-  const navLinks = showCurriculum ? [...baseNavLinks.slice(0, 2), curriculumLink, ...baseNavLinks.slice(2)] : baseNavLinks;
+  const navLinks = showCurriculum ? navLinksWithCurriculum : baseNavLinks;
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [showDropdown, setShowDropdown] = useState(false);
