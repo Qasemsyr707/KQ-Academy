@@ -213,12 +213,16 @@ test('PostgreSQL: certificate numbers can be guessed, so they reveal little; the
     assert.equal(await access.resolveCertificate(bad, null), null);
   }
 
-  // A certificate issued before tokens existed gets one on first use, once.
+  // A certificate issued by the original system is never rewritten: its record id
+  // is its public reference, and every stored field stays exactly as issued.
   await prisma.certificate.update({ where: { id: certificate.id }, data: { verifyToken: null, templateVersion: '1.0', courseDuration: 16 } });
   const legacy = await prisma.certificate.findUniqueOrThrow({ where: { id: certificate.id } });
-  const references = await Promise.all(Array.from({ length: 5 }, () => access.publicReference(legacy)));
-  assert.equal(new Set(references).size, 1);
-  assert.equal((await access.resolveCertificate(references[0], null)).certificate.id, certificate.id);
+  const references = Array.from({ length: 5 }, () => access.publicReference(legacy));
+  assert.deepEqual(new Set(references), new Set([legacy.id]));
+  assert.equal(access.isLegacyCertificate(legacy), true);
+  const viaId = await access.resolveCertificate(legacy.id, null);
+  assert.equal(viaId.access, 'full');
+  assert.deepEqual(await prisma.certificate.findUniqueOrThrow({ where: { id: certificate.id } }), legacy);
   // Its old number still verifies (limited), so printed certificates are not broken.
   assert.equal((await access.resolveCertificate(legacy.certificateNumber, null)).access, 'limited');
 });

@@ -3,9 +3,13 @@ import QRCode from 'qrcode';
 import path from 'path';
 import fs from 'fs';
 
-// Positions measured on the template (public/templates/kq-academy-certificate-v2.png,
-// 1023 x 1080: the original artwork without the location line, the old domain and
-// the empty duration brackets, which are now drawn only when they have a value). `cx`/`cy` is the centre of the text, `maxWidth` the room it may use.
+// Positions measured on the templates (1023 x 1080):
+// - kq-academy-certificate-v2.png: new certificates. The original artwork without
+//   the location line, the old domain and the empty duration brackets.
+// - kq-academy-certificate-legacy.png: re-generated certificates issued by the
+//   original system. The original artwork (including its location line) with only
+//   the misspelled domain and the empty duration brackets removed.
+// The duration and the site address are drawn only where they apply. `cx`/`cy` is the centre of the text, `maxWidth` the room it may use.
 const LAYOUT = {
   studentName: { cx: 512, cy: 465, maxWidth: 370, size: 30, color: '#D9A441' },
   courseName:  { cx: 511, cy: 597, maxWidth: 310, size: 24, color: '#D9A441' },
@@ -55,7 +59,14 @@ async function renderText(value: string, slot: TextSlot) {
   return null;
 }
 
+const TEMPLATES = {
+  v2: 'kq-academy-certificate-v2.png',
+  legacy: 'kq-academy-certificate-legacy.png',
+} as const;
+
 export async function generateCertificateBuffer(data: {
+  /** 'legacy' for certificates issued by the original system (template 1.0). */
+  template?: keyof typeof TEMPLATES;
   studentName: string;
   courseName: string;
   startDate: string;
@@ -68,7 +79,7 @@ export async function generateCertificateBuffer(data: {
   verifyReference: string;
 }): Promise<Buffer> {
   try {
-    const templatePath = path.join(process.cwd(), 'public', 'templates', 'kq-academy-certificate-v2.png');
+    const templatePath = path.join(process.cwd(), 'public', 'templates', TEMPLATES[data.template ?? 'v2']);
     if (!fs.existsSync(templatePath)) {
       throw new Error(`Certificate template not found at ${templatePath}. Please upload the clean template.`);
     }

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { prisma } from '@/lib/db';
 import { generateCertificateBuffer } from '@/lib/certificate';
-import { certificateHours, publicReference, resolveCertificate } from '@/lib/certificate-access';
+import { certificateHours, isLegacyCertificate, publicReference, resolveCertificate } from '@/lib/certificate-access';
+import { limitRequest, RATE_RULES } from '@/lib/rate-limit';
 import { getCourseViewer } from '@/lib/course-access';
 
 const day = (value: Date) => new Date(value).toLocaleDateString('en-GB', { timeZone: 'UTC' });
@@ -10,25 +11,30 @@ const day = (value: Date) => new Date(value).toLocaleDateString('en-GB', { timeZ
 /** Shared PNG/PDF delivery. A bare certificate number only works for its owner or staff. */
 export async function certificateDocument(req: Request, reference: string, format: 'png' | 'pdf') {
   try {
+    const limited = limitRequest(req, RATE_RULES.certificateDocument);
+    if (limited) return limited;
     const viewer = await getCourseViewer(req).catch(() => null);
     const found = await resolveCertificate(reference, viewer);
     if (!found || found.access !== 'full') {
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404, headers: { 'Cache-Control': 'private, no-store' } });
     }
     const { certificate } = found;
-    const enrollment = await prisma.enrollment.findUnique({
+    const legacy = isLegacyCertificate(certificate);
+    // Original certificates keep the start date the original system used (course
+    // creation); new ones use the student's own enrollment date.
+    const enrollment = legacy ? null : await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId: certificate.userId, courseId: certificate.courseId } }, select: { createdAt: true },
     });
     const png = await generateCertificateBuffer({
+      template: legacy ? 'legacy' : 'v2',
       studentName: certificate.studentName,
       courseName: certificate.courseName,
-      // The student's own start (enrollment); course creation only for old records without one.
       startDate: day(enrollment?.createdAt ?? certificate.course.createdAt),
       endDate: day(certificate.issuedAt),
       durationHours: certificateHours(certificate, certificate.course),
       issueDate: day(certificate.issuedAt),
       certificateNumber: certificate.certificateNumber || certificate.id,
-      verifyReference: await publicReference(certificate),
+      verifyReference: publicReference(certificate),
     });
     // Personal document: never stored by shared caches, short private reuse only.
     const headers: Record<string, string> = { 'Cache-Control': 'private, max-age=300', Vary: 'Cookie, Authorization', 'X-Robots-Tag': 'noindex' };

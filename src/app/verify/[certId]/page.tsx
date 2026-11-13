@@ -1,9 +1,9 @@
-import { prisma } from '@/lib/db';
 import { XCircle, CheckCircle, ArrowRight, Download, FileText } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { certificateHours, certificateUrls, maskName, publicReference, resolveCertificate } from '@/lib/certificate-access';
 import { getCourseViewer } from '@/lib/course-access';
+import { headers } from 'next/headers';
+import { clientIp, consume, RATE_LIMIT_MESSAGE, RATE_RULES } from '@/lib/rate-limit';
 
 // Personal data: keep verification pages out of search engines.
 export const metadata = { robots: { index: false, follow: false } };
@@ -17,6 +17,15 @@ export default async function VerifyCertificatePage({
 }) {
   const resolvedParams = await params;
 
+  // Lookups are rate limited per visitor IP to stop bulk enumeration of numbers.
+  const { allowed } = consume(RATE_RULES.verify, clientIp(await headers()));
+  if (!allowed) {
+    return (
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: 'var(--text-1)', textAlign: 'center' }}>
+        <p role="alert" style={{ maxWidth: '28rem', lineHeight: 1.8 }}>{RATE_LIMIT_MESSAGE}</p>
+      </div>
+    );
+  }
   const found = await resolveCertificate(resolvedParams.certId, await getCourseViewer().catch(() => null));
   const certificate = found?.certificate;
   // A bare certificate number confirms validity but, because numbers can be
@@ -42,7 +51,7 @@ export default async function VerifyCertificatePage({
 
   const issuedDate = new Date(certificate.issuedAt).toLocaleDateString('en-GB', { timeZone: 'UTC' });
   const hours = certificateHours(certificate, certificate.course);
-  const urls = full ? certificateUrls(await publicReference(certificate)) : null;
+  const urls = full ? certificateUrls(publicReference(certificate)) : null;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', padding: '3rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', direction: 'ltr' }}>

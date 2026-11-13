@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { certificateHours, certificateUrls, maskName, publicReference, resolveCertificate } from '@/lib/certificate-access';
 import { getCourseViewer } from '@/lib/course-access';
+import { limitRequest, RATE_RULES } from '@/lib/rate-limit';
 
 const HEADERS = { 'Cache-Control': 'private, no-store' };
 
@@ -10,6 +11,8 @@ const HEADERS = { 'Cache-Control': 'private, no-store' };
  * with a masked name and no document links, unless the caller owns it.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ certId: string }> }) {
+  const limited = limitRequest(request, RATE_RULES.verify);
+  if (limited) return limited;
   try {
     const { certId } = await params;
     const found = await resolveCertificate(certId, await getCourseViewer(request).catch(() => null));
@@ -18,7 +21,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ cert
     }
     const { certificate, access } = found;
     const full = access === 'full';
-    const urls = full ? certificateUrls(await publicReference(certificate)) : null;
+    const urls = full ? certificateUrls(publicReference(certificate)) : null;
     return NextResponse.json({
       certificateNumber: certificate.certificateNumber || certificate.id,
       studentName: full ? certificate.studentName : maskName(certificate.studentName),

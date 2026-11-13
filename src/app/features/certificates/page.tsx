@@ -35,7 +35,7 @@ export default async function CertificatesPage() {
 
   // Format them for the client
   const formattedCerts = await Promise.all(certificates.map(async cert => {
-    const reference = await publicReference(cert);
+    const reference = publicReference(cert);
     const urls = certificateUrls(reference);
     return {
     id: cert.id, // For fallback URL

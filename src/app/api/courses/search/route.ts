@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { searchCourses } from '@/lib/course-search';
+import { limitRequest, RATE_RULES } from '@/lib/rate-limit';
 
 /** Public catalogue search: published, publicly offered courses only. */
 export async function GET(req: Request) {
+  const limited = limitRequest(req, RATE_RULES.search);
+  if (limited) return limited;
   try {
     const p = new URL(req.url).searchParams;
     const value = (key: string) => (p.get(key) || '').slice(0, 200) || undefined;

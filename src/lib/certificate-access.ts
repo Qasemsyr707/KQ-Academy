@@ -37,13 +37,21 @@ export async function resolveCertificate(reference: unknown, viewer?: Certificat
   return certificate ? { certificate, access: 'full' } : null;
 }
 
-/** The public reference for links and QR codes; older certificates get one on first use. */
-export async function publicReference(certificate: Pick<Certificate, 'id' | 'verifyToken'>): Promise<string> {
-  if (certificate.verifyToken) return certificate.verifyToken;
-  const token = newVerifyToken();
-  await prisma.certificate.updateMany({ where: { id: certificate.id, verifyToken: null }, data: { verifyToken: token } });
-  const saved = await prisma.certificate.findUnique({ where: { id: certificate.id }, select: { verifyToken: true } });
-  return saved?.verifyToken ?? certificate.id;
+/**
+ * The public reference for links and QR codes. Certificates issued before
+ * verification tokens existed are never rewritten: their own non-sequential
+ * record id serves as the reference, so historical records stay untouched.
+ */
+export function publicReference(certificate: Pick<Certificate, 'id' | 'verifyToken'>): string {
+  return certificate.verifyToken || certificate.id;
+}
+
+/**
+ * Issued by the original system (template 1.0). Re-generated copies keep their
+ * original artwork and issue data, drawn legibly.
+ */
+export function isLegacyCertificate(certificate: Pick<Certificate, 'templateVersion'>): boolean {
+  return certificate.templateVersion === '1.0';
 }
 
 /** "محمد عبد الرحمن" -> "م••• ع••• ا•••": enough to recognise, not to harvest. */

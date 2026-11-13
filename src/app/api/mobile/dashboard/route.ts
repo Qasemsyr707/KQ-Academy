@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     });
     // The app loads documents without a session, so it gets unguessable links.
     const certificates = await Promise.all(ownCertificates.map(async certificate => {
-      const urls = certificateUrls(await publicReference(certificate));
+      const urls = certificateUrls(publicReference(certificate));
       return { ...certificate, pngUrl: urls.png, pdfUrl: urls.pdf, verifyUrl: urls.verify };
     }));
 
