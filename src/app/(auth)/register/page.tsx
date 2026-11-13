@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Mail, Lock, User, UserPlus, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Mail, Lock, User, UserPlus, Eye, EyeOff, Loader2, CheckCircle2, XCircle, ShieldCheck } from 'lucide-react';
 import AuthShell, { authStyles as styles } from '@/components/auth/AuthShell';
 import { toast } from '@/lib/motion';
+import { authHref } from '@/lib/safe-redirect';
+import { useAuthRedirectParams } from '@/lib/use-callback-url';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { callbackUrl } = useAuthRedirectParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,7 +75,9 @@ export default function RegisterPage() {
         throw new Error(data.error || 'حدث خطأ أثناء التسجيل');
       }
 
-      router.push('/login?registered=true');
+      router.push(callbackUrl
+        ? `/login?registered=true&callbackUrl=${encodeURIComponent(callbackUrl)}`
+        : '/login?registered=true');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ أثناء التسجيل');
       setIsLoading(false);
@@ -91,6 +96,11 @@ export default function RegisterPage() {
         text: 'انضم إلى آلاف الطلاب الذين غيروا مسار حياتهم المهنية من خلال دوراتنا الاحترافية.',
       }}
     >
+      {callbackUrl?.startsWith('/checkout') && !error ? (
+        <div className={`${styles.alert} ${styles.alertInfo}`} role="status">
+          <ShieldCheck size={18} aria-hidden="true" /> أنشئ حسابك لإتمام عملية الشراء، وستعود مباشرة إلى صفحة الدفع
+        </div>
+      ) : null}
       <AnimatePresence>
         {error && (
           <motion.div key="error" className={styles.alert} role="alert" variants={toast} initial="hidden" animate="visible" exit="exit">
@@ -235,7 +245,7 @@ export default function RegisterPage() {
 
       <p className={styles.switch}>
         لديك حساب مسبقاً؟{' '}
-        <Link href="/login">تسجيل الدخول</Link>
+        <Link href={authHref('/login', callbackUrl)}>تسجيل الدخول</Link>
       </p>
     </AuthShell>
   );

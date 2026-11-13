@@ -5,12 +5,16 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Mail, Lock, LogIn, Loader2, XCircle } from 'lucide-react';
+import { Mail, Lock, LogIn, Loader2, XCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
 import AuthShell, { authStyles as styles } from '@/components/auth/AuthShell';
 import { toast } from '@/lib/motion';
+import { authHref } from '@/lib/safe-redirect';
+import { useAuthRedirectParams } from '@/lib/use-callback-url';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { callbackUrl, registered } = useAuthRedirectParams();
+  const fromCheckout = callbackUrl?.startsWith('/checkout') ?? false;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,7 +36,8 @@ export default function LoginPage() {
         setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
         setIsLoading(false);
       } else {
-        router.push('/dashboard');
+        // Return the customer to where they came from (e.g. checkout), never off-site.
+        router.push(callbackUrl ?? '/dashboard');
         router.refresh();
       }
     } catch {
@@ -50,6 +55,16 @@ export default function LoginPage() {
         text: 'المكان الأول لتطوير مهاراتك واحتراف التكنولوجيا في سوريا والوطن العربي.',
       }}
     >
+      {registered && !error ? (
+        <div className={`${styles.alert} ${styles.alertSuccess}`} role="status">
+          <CheckCircle2 size={18} aria-hidden="true" /> تم إنشاء حسابك بنجاح، سجّل الدخول للمتابعة
+        </div>
+      ) : null}
+      {fromCheckout && !registered && !error ? (
+        <div className={`${styles.alert} ${styles.alertInfo}`} role="status">
+          <ShieldCheck size={18} aria-hidden="true" /> سجّل دخولك لإتمام عملية الشراء، وستعود مباشرة إلى صفحة الدفع
+        </div>
+      ) : null}
       <AnimatePresence>
         {error && (
           <motion.div key="error" className={styles.alert} role="alert" variants={toast} initial="hidden" animate="visible" exit="exit">
@@ -115,7 +130,7 @@ export default function LoginPage() {
 
       <p className={styles.switch}>
         ليس لديك حساب بعد؟{' '}
-        <Link href="/register">إنشاء حساب جديد</Link>
+        <Link href={authHref('/register', callbackUrl)}>إنشاء حساب جديد</Link>
       </p>
     </AuthShell>
   );

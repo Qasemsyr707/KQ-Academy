@@ -225,6 +225,12 @@
   color: #7ee2a8;
 }
 
+.alertInfo {
+  border-color: var(--line-gold);
+  background: rgba(201, 164, 92, 0.1);
+  color: var(--gold-100);
+}
+
 .switch {
   margin-top: 2rem;
   text-align: center;
