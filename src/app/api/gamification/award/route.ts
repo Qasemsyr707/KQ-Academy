@@ -1,26 +1,18 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { requireRequestUser } from '@/lib/request-user';
+import { CheckoutError } from '@/lib/payments/checkout-context';
+import { paymentBody, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
+import { claimDailyLogin } from '@/lib/reward-events';
 
 export async function POST(req: Request) {
   try {
-    const { userId, points, reason } = await req.json();
-
-    if (!userId || !points) {
-      return NextResponse.json({ error: 'Missing userId or points' }, { status: 400 });
+    const user = await requireRequestUser(req, ['STUDENT']);
+    const body = paymentBody(await req.json());
+    // The only browser-triggered reward is authenticated daily presence.
+    // Amount, identity, day and idempotency key are exclusively server-owned.
+    if (body.action !== 'DAILY_LOGIN' || Object.keys(body).some(key => key !== 'action')) {
+      throw new CheckoutError(400, 'طلب المكافأة غير صالح');
     }
-
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        points: { increment: points }
-      }
-    });
-
-    // Optionally create a Badge if threshold is crossed, we will keep it simple for now
-    
-    return NextResponse.json({ success: true, newTotal: user.points, reason });
-  } catch (error) {
-    console.error('Gamification Award Error:', error);
-    return NextResponse.json({ error: 'Failed to award points' }, { status: 500 });
-  }
+    return NextResponse.json(await claimDailyLogin(user.id), { headers: WALLET_HEADERS });
+  } catch (error) { return walletError(error); }
 }

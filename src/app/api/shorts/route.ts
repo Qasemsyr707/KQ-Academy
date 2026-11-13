@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 export async function GET(req: Request) {
   try {
     const shorts = await prisma.short.findMany({
+      where: { OR: [{ courseId: null }, { course: { status: 'PUBLISHED' } }] },
       include: {
         user: { select: { name: true, image: true } },
         course: { select: { title: true, id: true } },

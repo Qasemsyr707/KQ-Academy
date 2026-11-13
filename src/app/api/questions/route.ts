@@ -1,34 +1,25 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser } from '@/lib/request-user';
+import { CheckoutError } from '@/lib/payments/checkout-context';
+import { paymentBody, paymentId, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
+    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER']);
+    const { text, options, correctAnswer, quizId } = paymentBody(await req.json());
+    if (typeof text !== 'string' || !text.trim() || !paymentId(quizId)
+      || !Array.isArray(options) || options.length < 2 || !options.every(option => typeof option === 'string')
+      || typeof correctAnswer !== 'number' || !Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer >= options.length) {
+      throw new CheckoutError(400, 'بيانات ناقصة');
     }
-
-    const { text, options, correctAnswer, quizId } = await req.json();
-
-    if (!text || !options || correctAnswer === undefined || !quizId) {
-      return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 });
-    }
-
-    const question = await prisma.question.create({
-      data: {
-        text,
-        options: JSON.stringify(options),
-        correctAnswer,
-        quizId
-      }
+    const quiz = await prisma.quiz.findUnique({
+      where: { id: quizId }, select: { chapter: { select: { course: { select: { instructorId: true } } } } },
     });
-
-    return NextResponse.json({ question, message: 'تم إضافة السؤال بنجاح' }, { status: 201 });
-
-  } catch (error) {
-    console.error('Create Question API Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
-  }
+    if (!quiz || (user.role === 'INSTRUCTOR' && quiz.chapter.course.instructorId !== user.id)) {
+      throw new CheckoutError(403, 'لا تملك صلاحية إدارة هذا الاختبار');
+    }
+    const question = await prisma.question.create({ data: { text, options: JSON.stringify(options), correctAnswer, quizId } });
+    return NextResponse.json({ question, message: 'تم إضافة السؤال بنجاح' }, { status: 201, headers: WALLET_HEADERS });
+  } catch (error) { return walletError(error); }
 }

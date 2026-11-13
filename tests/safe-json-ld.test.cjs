@@ -56,7 +56,7 @@ test('course page serializes untrusted course fields safely while retaining SEO 
   const course = {
     id: 'course-1', title: TITLE, description: DESCRIPTION, category: 'تعليم',
     instructor: { name: TEACHER, image: null }, price: 25, priceSYP: 100,
-    rating: 4.5, reviews: [{ id: 'review-1' }], chapters: [], previewVideoUrl: null,
+    rating: 4.5, status: 'PUBLISHED', reviews: [{ id: 'review-1' }], chapters: [], previewVideoUrl: null,
   };
   const calls = [];
   function Client() { return null; }

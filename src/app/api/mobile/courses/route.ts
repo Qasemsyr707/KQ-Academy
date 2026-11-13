@@ -1,24 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { protectCourseLessonSources } from '@/lib/lesson-links';
+import { protectCoursePlaybackLinks } from '@/lib/course-playback-links';
 import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { safeMediaUrl } from '@/lib/media-url';
+import { mobileCourseSelect } from '@/lib/public-course';
 
 const privateHeaders = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 
 export async function GET() {
   try {
     const courses = await prisma.course.findMany({
-      include: {
-        instructor: { select: { name: true } },
-        chapters: {
-          include: { lessons: true, quizzes: true }
-        }
-      },
+      where: { status: 'PUBLISHED' },
+      select: mobileCourseSelect,
       orderBy: { createdAt: 'desc' }
     });
 
-    return NextResponse.json({ courses: courses.map(protectCourseLessonSources) }, { status: 200 });
+    return NextResponse.json({ courses: courses.map(protectCoursePlaybackLinks) }, { status: 200, headers: privateHeaders });
   } catch (error) {
     console.error('Mobile Courses API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });

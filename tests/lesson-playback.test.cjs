@@ -120,7 +120,7 @@ test('student and public course DTOs remove raw URLs and locked bodies without m
 });
 
 test('anonymous mobile catalogue and detail responses redact paid lesson sources', async () => {
-  const course = { id: 'course', chapters: [{ lessons: [{ id: LESSON, title: 'Private', videoUrl: VIDEO, content: 'private notes', liveRoomName: 'private-room' }] }] };
+  const course = { id: 'course', status: 'PUBLISHED', chapters: [{ lessons: [{ id: LESSON, title: 'Private', videoUrl: VIDEO, content: 'private notes', liveRoomName: 'private-room' }] }] };
   const mocks = { '@/lib/db': { prisma: { course: { findMany: async () => [course], findUnique: async () => course } } } };
   const list = loadTs('../src/app/api/mobile/courses/route.ts', mocks).GET;
   const detail = loadTs('../src/app/api/mobile/courses/[id]/route.ts', mocks).GET;
@@ -173,6 +173,31 @@ test('cookie playback rechecks current database role and rejects banned or delet
     assert.equal((await h.route(request, params())).status, 401);
     assert.equal(h.events.includes('provider'), false);
     assert.equal(h.events.includes('sign'), false);
+  }
+});
+
+test('demoted course owners need enrollment; existing enrollment on unpublished courses stays valid', async () => {
+  const demoted = harness({ user: { id: 'teacher', role: 'INSTRUCTOR' }, bearerUser: { id: 'teacher', role: 'STUDENT' } });
+  assert.equal((await demoted.route(request, params())).status, 403);
+  assert.equal(demoted.events.includes('sign'), false);
+  for (const status of ['PENDING', 'REJECTED', 'UNPUBLISHED']) {
+    const enrolled = harness({ status, enrolled: true });
+    assert.equal((await enrolled.route(request, params())).status, 200);
+    const denied = harness({ status, free: true, user: null });
+    assert.equal((await denied.route(request, params())).status, 401);
+    assert.equal(denied.events.includes('sign'), false);
+  }
+});
+
+test('legacy sources still require authorization before any playback URL is disclosed', async () => {
+  for (const videoUrl of ['/uploads/old.mp4', '/api/files/original.pdf', 'https://legacy.test/lesson.mp4']) {
+    for (const user of [null, STUDENT]) {
+      const h = harness({ videoUrl, user });
+      const response = await h.route(request, params());
+      assert.equal(response.status, user ? 403 : 401);
+      assert.equal((await response.text()).includes(videoUrl), false);
+      assert.equal(h.events.includes('sign'), false);
+    }
   }
 });
 

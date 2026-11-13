@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     // Get the course to calculate the new price
-    const course = await prisma.course.findUnique({ where: { id: courseId } });
+    const course = await prisma.course.findUnique({ where: { id: courseId, status: 'PUBLISHED' }, select: { price: true } });
     if (!course) {
       return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
     }

@@ -1,22 +1,26 @@
 import { prisma } from '@/lib/db';
-import { notFound } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { notFound, unstable_rethrow } from 'next/navigation';
 import CourseDetailsClient from './CourseDetailsClient';
 import { Metadata } from 'next';
 import { protectCourseLessonSources } from '@/lib/lesson-links';
 import { getBunnyPlaybackUrl } from '@/lib/bunny-playback';
 import { serializeJsonLd } from '@/lib/safe-json-ld';
+import { getCourseAccess, getCourseViewer } from '@/lib/course-access';
+import { publicCourseDetailsSelect } from '@/lib/public-course';
 
 export async function generateMetadata({ params }: { params: Promise<{ courseId: string }> }): Promise<Metadata> {
   try {
     const resolvedParams = await params;
     const course = await prisma.course.findUnique({
       where: { id: resolvedParams.courseId },
-      include: { instructor: true }
+      select: {
+        id: true, title: true, category: true, thumbnail: true, status: true, instructorId: true,
+        instructor: { select: { name: true } },
+      }
     });
 
-    if (!course) {
+    if (!course || (course.status !== 'PUBLISHED'
+      && !(await getCourseAccess(course, await getCourseViewer())).canView)) {
       return { title: 'كورس غير موجود | KQ Academy' };
     }
 
@@ -35,6 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ courseId:
       },
     };
   } catch (error) {
+    unstable_rethrow(error);
     return { title: 'الكورس | KQ Academy' };
   }
 }
@@ -44,17 +49,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
     const resolvedParams = await params;
     const course = await prisma.course.findUnique({
       where: { id: resolvedParams.courseId },
-      include: {
-        instructor: true,
-        reviews: {
-          include: { user: true },
-          orderBy: { createdAt: 'desc' }
-        },
-        chapters: {
-          include: { lessons: true },
-          orderBy: { order: 'asc' }
-        }
-      }
+      select: publicCourseDetailsSelect
     });
 
     if (!course) {
@@ -63,20 +58,10 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
       }
     }
 
-    const session = await getServerSession(authOptions);
-    let isEnrolled = false;
-
-    if (session?.user && course) {
-      const enrollment = await prisma.enrollment.findUnique({
-        where: {
-          userId_courseId: {
-            userId: (session.user as any).id,
-            courseId: course.id
-          }
-        }
-      });
-      isEnrolled = !!enrollment;
-    }
+    const viewer = await getCourseViewer();
+    const access = course ? await getCourseAccess(course, viewer) : { canView: true, isEnrolled: false };
+    if (!access.canView) notFound();
+    const isEnrolled = access.isEnrolled;
 
     // Fallback demo data
     const displayCourse = course || {
@@ -155,6 +140,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
       </>
     );
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Error loading course details:", error);
     // Render a friendly error page instead of crashing with 500
     return (

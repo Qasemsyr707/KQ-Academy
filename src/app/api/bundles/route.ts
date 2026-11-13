@@ -5,7 +5,8 @@ import { prisma } from '@/lib/db';
 export async function GET() {
   try {
     const bundles = await prisma.courseBundle.findMany({
-      where: { isActive: true },
+      // A bundle must not disclose or sell any unpublished constituent course.
+      where: { isActive: true, courses: { every: { course: { status: 'PUBLISHED' } } } },
       include: {
         courses: {
           include: {

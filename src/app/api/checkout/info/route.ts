@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     if (!paymentId(courseId)) throw new CheckoutError(400, 'معرف الكورس مفقود');
 
     const course = await prisma.course.findUnique({
-      where: { id: courseId },
+      where: { id: courseId, status: 'PUBLISHED' },
       select: { 
         title: true, 
         price: true, 

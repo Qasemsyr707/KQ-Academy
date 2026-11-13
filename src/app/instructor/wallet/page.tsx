@@ -31,7 +31,7 @@ export default async function InstructorWalletPage() {
 
   // Fetch transaction history
   const transactions = await prisma.walletTransaction.findMany({
-    where: { userId },
+    where: { userId, type: { not: 'POINTS_REWARD' } },
     orderBy: { createdAt: 'desc' },
     take: 20
   });

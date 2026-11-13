@@ -1,52 +1,22 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser } from '@/lib/request-user';
+import { CheckoutError } from '@/lib/payments/checkout-context';
+import { paymentBody, paymentId, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
+import { submitQuiz } from '@/lib/quiz-submission';
+import { assertOwnedDocumentReference } from '@/lib/owned-document';
+import { PrivateFileError } from '@/lib/private-file-storage';
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'يجب تسجيل الدخول لتقديم الاختبار' }, { status: 401 });
-    }
-
-    const { quizId, answers } = await req.json(); // answers is an object: { questionId: selectedOptionIndex }
-
-    if (!quizId || !answers) {
-      return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 });
-    }
-
-    const userId = (session.user as any).id;
-
-    // Fetch quiz questions
-    const questions = await prisma.question.findMany({
-      where: { quizId }
-    });
-
-    let correctAnswersCount = 0;
-    
-    questions.forEach(q => {
-      if (answers[q.id] === q.correctAnswer) {
-        correctAnswersCount++;
-      }
-    });
-
-    const score = (correctAnswersCount / questions.length) * 100;
-    const passed = score >= 50; // Pass mark is 50%
-
-    const attempt = await prisma.quizAttempt.create({
-      data: {
-        userId,
-        quizId,
-        score,
-        passed
-      }
-    });
-
-    return NextResponse.json({ attempt, message: 'تم إرسال الاختبار وتصحيحه' }, { status: 201 });
-
+    const user = await requireRequestUser(req);
+    const body = paymentBody(await req.json());
+    if (!paymentId(body.quizId)) throw new CheckoutError(400, 'بيانات ناقصة');
+    if (body.answerFileUrl) await assertOwnedDocumentReference(user, body.answerFileUrl);
+    const result = await submitQuiz(user.id, body.quizId, body, true);
+    if ('status' in result) return NextResponse.json(result, { headers: WALLET_HEADERS });
+    return NextResponse.json({ attempt: result.attempt, message: 'تم إرسال الاختبار وتصحيحه' }, { status: 201, headers: WALLET_HEADERS });
   } catch (error) {
-    console.error('Submit Quiz API Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
+    if (error instanceof PrivateFileError) return NextResponse.json({ error: error.message }, { status: error.status, headers: WALLET_HEADERS });
+    return walletError(error);
   }
 }

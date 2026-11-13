@@ -27,7 +27,7 @@ export default async function WalletPage() {
   }
 
   const transactions = await prisma.walletTransaction.findMany({
-    where: { userId },
+    where: { userId, type: { not: 'POINTS_REWARD' } },
     orderBy: { createdAt: 'desc' }
   });
 

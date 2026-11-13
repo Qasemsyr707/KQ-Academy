@@ -1,22 +1,18 @@
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import CoursePlayerClient from './CoursePlayerClient';
 import { protectCourseAttachmentLinks } from '@/lib/attachment-links';
 import { protectLessonSource } from '@/lib/lesson-links';
-import { isPublicLesson, managesLessonCourse, type LessonViewer } from '@/lib/lesson-playback';
+import { isPublicLesson } from '@/lib/lesson-playback';
+import { getCourseAccess, getCourseViewer, managesCourse } from '@/lib/course-access';
 
 export default async function CourseLearnPage(props: { params: Promise<{ courseId: string }>, searchParams: Promise<{ lessonId?: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) redirect('/login');
-  const viewer = session.user as LessonViewer;
-  if (!viewer.id) redirect('/login');
+  const viewer = await getCourseViewer();
+  if (!viewer) redirect('/login');
   const { courseId } = await props.params;
   const searchParams = await props.searchParams;
 
-  const [course, enrollment] = await Promise.all([
-    prisma.course.findUnique({
+  const course = await prisma.course.findUnique({
       where: { id: courseId },
       include: {
         attachments: true,
@@ -25,7 +21,7 @@ export default async function CourseLearnPage(props: { params: Promise<{ courseI
           include: {
             attachments: true,
             lessons: { orderBy: { order: 'asc' }, include: { attachments: true } },
-            quizzes: { include: { questions: true } },
+            quizzes: { include: { questions: { select: { id: true, text: true, options: true, points: true } } } },
           },
         },
         questions: {
@@ -36,11 +32,11 @@ export default async function CourseLearnPage(props: { params: Promise<{ courseI
           },
         },
       },
-    }),
-    prisma.enrollment.findUnique({ where: { userId_courseId: { userId: viewer.id, courseId } }, select: { id: true } }),
-  ]);
+    });
   if (!course) notFound();
-  const hasAccess = !!enrollment || managesLessonCourse(course, viewer) || isPublicLesson(course, false);
+  const access = await getCourseAccess(course, viewer);
+  if (!access.canView) notFound();
+  const hasAccess = access.isEnrolled || managesCourse(course, viewer) || isPublicLesson(course, false);
   if (!hasAccess && !course.chapters.some(chapter => isPublicLesson(course, chapter.isFree))) redirect(`/courses/${courseId}`);
 
   // Sources stay on the server; the playback endpoint rechecks every request.

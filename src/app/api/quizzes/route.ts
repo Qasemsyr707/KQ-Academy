@@ -1,32 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser } from '@/lib/request-user';
+import { CheckoutError } from '@/lib/payments/checkout-context';
+import { paymentBody, paymentId, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
-
-    const { title, chapterId } = await req.json();
-
-    if (!title || !chapterId) {
-      return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 });
-    }
-
-    const quiz = await prisma.quiz.create({
-      data: {
-        title,
-        chapterId
-      }
+    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER']);
+    const { title, chapterId } = paymentBody(await req.json());
+    if (typeof title !== 'string' || !title.trim() || !paymentId(chapterId)) throw new CheckoutError(400, 'بيانات ناقصة');
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId }, select: { course: { select: { instructorId: true } } },
     });
-
-    return NextResponse.json({ quiz, message: 'تم إنشاء الاختبار بنجاح' }, { status: 201 });
-
-  } catch (error) {
-    console.error('Create Quiz API Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
-  }
+    if (!chapter || (user.role === 'INSTRUCTOR' && chapter.course.instructorId !== user.id)) {
+      throw new CheckoutError(403, 'الفصل غير موجود أو أنك لا تملك صلاحية إدارته');
+    }
+    const quiz = await prisma.quiz.create({ data: { title, chapterId } });
+    return NextResponse.json({ quiz, message: 'تم إنشاء الاختبار بنجاح' }, { status: 201, headers: WALLET_HEADERS });
+  } catch (error) { return walletError(error); }
 }

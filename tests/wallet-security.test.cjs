@@ -40,7 +40,7 @@ function harness(options = {}) {
         findUnique: async () => working.user,
       },
       payment: { create: create('payments') },
-      courseBundle: { findUnique: async () => ({ id: 'bundle', price: 30, courses: [{ courseId: 'course' }, { courseId: 'other-course' }] }) },
+      courseBundle: { findUnique: async () => ({ id: 'bundle', price: 30, courses: [{ courseId: 'course', course: { status: options.bundleCourseStatus ?? 'PUBLISHED' } }, { courseId: 'other-course', course: { status: 'PUBLISHED' } }] }) },
       bundlePayment: { findFirst: async ({ where }) => working.bundles.find(e => match(e, where)) ?? null, create: create('bundles') },
       subscriptionPlan: { findUnique: async () => ({ id: 'plan', name: 'Plan', priceMonthly: 20, priceYearly: 200 }) },
       userSubscription: { findFirst: async () => working.subscriptions[0] ?? null, create: create('subscriptions') },
@@ -142,4 +142,15 @@ test('failed financial writes roll back debit and pending deposits never credit 
   const pending = harness(); assert.equal((await pending.routes.deposit(request({ amount: 20, currency: 'USD', userId: 'victim', receiptImage: 'data:image/png;base64,AAAA' }))).status, 200);
   assert.equal(pending.state.transactions[0].status, 'PENDING'); assert.equal(pending.state.transactions[0].userId, 'buyer');
   assert.equal(pending.state.user.walletUSD, 100);
+});
+
+test('bundle checkout cannot create enrollment or charge for an unpublished course', async () => {
+  for (const bundleCourseStatus of ['PENDING', 'REJECTED', 'UNPUBLISHED']) {
+    const h = harness({ bundleCourseStatus });
+    const response = await h.routes.bundle(request({ bundleId: 'bundle', paymentMethod: 'WALLET' }));
+    assert.equal(response.status, 404);
+    assert.equal(h.state.user.walletUSD, 100);
+    assert.deepEqual(h.state.enrollments, []);
+    assert.deepEqual(h.state.bundles, []);
+  }
 });

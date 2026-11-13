@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser } from '@/lib/request-user';
+import { walletError } from '@/lib/payments/wallet-operations';
 import { prisma } from '@/lib/db';
 import { assertOwnedDocumentReference } from '@/lib/owned-document';
 import { PrivateFileError } from '@/lib/private-file-storage';
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as any;
-    
-    if (!session || !user || (user.role !== 'INSTRUCTOR' && user.role !== 'ADMIN' && user.role !== 'OWNER')) {
-      return NextResponse.json({ error: 'غير مصرح لك بإجراء هذه العملية' }, { status: 401 });
-    }
+    const user = await requireRequestUser(request, ['INSTRUCTOR', 'ADMIN', 'OWNER']);
 
     const { title, chapterId, type, passingScore, totalMarks, fileUrl, questions } = await request.json();
 
@@ -84,7 +79,6 @@ export async function POST(request: Request) {
     if (error instanceof PrivateFileError) {
       return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
     }
-    console.error('Error creating quiz:', error);
-    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
+    return walletError(error);
   }
 }

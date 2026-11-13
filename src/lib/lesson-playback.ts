@@ -21,7 +21,8 @@ export function isPublicLesson(course: Pick<LessonCourse, 'status' | 'price' | '
 }
 
 export function managesLessonCourse(course: Pick<LessonCourse, 'instructorId'>, viewer?: LessonViewer | null): boolean {
-  return !!viewer && (course.instructorId === viewer.id || ['ADMIN', 'OWNER'].includes(viewer.role ?? ''));
+  return !!viewer && ((viewer.role === 'INSTRUCTOR' && course.instructorId === viewer.id)
+    || ['ADMIN', 'OWNER'].includes(viewer.role ?? ''));
 }
 
 /** Every playback request checks the real lesson relation before exposing a URL

@@ -1,34 +1,31 @@
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
+import { getCourseViewer, managesCourse } from '@/lib/course-access';
+import { publicInstructorSelect } from '@/lib/public-course';
 import LiveInstructorClient from './LiveInstructorClient';
-
-const prisma = new PrismaClient();
 
 export default async function InstructorLiveLessonPage({ params }: { params: Promise<{ courseId: string, lessonId: string }> }) {
   const resolvedParams = await params;
   const { courseId, lessonId } = resolvedParams;
 
-  const session = await getServerSession(authOptions);
-  const user = session?.user as any;
-  if (!session || !user || (user.role !== 'INSTRUCTOR' && user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  const user = await getCourseViewer();
+  if (!user || !['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role)) {
     redirect('/login');
   }
 
   const course = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
-      instructor: true
+      instructor: { select: publicInstructorSelect }
     }
   });
 
-  if (!course || (course.instructorId !== user.id && user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  if (!course || !managesCourse(course, user)) {
     redirect('/instructor/courses');
   }
 
   const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId }
+    where: { id: lessonId, chapter: { courseId } }
   });
 
   if (!lesson || !lesson.isLive) {

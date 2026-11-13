@@ -71,9 +71,42 @@ test('signer fails closed for enabled authentication without key and foreign lib
   assert.throws(() => getUrl(EMBED.replace('/123/', '/999/')), error => error.status === 503);
 });
 
-test('unsigned libraries retain safe embeds and legacy local files', t => {
+test('missing key never falls back to unsigned embeds; safe legacy local files remain supported', t => {
   const getUrl = signer(t, { BUNNY_LIBRARY_ID: '123' });
-  assert.equal(getUrl(EMBED + '?token=stale&expires=1'), EMBED);
+  assert.throws(() => getUrl(EMBED + '?token=stale&expires=1'), error => error.status === 503);
   assert.equal(getUrl('/uploads/existing.mp4'), '/uploads/existing.mp4');
   assert.throws(() => getUrl(EMBED.replace('.net', '.net.evil.test')), error => error.status === 400);
+});
+
+test('disabled flag and blank signing keys cannot downgrade Bunny protection', t => {
+  const getUrl = signer(t, { BUNNY_LIBRARY_ID: '123', BUNNY_STREAM_TOKEN_AUTH_ENABLED: 'false', BUNNY_STREAM_TOKEN_AUTH_KEY: '  ' });
+  assert.throws(() => getUrl(EMBED), error => error.status === 503);
+});
+
+test('signer rejects executable and malformed legacy sources while retaining authorized media references', t => {
+  const getUrl = signer(t);
+  for (const url of ['javascript:alert(1)', 'data:text/html,hello', '//evil.test/video.mp4', 'https://user:pass@legacy.test/video.mp4', '<iframe src="https://evil.test"></iframe>']) {
+    assert.throws(() => getUrl(url), error => error.status === 400);
+  }
+  for (const url of ['/api/files/document.pdf', '/api/attachments/attachment/file', 'https://legacy.test/video.mp4']) {
+    assert.equal(getUrl(url), url);
+  }
+});
+
+test('generated signatures bind the video and expiry and expire after one hour', t => {
+  t.mock.method(Date, 'now', () => 1_800_000_000_000);
+  const key = 'test-only-token-key';
+  const getUrl = signer(t, { BUNNY_LIBRARY_ID: '123', BUNNY_STREAM_TOKEN_AUTH_KEY: key });
+  const signed = new URL(getUrl(EMBED));
+  const expiry = Number(signed.searchParams.get('expires'));
+  const token = signed.searchParams.get('token');
+  const expected = (video, expires) => createHash('sha256').update(key + video + expires).digest('hex');
+  assert.equal(expiry - Date.now() / 1000, 3600);
+  assert.equal(token, expected(VIDEO, expiry));
+  assert.notEqual(token, expected('aaaaaaaa-2222-3333-4444-555555555555', expiry));
+  assert.notEqual(token, expected(VIDEO, expiry + 1));
+  // This checks application token construction, not Bunny's remote enforcement.
+  assert.equal(expiry > Date.now() / 1000, true);
+  t.mock.method(Date, 'now', () => expiry * 1000);
+  assert.equal(expiry > Date.now() / 1000, false);
 });

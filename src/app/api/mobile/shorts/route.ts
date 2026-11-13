@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 export async function GET(request: Request) {
   try {
     const shorts = await prisma.short.findMany({
+      where: { OR: [{ courseId: null }, { course: { status: 'PUBLISHED' } }] },
       include: {
         user: { select: { name: true, image: true, role: true } }
       },
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     const { shortId, action } = await request.json(); // action = 'like'
     if (action === 'like') {
       const short = await prisma.short.update({
-        where: { id: shortId },
+        where: { id: shortId, OR: [{ courseId: null }, { course: { status: 'PUBLISHED' } }] },
         data: { likes: { increment: 1 } }
       });
       return NextResponse.json(short);

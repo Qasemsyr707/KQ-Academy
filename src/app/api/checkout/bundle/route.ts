@@ -20,6 +20,10 @@ export async function POST(req: Request) {
       if (!bundle) throw new CheckoutError(404, 'الحزمة غير موجودة');
       const amount = positiveAmount(bundle.price);
       if (!bundle.courses.length) throw new CheckoutError(400, 'الحزمة لا تحتوي كورسات متاحة');
+      // A bundle must not provide a new enrollment path into hidden courses.
+      if (bundle.courses.some(item => item.course.status !== 'PUBLISHED')) {
+        throw new CheckoutError(404, 'الحزمة غير موجودة');
+      }
       if (!await debitWallet(tx, user.id, 'USD', amount)) throw new CheckoutError(400, 'رصيد المحفظة غير كافٍ');
       await tx.bundlePayment.create({ data: { userId: user.id, bundleId: bundle.id, amount, provider: 'WALLET', status: 'APPROVED' } });
       for (const course of bundle.courses) {

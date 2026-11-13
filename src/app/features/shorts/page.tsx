@@ -4,6 +4,7 @@ import { connection } from 'next/server';
 import { unstable_cache } from 'next/cache';
 
 const getPublicShorts = unstable_cache(() => prisma.short.findMany({
+    where: { OR: [{ courseId: null }, { course: { status: 'PUBLISHED' } }] },
     include: {
       user: { select: { name: true, image: true } },
       course: { select: { title: true, id: true } },
@@ -12,7 +13,7 @@ const getPublicShorts = unstable_cache(() => prisma.short.findMany({
       }
     },
     orderBy: { createdAt: 'desc' }
-  }), ['public-shorts-v1'], { revalidate: 300 });
+  }), ['public-shorts-v2'], { revalidate: 300 });
 
 export default async function ShortsPage() {
   await connection();

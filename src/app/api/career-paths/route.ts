@@ -16,6 +16,7 @@ export async function GET() {
     const paths = await prisma.careerPath.findMany({
       include: {
         courses: {
+          where: { course: { status: 'PUBLISHED' } },
           orderBy: { order: 'asc' },
           include: {
             course: {

@@ -1,56 +1,30 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { requireRequestUser, RequestUserError } from '@/lib/request-user';
+import { claimAffiliateEarnings } from '@/lib/payments/affiliate-claim';
+import { walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 
 // POST /api/affiliate/claim — Transfer pending affiliate earnings to wallet
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
+    let identityRequest = req;
+    if (!req.headers.has('authorization')) {
+      // The existing browser sends a bodyless POST. Require an explicit matching
+      // Origin before using the shared helper only for cookie identity resolution.
+      const configuredUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || req.url;
+      if (req.headers.get('origin') !== new URL(configuredUrl).origin) {
+        throw new RequestUserError(403, 'مصدر الطلب غير مصرح به');
+      }
+      identityRequest = new Request(req.url, { method: 'GET', headers: req.headers });
     }
-
-    // Find all pending earnings for this user
-    const pendingEarnings = await prisma.affiliateEarning.findMany({
-      where: { ownerId: session.user.id, status: 'PENDING' }
-    });
-
-    if (pendingEarnings.length === 0) {
-      return NextResponse.json({ error: 'لا يوجد أرباح معلقة لاسترداد' }, { status: 400 });
-    }
-
-    const totalAmount = pendingEarnings.reduce((sum, e) => sum + e.amount, 0);
-
-    // Atomic transaction: mark as paid + add to wallet
-    await prisma.$transaction([
-      prisma.affiliateEarning.updateMany({
-        where: { ownerId: session.user.id, status: 'PENDING' },
-        data: { status: 'PAID' }
-      }),
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: { walletUSD: { increment: totalAmount } }
-      }),
-      prisma.walletTransaction.create({
-        data: {
-          userId: session.user.id,
-          amount: totalAmount,
-          currency: 'USD',
-          type: 'DEPOSIT',
-          status: 'APPROVED',
-          provider: 'AFFILIATE',
-        }
-      })
-    ]);
+    const user = await requireRequestUser(identityRequest);
+    const totalAmount = await claimAffiliateEarnings(user.id);
 
     return NextResponse.json({
       success: true,
       message: `تم تحويل $${totalAmount.toFixed(2)} إلى محفظتك بنجاح!`,
       amount: totalAmount
-    });
+    }, { headers: WALLET_HEADERS });
   } catch (error) {
-    console.error('Affiliate Claim Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ أثناء التحويل' }, { status: 500 });
+    return walletError(error);
   }
 }

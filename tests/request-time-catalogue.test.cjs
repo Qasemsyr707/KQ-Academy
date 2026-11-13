@@ -20,9 +20,10 @@ const SPECS = [
   },
   {
     name: 'shorts', modulePath: '../src/app/features/shorts/page.tsx', model: 'short',
-    componentImport: './ShortsClient', prop: 'initialShorts', key: 'public-shorts-v1',
+    componentImport: './ShortsClient', prop: 'initialShorts', key: 'public-shorts-v2',
     rows: [{ id: 'short-1', title: 'Educational short', user: { name: 'Teacher', image: null }, course: { title: 'Course', id: 'course-1' }, _count: { comments: 2 } }],
     query: {
+      where: { OR: [{ courseId: null }, { course: { status: 'PUBLISHED' } }] },
       include: { user: { select: { name: true, image: true } }, course: { select: { title: true, id: true } }, _count: { select: { comments: true } } },
       orderBy: { createdAt: 'desc' },
     },

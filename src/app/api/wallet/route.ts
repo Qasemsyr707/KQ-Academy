@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     });
 
     const transactions = await prisma.walletTransaction.findMany({
-      where: { userId: viewer.id },
+      where: { userId: viewer.id, type: { not: 'POINTS_REWARD' } },
       orderBy: { createdAt: 'desc' }
     });
 

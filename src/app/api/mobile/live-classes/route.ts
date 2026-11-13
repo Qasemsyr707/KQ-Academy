@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 export async function GET(request: Request) {
   try {
     const liveClasses = await prisma.liveClass.findMany({
+      where: { course: { status: 'PUBLISHED' } },
       include: {
         instructor: { select: { id: true, name: true, image: true } }
       },
