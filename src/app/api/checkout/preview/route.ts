@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { paymentId } from '@/lib/payments/wallet-operations';
 import { availableCheckoutMethods } from '@/lib/payments/public-checkout';
+import { publicCourseWhere } from '@/lib/catalogue-visibility';
 
 // The response depends on the visitor's session (enrolment flag), so it must never be cached.
 const HEADERS = { 'Cache-Control': 'private, no-store', Vary: 'Cookie' };
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
 
   try {
     const course = await prisma.course.findFirst({
-      where: { id: courseId, status: 'PUBLISHED' },
+      where: publicCourseWhere({ id: courseId }),
       select: {
         id: true,
         title: true,

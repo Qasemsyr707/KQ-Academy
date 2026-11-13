@@ -13,7 +13,7 @@ export default function FinalCta() {
               خطوتك القادمة نحو <span className="text-gold">التميّز</span> تبدأ من هنا
             </h2>
             <p className={styles.ctaText}>
-              المناهج السورية والمهارات المهنية في مكان واحد — أنشئ حسابك وابدأ التعلّم بالسرعة التي تناسبك.
+              المعرفة والمهارات العملية في مكان واحد. أنشئ حسابك وابدأ التعلّم بالسرعة التي تناسبك.
             </p>
             <div className={styles.ctaActions}>
               <Link href="/register" className="btn btn-solid btn-lg">

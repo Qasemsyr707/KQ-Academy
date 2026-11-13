@@ -217,7 +217,7 @@ export default function StudyRoomsPage() {
                   type="text" 
                   value={newRoomTitle}
                   onChange={e => setNewRoomTitle(e.target.value)}
-                  placeholder="مثال: نقاش فيزياء البكالوريا..."
+                  placeholder="مثال: نقاش أساسيات البرمجة..."
                   style={{ width: '100%', padding: '1rem', background: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', outline: 'none' }}
                   autoFocus
                 />

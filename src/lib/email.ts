@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_test_key');
 
-const APP_NAME = 'منصة التعلم السوري';
+const APP_NAME = 'KQ Academy';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@elearning.sy';
 

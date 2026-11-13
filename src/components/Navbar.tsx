@@ -23,14 +23,15 @@ type NotificationItem = {
 
 type SessionUserWithRole = { role?: string };
 
-const navLinks = [
+const baseNavLinks = [
   { href: '/', label: 'الرئيسية', icon: Home },
   { href: '/courses', label: 'الكورسات', icon: BookOpen },
-  { href: '/curriculum', label: 'المنهاج الدراسي', icon: GraduationCap },
   { href: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
   { href: '/instructor', label: 'المدربون', icon: Briefcase },
   { href: '/community', label: 'المجتمع', icon: Users },
 ];
+
+const curriculumLink = { href: '/curriculum', label: 'المنهاج الدراسي', icon: GraduationCap };
 
 const advancedLinks = [
   { href: '/verify', label: 'التحقق من شهادة', emoji: '📜' },
@@ -44,7 +45,9 @@ const advancedLinks = [
   { href: '/features/shorts', label: 'الفيديوهات القصيرة', emoji: '🎬' },
 ];
 
-export default function Navbar() {
+export default function Navbar({ showCurriculum = false }: { showCurriculum?: boolean }) {
+  // The curriculum entry returns with the catalogue switch (see catalogue-visibility.ts).
+  const navLinks = showCurriculum ? [...baseNavLinks.slice(0, 2), curriculumLink, ...baseNavLinks.slice(2)] : baseNavLinks;
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [showDropdown, setShowDropdown] = useState(false);

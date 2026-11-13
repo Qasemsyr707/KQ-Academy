@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Node's CommonJS test runner. */
+// Pins the publication rule; the temporary curriculum switch is tested in catalogue-search.test.cjs.
+process.env.KQ_HIDE_CURRICULUM = 'false';
 const assert = require('node:assert/strict');
 const { test, beforeEach, afterEach } = require('node:test');
 const { loadTs } = require('./load-ts.cjs');

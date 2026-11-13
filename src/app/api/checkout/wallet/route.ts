@@ -4,6 +4,7 @@ import { CheckoutError } from '@/lib/payments/checkout-context';
 import { withPaymentTransaction } from '@/lib/payments/transactions';
 import { debitWallet, paymentBody, paymentId, positiveAmount, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 import { notifyEnrollment } from '@/lib/notifications';
+import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 
 export async function POST(req: Request) {
   try {
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
       const existing = await tx.enrollment.findUnique({ where: { userId_courseId: { userId: user.id, courseId } } });
       if (existing) return;
       const course = await tx.course.findUnique({ where: { id: courseId } });
-      if (!course || course.status !== 'PUBLISHED') throw new CheckoutError(404, 'الكورس غير متاح للشراء');
+      if (!course || !isPubliclyOffered(course)) throw new CheckoutError(404, 'الكورس غير متاح للشراء');
       let currency: 'USD' | 'SYP' = paymentCurrency;
       let amount = positiveAmount(paymentCurrency === 'USD' ? course.price : course.priceSYP);
       let couponId: string | undefined;

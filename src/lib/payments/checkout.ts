@@ -9,6 +9,7 @@ import { amountInMinorUnits, CheckoutError, readCheckoutContext, type CheckoutCo
 import { withPaymentTransaction } from './transactions';
 import { checkoutAvailable } from './availability';
 import { adminRecipients, notify } from '@/lib/notifications';
+import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 
 export const PAYMENT_HEADERS = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 const PROVIDERS = ['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'MANUAL'];
@@ -68,7 +69,7 @@ async function startCheckout(req: Request, channel: 'web' | 'mobile') {
   if (switchSetting?.value === 'false') throw new CheckoutError(403, 'طريقة الدفع المختارة غير مفعّلة');
 
   const course = await prisma.course.findUnique({ where: { id: courseId } });
-  if (!course || course.status !== 'PUBLISHED') throw new CheckoutError(404, 'الكورس غير متاح للشراء');
+  if (!course || !isPubliclyOffered(course)) throw new CheckoutError(404, 'الكورس غير متاح للشراء');
   let amount = currency === 'SYP' ? course.priceSYP : course.price;
   let couponId: string | undefined;
   if (body.couponCode !== undefined) {

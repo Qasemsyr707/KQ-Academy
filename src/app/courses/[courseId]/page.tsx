@@ -7,6 +7,7 @@ import { getBunnyPlaybackUrl } from '@/lib/bunny-playback';
 import { serializeJsonLd } from '@/lib/safe-json-ld';
 import { getCourseAccess, getCourseViewer } from '@/lib/course-access';
 import { publicCourseDetailsSelect } from '@/lib/public-course';
+import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 
 export async function generateMetadata({ params }: { params: Promise<{ courseId: string }> }): Promise<Metadata> {
   try {
@@ -14,23 +15,23 @@ export async function generateMetadata({ params }: { params: Promise<{ courseId:
     const course = await prisma.course.findUnique({
       where: { id: resolvedParams.courseId },
       select: {
-        id: true, title: true, category: true, thumbnail: true, status: true, instructorId: true,
+        id: true, title: true, category: true, type: true, thumbnail: true, status: true, instructorId: true,
         instructor: { select: { name: true } },
       }
     });
 
-    if (!course || (course.status !== 'PUBLISHED'
+    if (!course || (!isPubliclyOffered(course)
       && !(await getCourseAccess(course, await getCourseViewer())).canView)) {
       return { title: 'كورس غير موجود | KQ Academy' };
     }
 
-    const title = `${course.title} - أفضل كورس في سوريا والوطن العربي | KQ Academy`;
-    const description = `تعلم ${course.title} مع ${course.instructor.name}. كورس احترافي معتمد في سوريا، الأردن، العراق، والسعودية. احصل على شهادة معتمدة وابدأ رحلتك المهنية الآن.`;
+    const title = `${course.title} | KQ Academy`;
+    const description = `تعلّم ${course.title} مع ${course.instructor.name} على KQ Academy. محتوى عملي منظّم تتابعه في الوقت الذي يناسبك، مع شهادة إتمام قابلة للتحقق.`;
     
     return {
       title,
       description,
-      keywords: [course.title, course.category, 'كورس', 'دورة', 'سوريا', 'الأردن', 'العراق', 'السعودية', 'الخليج', 'تعلم', 'أونلاين', course.instructor.name, 'KQ Academy'],
+      keywords: [course.title, course.category, 'كورس', 'دورة', 'تعلّم', 'أونلاين', course.instructor.name, 'KQ Academy'],
       openGraph: {
         title,
         description,
@@ -108,7 +109,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
       "@context": "https://schema.org",
       "@type": "Course",
       "name": displayCourse.title,
-      "description": displayCourse.description || `أفضل كورس لتعلم ${displayCourse.title} في سوريا والوطن العربي.`,
+      "description": displayCourse.description || `تعلّم ${displayCourse.title} على KQ Academy بخطوات واضحة وفي الوقت الذي يناسبك.`,
       "provider": {
         "@type": "Organization",
         "name": "KQ Academy",

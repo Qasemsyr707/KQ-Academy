@@ -495,3 +495,56 @@
     display: none;
   }
 }
+
+/* ----- Search suggestions ----- */
+.search {
+  position: relative;
+}
+
+.suggestions {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 30;
+  margin: 0;
+  padding: 0.4rem;
+  list-style: none;
+  text-align: start;
+  border-radius: 16px;
+  border: 1px solid var(--line-2);
+  background: var(--ink-3);
+  box-shadow: var(--shadow-md);
+  max-height: min(60vh, 22rem);
+  overflow-y: auto;
+}
+
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.suggestion:hover,
+.suggestion:focus-visible {
+  background: var(--gold-soft, rgba(201, 164, 92, 0.14));
+  outline: none;
+}
+
+.suggestionLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestionKind {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}

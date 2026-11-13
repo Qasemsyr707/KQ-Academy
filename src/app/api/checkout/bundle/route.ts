@@ -3,6 +3,7 @@ import { requireRequestUser } from '@/lib/request-user';
 import { CheckoutError } from '@/lib/payments/checkout-context';
 import { withPaymentTransaction } from '@/lib/payments/transactions';
 import { debitWallet, paymentBody, paymentId, positiveAmount, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
+import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 
 export async function POST(req: Request) {
   try {
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
       const amount = positiveAmount(bundle.price);
       if (!bundle.courses.length) throw new CheckoutError(400, 'الحزمة لا تحتوي كورسات متاحة');
       // A bundle must not provide a new enrollment path into hidden courses.
-      if (bundle.courses.some(item => item.course.status !== 'PUBLISHED')) {
+      if (bundle.courses.some(item => !isPubliclyOffered(item.course))) {
         throw new CheckoutError(404, 'الحزمة غير موجودة');
       }
       if (!await debitWallet(tx, user.id, 'USD', amount)) throw new CheckoutError(400, 'رصيد المحفظة غير كافٍ');

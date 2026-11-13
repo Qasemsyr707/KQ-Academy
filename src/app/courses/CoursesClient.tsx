@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, BookOpen, Star, User, X, SlidersHorizontal, ArrowUpDown, Tag } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import CourseCard from '@/components/ui/CourseCard';
 import { backdrop, drawerFromStart, fadeUp } from '@/lib/motion';
 import styles from './Courses.module.css';
-import { formatNumber } from '@/lib/format';
+import { coursePriceLabel } from '@/lib/format';
 
 type CatalogCourse = {
   id: string;
@@ -15,6 +16,7 @@ type CatalogCourse = {
   description?: string | null;
   category?: string | null;
   thumbnail?: string | null;
+  price?: number;
   priceSYP: number;
   rating: number;
   instructor: { name: string | null; image?: string | null };
@@ -25,6 +27,11 @@ type Props = {
   featuredCourses?: CatalogCourse[];
   categories?: string[];
   instructors?: string[];
+  /** Total matches on the server for the initial (URL) filters. */
+  initialTotal?: number;
+  initialHasMore?: boolean;
+  /** The curriculum type filter exists only while that catalogue is public. */
+  showTypeFilter?: boolean;
   /** Optional page heading overrides (used by /curriculum). */
   eyebrow?: ReactNode;
   heading?: ReactNode;
@@ -36,6 +43,9 @@ export default function CoursesClient({
   featuredCourses = [],
   categories = [],
   instructors = [],
+  initialTotal,
+  initialHasMore = false,
+  showTypeFilter = false,
   eyebrow = 'اكتشف كورسك القادم',
   heading = <>البحث <span className="text-gold">المتقدم</span></>,
   description,
@@ -45,7 +55,16 @@ export default function CoursesClient({
   const searchParams = useSearchParams();
 
   const [courses, setCourses] = useState(initialCourses);
+  const [total, setTotal] = useState(initialTotal ?? initialCourses.length);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<{ type: string; label: string; href: string }[]>([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  // The server already rendered the results for the URL's filters.
+  const firstRun = useRef(true);
+  const requestId = useRef(0);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Filters State
@@ -55,40 +74,82 @@ export default function CoursesClient({
   const [price, setPrice] = useState(searchParams.get('price') || 'الكل');
   const [rating, setRating] = useState(searchParams.get('rating') || 'الكل');
   const [instructor, setInstructor] = useState(searchParams.get('instructor') || 'الكل');
-  const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
+  const [sort, setSort] = useState(searchParams.get('sort') || 'auto');
 
-  // Trigger search when filters change (400ms debounce)
+  const buildParams = () => {
+    const params = new URLSearchParams();
+    if (q.trim()) params.set('q', q.trim());
+    if (category && category !== 'الكل') params.set('category', category);
+    if (showTypeFilter && type && type !== 'الكل') params.set('type', type);
+    if (price && price !== 'الكل') params.set('price', price);
+    if (rating && rating !== 'الكل') params.set('rating', rating);
+    if (instructor && instructor !== 'الكل') params.set('instructor', instructor);
+    if (sort && sort !== 'auto') params.set('sort', sort);
+    return params;
+  };
+
+  // Search when filters change (300ms debounce). Stale responses are ignored.
   useEffect(() => {
-    const fetchCourses = async () => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    const id = ++requestId.current;
+    const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (q) params.set('q', q);
-        if (category && category !== 'الكل') params.set('category', category);
-        if (type && type !== 'الكل') params.set('type', type);
-        if (price && price !== 'الكل') params.set('price', price);
-        if (rating && rating !== 'الكل') params.set('rating', rating);
-        if (instructor && instructor !== 'الكل') params.set('instructor', instructor);
-        if (sort && sort !== 'newest') params.set('sort', sort);
-
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-
-        const res = await fetch(`/api/courses/search?${params.toString()}`);
-        if (res.ok) {
+        const params = buildParams();
+        const query = params.toString();
+        // The URL always reflects the search, so back/forward and sharing keep it.
+        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+        const res = await fetch(`/api/courses/search?${query}`);
+        if (res.ok && id === requestId.current) {
           const data = await res.json();
           setCourses(data.courses);
+          setTotal(data.total ?? data.courses.length);
+          setHasMore(Boolean(data.hasMore));
+          setPage(1);
         }
       } catch (error) {
         console.error('Failed to fetch courses:', error);
       }
-      setLoading(false);
-    };
-
-    const delayDebounceFn = setTimeout(() => {
-      fetchCourses();
-    }, 400);
-    return () => clearTimeout(delayDebounceFn);
+      if (id === requestId.current) setLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, category, type, price, rating, instructor, sort, router, pathname]);
+
+  // Instant suggestions while typing.
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) { setSuggestions([]); return; }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/courses/suggest?q=${encodeURIComponent(term)}`, { signal: controller.signal });
+        if (res.ok) setSuggestions((await res.json()).suggestions || []);
+      } catch { /* aborted or offline: no suggestions */ }
+    }, 180);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [q]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const params = buildParams();
+      params.set('page', String(page + 1));
+      const res = await fetch(`/api/courses/search?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCourses(current => [...current, ...data.courses.filter((c: CatalogCourse) => !current.some(x => x.id === c.id))]);
+        setHasMore(Boolean(data.hasMore));
+        setPage(page + 1);
+      }
+    } catch (error) {
+      console.error('Failed to load more courses:', error);
+    }
+    setLoadingMore(false);
+  };
+
+  const activeFilters = [category, price, rating, instructor].filter(value => value !== 'الكل').length
+    + (showTypeFilter && type !== 'الكل' ? 1 : 0) + (q.trim() ? 1 : 0);
 
   // Escape closes the mobile filters; page scroll is locked while open.
   useEffect(() => {
@@ -112,7 +173,7 @@ export default function CoursesClient({
     setPrice('الكل');
     setRating('الكل');
     setInstructor('الكل');
-    setSort('newest');
+    setSort('auto');
   };
 
   const renderFilters = (idPrefix: string) => (
@@ -137,6 +198,7 @@ export default function CoursesClient({
         </select>
       </div>
 
+      {showTypeFilter && (
       <fieldset className={styles.filterGroup}>
         <legend className={styles.filterLabel} style={{ marginBottom: '0.75rem' }}>
           <Filter size={18} aria-hidden="true" /> نوع الكورس
@@ -150,6 +212,7 @@ export default function CoursesClient({
           ))}
         </div>
       </fieldset>
+      )}
 
       <fieldset className={styles.filterGroup}>
         <legend className={styles.filterLabel} style={{ marginBottom: '0.75rem' }}>
@@ -179,13 +242,13 @@ export default function CoursesClient({
         </div>
       </fieldset>
 
-      <button type="button" onClick={clearFilters} className={`btn ${styles.clear}`}>
-        مسح جميع الفلاتر
+      <button type="button" onClick={clearFilters} className={`btn ${styles.clear}`} disabled={activeFilters === 0}>
+        إعادة ضبط الفلاتر{activeFilters > 0 ? ` (${activeFilters})` : ''}
       </button>
     </div>
   );
 
-  const showFeatured = featuredCourses.length > 0 && !q && category === 'الكل' && type === 'الكل';
+  const showFeatured = featuredCourses.length > 0 && activeFilters === 0;
 
   return (
     <div className={styles.page}>
@@ -210,15 +273,35 @@ export default function CoursesClient({
             type="search"
             placeholder="ابحث عن كورس، مدرب، أو مهارة..."
             value={q}
-            onChange={e => setQ(e.target.value)}
+            onChange={e => { setQ(e.target.value); setSuggestOpen(true); }}
+            onFocus={() => setSuggestOpen(true)}
+            onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+            onKeyDown={e => { if (e.key === 'Escape' || e.key === 'Enter') setSuggestOpen(false); }}
             className={styles.searchInput}
             autoComplete="off"
             enterKeyHint="search"
+            role="combobox"
+            aria-expanded={suggestOpen && suggestions.length > 0}
+            aria-controls="catalog-suggestions"
+            aria-autocomplete="list"
           />
           {q ? (
             <button type="button" className={styles.clearSearch} onClick={() => setQ('')} aria-label="مسح البحث">
               <X size={18} aria-hidden="true" />
             </button>
+          ) : null}
+          {suggestOpen && suggestions.length > 0 ? (
+            <ul id="catalog-suggestions" className={styles.suggestions} role="listbox" aria-label="اقتراحات البحث">
+              {suggestions.map(item => (
+                <li key={item.href} role="option" aria-selected="false">
+                  <Link href={item.href} className={styles.suggestion} onMouseDown={e => e.preventDefault()} onClick={() => setSuggestOpen(false)}>
+                    {item.type === 'category' ? <Tag size={15} aria-hidden="true" /> : <BookOpen size={15} aria-hidden="true" />}
+                    <span className={styles.suggestionLabel}>{item.label}</span>
+                    {item.type === 'category' ? <span className={styles.suggestionKind}>قسم</span> : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           ) : null}
         </div>
       </header>
@@ -246,7 +329,7 @@ export default function CoursesClient({
                 instructorName={course.instructor?.name}
                 instructorImage={course.instructor?.image}
                 rating={course.rating}
-                price={course.priceSYP > 0 ? `${formatNumber(course.priceSYP)} ل.س` : null}
+                price={coursePriceLabel(course)}
               />
             ))}
           </div>
@@ -280,7 +363,7 @@ export default function CoursesClient({
                 </div>
                 {renderFilters('mobile')}
                 <button type="button" className={`btn btn-solid ${styles.drawerApply}`} onClick={() => setIsMobileFiltersOpen(false)}>
-                  عرض النتائج ({courses.length})
+                  عرض النتائج ({total})
                 </button>
               </motion.div>
             </div>
@@ -304,7 +387,7 @@ export default function CoursesClient({
                 {loading ? (
                   <><span className="loader" style={{ width: 16, height: 16 }} aria-hidden="true" /> جاري البحث...</>
                 ) : (
-                  <>وجدنا <strong className="num">{courses.length}</strong> كورس</>
+                  <>وجدنا <strong className="num">{total}</strong> كورس</>
                 )}
               </h2>
             </div>
@@ -312,7 +395,8 @@ export default function CoursesClient({
             <div className={styles.sort}>
               <ArrowUpDown size={18} aria-hidden="true" />
               <label htmlFor="catalog-sort" className={styles.sortLabel}>ترتيب حسب:</label>
-              <select id="catalog-sort" value={sort} onChange={e => setSort(e.target.value)} className={`input-field ${styles.sortSelect}`}>
+              <select id="catalog-sort" value={sort === 'auto' || (sort === 'relevance' && !q.trim()) ? (q.trim() ? 'relevance' : 'newest') : sort} onChange={e => setSort(e.target.value)} className={`input-field ${styles.sortSelect}`}>
+                {q.trim() ? <option value="relevance">الأكثر صلة</option> : null}
                 <option value="newest">الأحدث إضافة</option>
                 <option value="rating">الأعلى تقييماً</option>
                 <option value="price_asc">السعر: الأقل للأعلى</option>
@@ -328,7 +412,10 @@ export default function CoursesClient({
             <div className={styles.empty}>
               <span className={styles.emptyIcon} aria-hidden="true"><BookOpen size={40} /></span>
               <h3 className={styles.emptyTitle}>لم نجد أي كورسات تطابق بحثك</h3>
-              <p className={styles.emptyText}>جرب تخفيف الفلاتر أو تغيير مصطلحات البحث.</p>
+              <p className={styles.emptyText}>
+                {q.trim() ? <>لا توجد نتائج لـ «{q.trim()}». </> : null}
+                جرّب كلمة أقصر أو تهجئة أخرى، أو أزل بعض الفلاتر.
+              </p>
               <button type="button" onClick={clearFilters} className="btn btn-solid" style={{ marginTop: '0.75rem' }}>إظهار كل الكورسات</button>
             </div>
           ) : (
@@ -355,13 +442,20 @@ export default function CoursesClient({
                       instructorImage={course.instructor?.image}
                       rating={course.rating}
                       priority={idx < 3 && !showFeatured}
-                      price={course.priceSYP > 0 ? `${formatNumber(course.priceSYP)} ل.س` : null}
+                      price={coursePriceLabel(course)}
                     />
                   </motion.div>
                 ))}
               </AnimatePresence>
             </div>
           )}
+          {hasMore && !loading && courses.length > 0 ? (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
+              <button type="button" className="btn btn-outline" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? 'جاري التحميل...' : `عرض المزيد (${total - courses.length})`}
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
