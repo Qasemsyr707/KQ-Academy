@@ -17,6 +17,8 @@ export interface CourseCompletion {
   progress: number;
   /** Every lesson completed and every quiz passed (and the course is not empty). */
   complete: boolean;
+  /** When the last requirement was met (null until the course is complete). */
+  completedAt: Date | null;
 }
 
 /**
@@ -32,22 +34,25 @@ export async function getCourseCompletion(db: Db, userId: string, courseId: stri
   const lessonIds = chapters.flatMap(chapter => chapter.lessons.map(lesson => lesson.id));
   const quizIds = chapters.flatMap(chapter => chapter.quizzes.map(quiz => quiz.id));
   const totalItems = lessonIds.length + quizIds.length;
-  if (totalItems === 0) return { completedItemIds: [], totalItems: 0, progress: 0, complete: false };
+  if (totalItems === 0) return { completedItemIds: [], totalItems: 0, progress: 0, complete: false, completedAt: null };
 
   const [doneLessons, passedQuizzes] = await Promise.all([
     lessonIds.length ? db.lessonProgress.findMany({
-      where: { userId, lessonId: { in: lessonIds } }, select: { lessonId: true },
+      where: { userId, lessonId: { in: lessonIds } }, select: { lessonId: true, completedAt: true },
     }) : [],
+    // The first passing attempt is when a quiz requirement was met.
     quizIds.length ? db.quizAttempt.findMany({
       where: { userId, quizId: { in: quizIds }, passed: true, status: 'COMPLETED' },
-      select: { quizId: true }, distinct: ['quizId'],
+      select: { quizId: true, createdAt: true }, distinct: ['quizId'], orderBy: { createdAt: 'asc' },
     }) : [],
   ]);
   const completedItemIds = [...doneLessons.map(row => row.lessonId), ...passedQuizzes.map(row => row.quizId)];
   const complete = completedItemIds.length === totalItems;
   // Never show 100% unless every item is really done.
   const progress = complete ? 100 : Math.min(99, Math.round((completedItemIds.length / totalItems) * 100));
-  return { completedItemIds, totalItems, progress, complete };
+  const moments = [...doneLessons.map(row => row.completedAt.getTime()), ...passedQuizzes.map(row => row.createdAt.getTime())];
+  const completedAt = complete ? new Date(Math.max(...moments)) : null;
+  return { completedItemIds, totalItems, progress, complete, completedAt };
 }
 
 /** Store the recalculated percentage on the enrollment (dashboard, reminders). */

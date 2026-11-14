@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import { prisma } from '@/lib/db';
 import { generateCertificateBuffer } from '@/lib/certificate';
-import { certificateHours, isLegacyCertificate, publicReference, resolveCertificate } from '@/lib/certificate-access';
+import { certificateDates, certificateHours, isLegacyCertificate, publicReference, resolveCertificate } from '@/lib/certificate-access';
 import { limitRequest, RATE_RULES } from '@/lib/rate-limit';
 import { getCourseViewer } from '@/lib/course-access';
-
-const day = (value: Date) => new Date(value).toLocaleDateString('en-GB', { timeZone: 'UTC' });
 
 /** Shared PNG/PDF delivery. A bare certificate number only works for its owner or staff. */
 export async function certificateDocument(req: Request, reference: string, format: 'png' | 'pdf') {
@@ -20,19 +18,18 @@ export async function certificateDocument(req: Request, reference: string, forma
     }
     const { certificate } = found;
     const legacy = isLegacyCertificate(certificate);
-    // Original certificates keep the start date the original system used (course
-    // creation); new ones use the student's own enrollment date.
-    const enrollment = legacy ? null : await prisma.enrollment.findUnique({
+    // Both kinds use stored facts only: the student's enrollment and the issue date.
+    const enrollment = await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId: certificate.userId, courseId: certificate.courseId } }, select: { createdAt: true },
     });
+    const dates = certificateDates(certificate.issuedAt, enrollment?.createdAt);
     const png = await generateCertificateBuffer({
       template: legacy ? 'legacy' : 'v2',
       studentName: certificate.studentName,
       courseName: certificate.courseName,
-      startDate: day(enrollment?.createdAt ?? certificate.course.createdAt),
-      endDate: day(certificate.issuedAt),
+      courseDate: dates.courseDate,
       durationHours: certificateHours(certificate, certificate.course),
-      issueDate: day(certificate.issuedAt),
+      issueDate: dates.issueDate,
       certificateNumber: certificate.certificateNumber || certificate.id,
       verifyReference: publicReference(certificate),
     });

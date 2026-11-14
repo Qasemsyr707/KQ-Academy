@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Node test runner. */
 const fs = require('node:fs');
 const path = require('node:path');
 const Module = require('node:module');
@@ -9,7 +10,7 @@ const EVENT_STUBS = {
     adminRecipients: async () => [], notificationLink: value => value,
   },
   '@/lib/course-progress': {
-    syncEnrollmentProgress: async () => ({ completedItemIds: [], totalItems: 0, progress: 0, complete: false }),
+    syncEnrollmentProgress: async () => ({ completedItemIds: [], totalItems: 0, progress: 0, complete: false, completedAt: null }),
     enrollInFreeCourse: async () => false,
   },
 };

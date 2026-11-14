@@ -23,6 +23,32 @@ const LAYOUT = {
 
 type TextSlot = { cx: number; cy: number; maxWidth: number; size: number; color: string; spacing?: number };
 
+/**
+ * Dates, numbers and the address contain no letter that fixes their direction,
+ * and the Linux text engine laid "start - end" out right-to-left (reversing the
+ * two dates). A leading LEFT-TO-RIGHT MARK fixes the direction of these fields.
+ * Names keep automatic direction (Arabic right-to-left, Latin left-to-right).
+ */
+const LRM = '\u200E';
+
+export interface CertificateText { slot: keyof typeof LAYOUT; text: string }
+
+/** The exact text of every field, in drawing order (pure: used by tests). */
+export function certificateFields(data: CertificateData): CertificateText[] {
+  const fields: CertificateText[] = [
+    { slot: 'studentName', text: data.studentName },
+    { slot: 'courseName', text: data.courseName },
+    { slot: 'courseDate', text: LRM + data.courseDate },
+  ];
+  if (data.durationHours) fields.push({ slot: 'duration', text: `${LRM}( ${data.durationHours} h )` });
+  fields.push(
+    { slot: 'website', text: `${LRM}www.kqacademy.com` },
+    { slot: 'issueDate', text: LRM + data.issueDate },
+    { slot: 'certNumber', text: LRM + data.certificateNumber },
+  );
+  return fields;
+}
+
 // The font ships with the application: the production image has no system
 // fonts, which rendered every field as empty boxes. Amiri covers Arabic and
 // Latin, and Pango shapes and orders right-to-left text correctly.
@@ -64,20 +90,22 @@ const TEMPLATES = {
   legacy: 'kq-academy-certificate-legacy.png',
 } as const;
 
-export async function generateCertificateBuffer(data: {
+export interface CertificateData {
   /** 'legacy' for certificates issued by the original system (template 1.0). */
   template?: keyof typeof TEMPLATES;
   studentName: string;
   courseName: string;
-  startDate: string;
-  endDate: string;
+  /** Already formatted, e.g. "01/05/2025 - 01/06/2025" or "Completed by 01/06/2025". */
+  courseDate: string;
   /** Null when the course has no real duration: nothing is printed. */
   durationHours: number | null;
   issueDate: string;
   certificateNumber: string;
   /** Unguessable public reference encoded in the QR code. */
   verifyReference: string;
-}): Promise<Buffer> {
+}
+
+export async function generateCertificateBuffer(data: CertificateData): Promise<Buffer> {
   try {
     const templatePath = path.join(process.cwd(), 'public', 'templates', TEMPLATES[data.template ?? 'v2']);
     if (!fs.existsSync(templatePath)) {
@@ -85,15 +113,7 @@ export async function generateCertificateBuffer(data: {
     }
     if (!fs.existsSync(FONT_FILE)) throw new Error(`Certificate font not found at ${FONT_FILE}`);
 
-    const texts = await Promise.all([
-      renderText(data.studentName, LAYOUT.studentName),
-      renderText(data.courseName, LAYOUT.courseName),
-      renderText(`${data.startDate} - ${data.endDate}`, LAYOUT.courseDate),
-      data.durationHours ? renderText(`( ${data.durationHours} h )`, LAYOUT.duration) : null,
-      renderText('www.kqacademy.com', LAYOUT.website),
-      renderText(data.issueDate, LAYOUT.issueDate),
-      renderText(data.certificateNumber, LAYOUT.certNumber),
-    ]);
+    const texts = await Promise.all(certificateFields(data).map(field => renderText(field.text, LAYOUT[field.slot] as TextSlot)));
 
     const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.kqacademy.com').replace(/\/+$/, '');
     const qrCodeBuffer = await QRCode.toBuffer(`${base}/verify/${data.verifyReference}`, {

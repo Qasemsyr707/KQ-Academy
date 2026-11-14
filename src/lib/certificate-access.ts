@@ -70,6 +70,23 @@ export function certificateHours(certificate: Pick<Certificate, 'courseDuration'
   return typeof hours === 'number' && Number.isFinite(hours) && hours > 0 ? Math.round(hours * 10) / 10 : null;
 }
 
+const utcDay = (value: Date) => new Date(value).toLocaleDateString('en-GB', { timeZone: 'UTC' });
+
+/**
+ * The dates printed on a certificate, taken from stored facts only:
+ * - issue date: the certificate's own issuedAt;
+ * - course period: from the student's recorded enrollment to the issue date,
+ *   shown only when that enrollment exists and is not later than the issue date.
+ * When the start is unknown nothing is invented: the period reads
+ * "Completed by <issue date>". The course's creation date (it changes when a
+ * course is re-created or restored) and the current date are never used.
+ */
+export function certificateDates(issuedAt: Date, enrolledAt?: Date | null): { courseDate: string; issueDate: string } {
+  const issueDate = utcDay(issuedAt);
+  const start = enrolledAt && new Date(enrolledAt).getTime() <= new Date(issuedAt).getTime() ? utcDay(enrolledAt) : null;
+  return { issueDate, courseDate: start ? `${start} - ${issueDate}` : `Completed by ${issueDate}` };
+}
+
 export const certificateUrls = (reference: string) => ({
   verify: `/verify/${reference}`,
   png: `/api/certificates/${reference}/png`,

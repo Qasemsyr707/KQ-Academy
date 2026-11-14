@@ -55,6 +55,9 @@ export async function issueCertificate(userId: string, courseId: unknown) {
         const created = await tx.certificate.create({
           data: {
             userId, courseId, certificateNumber, verifyToken, templateVersion: '2.0',
+            // Never dated before the moment the last requirement was met, even if the
+            // application and database clocks disagree.
+            issuedAt: new Date(Math.max(Date.now(), completion.completedAt?.getTime() ?? 0)),
             studentName: student.name!.trim(), courseName: course.title,
             // The course's real duration at issue time; 0 = unknown, never an invented default.
             courseDuration: course.durationHours && course.durationHours > 0 ? Math.round(course.durationHours) : 0,

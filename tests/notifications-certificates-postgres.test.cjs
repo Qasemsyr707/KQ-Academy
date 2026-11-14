@@ -226,3 +226,40 @@ test('PostgreSQL: certificate numbers can be guessed, so they reveal little; the
   // Its old number still verifies (limited), so printed certificates are not broken.
   assert.equal((await access.resolveCertificate(legacy.certificateNumber, null)).access, 'limited');
 });
+
+test('PostgreSQL: a certificate is never dated before the course requirements were met', { skip, timeout: 60000 }, async t => {
+  const prisma = createTestPrisma();
+  const { progress, certificates } = load(prisma);
+  const access = loadTs('../src/lib/certificate-access.ts', { '@/lib/db': { prisma } });
+  const { ids, cleanup } = await fixture(prisma);
+  t.after(async () => { try { await cleanup(); } finally { await prisma.$disconnect(); } });
+
+  await prisma.enrollment.create({ data: { userId: ids.student, courseId: ids.course } });
+  await progress.completeLessons(ids.student, ids.course, ids.lessons);
+  await prisma.quizAttempt.create({ data: { userId: ids.student, quizId: ids.quiz, score: 2, passed: true, status: 'COMPLETED' } });
+  // The last requirement is recorded as met in the future (e.g. the database clock
+  // is ahead of the application server). The certificate must not predate it.
+  const metAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+  await prisma.lessonProgress.update({ where: { userId_lessonId: { userId: ids.student, lessonId: ids.lessons[2] } }, data: { completedAt: metAt } });
+  const completion = await progress.getCourseCompletion(prisma, ids.student, ids.course);
+  assert.equal(completion.complete, true);
+  assert.equal(completion.completedAt.getTime(), metAt.getTime());
+
+  const { certificate } = await certificates.issueCertificate(ids.student, ids.course);
+  assert.ok(certificate.issuedAt.getTime() >= metAt.getTime(), `${certificate.issuedAt.toISOString()} < ${metAt.toISOString()}`);
+
+  // Every recorded requirement is at or before the issue date.
+  const lessons = await prisma.lessonProgress.findMany({ where: { userId: ids.student, courseId: ids.course } });
+  const quizzes = await prisma.quizAttempt.findMany({ where: { userId: ids.student, passed: true } });
+  for (const moment of [...lessons.map(l => l.completedAt), ...quizzes.map(q => q.createdAt)]) {
+    assert.ok(moment.getTime() <= certificate.issuedAt.getTime());
+  }
+  // The printed period is consistent: it starts at the enrollment and ends at the issue date.
+  const enrollment = await prisma.enrollment.findUniqueOrThrow({ where: { userId_courseId: { userId: ids.student, courseId: ids.course } } });
+  const dates = access.certificateDates(certificate.issuedAt, enrollment.createdAt);
+  const [start, end] = dates.courseDate.split(' - ');
+  const parse = value => { const [d, m, y] = value.split('/').map(Number); return Date.UTC(y, m - 1, d); };
+  assert.ok(parse(start) <= parse(end), dates.courseDate);
+  assert.equal(end, dates.issueDate);
+});
+
