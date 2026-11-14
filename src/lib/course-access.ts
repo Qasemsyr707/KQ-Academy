@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { requireRequestUser, RequestUserError } from '@/lib/request-user';
+import { readAuthorization, requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 
 export interface CourseViewer { id: string; role: string }
@@ -9,7 +9,8 @@ interface CourseAccessRecord { id: string; instructorId: string; status: string;
 
 /** Session/JWT role claims are not an authorization source. */
 export async function getCourseViewer(req?: Request): Promise<CourseViewer | null> {
-  if (req?.headers.has('authorization')) {
+  // Only an application credential (mobile Bearer) replaces the session cookie.
+  if (req && readAuthorization(req.headers).kind !== 'none') {
     try {
       const user = await requireRequestUser(req);
       return { id: user.id, role: user.role };

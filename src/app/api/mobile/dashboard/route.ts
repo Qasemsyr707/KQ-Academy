@@ -3,15 +3,17 @@ import { prisma } from '@/lib/db';
 import jwt from 'jsonwebtoken';
 import { protectCourseLessonSources } from '@/lib/lesson-links';
 import { certificateUrls, publicReference } from '@/lib/certificate-access';
+import { readAuthorization } from '@/lib/request-user';
 
 export async function GET(req: Request) {
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Mobile-only endpoint: a Bearer token is required.
+    const authorization = readAuthorization(req.headers);
+    if (authorization.kind !== 'bearer') {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authorization.token;
     const secret = process.env.NEXTAUTH_SECRET;
     if (!secret) return NextResponse.json({ error: 'خدمة تسجيل الدخول غير متاحة حالياً' }, { status: 503 });
     

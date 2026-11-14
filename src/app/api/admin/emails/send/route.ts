@@ -35,8 +35,7 @@ export async function POST(req: Request) {
     let sent = 0;
     for (const user of users) {
       try {
-        await sendPromotionalEmail(user.email, user.name, subject, body);
-        sent++;
+        if (await sendPromotionalEmail(user.email, user.name, subject, body)) sent++;
       } catch (e) {
         console.error(`Failed to send to ${user.email}:`, e);
       }

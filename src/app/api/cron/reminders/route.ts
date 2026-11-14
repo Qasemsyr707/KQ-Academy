@@ -1,15 +1,25 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { sendCourseReminderEmail } from '@/lib/email';
+import { readAuthorization } from '@/lib/request-user';
+import { constantTimeSecret } from '@/lib/payments/provider-validation';
 
 // POST /api/cron/reminders — Send automated reminder emails
 // Call this endpoint from a cron job (e.g., daily at 9AM)
+// Values that appeared in this repository's history must never be accepted.
+const KNOWN_CRON_DEFAULTS = new Set(['dev-cron-secret']);
+
 export async function POST(req: Request) {
   try {
-    // Security: Only allow requests with a secret cron token
-    const authHeader = req.headers.get('authorization');
-    const expectedToken = process.env.CRON_SECRET || 'dev-cron-secret';
-    if (authHeader !== `Bearer ${expectedToken}`) {
+    // Only a caller holding the configured secret may run this job. Without a
+    // configured secret, or with the formerly published default, it never runs.
+    const expectedToken = process.env.CRON_SECRET?.trim();
+    if (!expectedToken || KNOWN_CRON_DEFAULTS.has(expectedToken)) {
+      return NextResponse.json({ error: 'Cron is not configured' }, { status: 503 });
+    }
+    if (expectedToken.length < 32) console.warn('[cron] CRON_SECRET is shorter than 32 characters; use a long random value');
+    const authorization = readAuthorization(req.headers);
+    if (authorization.kind !== 'bearer' || !constantTimeSecret(expectedToken, authorization.token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -32,14 +42,14 @@ export async function POST(req: Request) {
     let sent = 0;
     for (const enrollment of staleEnrollments) {
       try {
-        await sendCourseReminderEmail(
+        const delivered = await sendCourseReminderEmail(
           enrollment.user.email,
           enrollment.user.name,
           enrollment.course.title,
           enrollment.course.id,
           enrollment.progress
         );
-        sent++;
+        if (delivered) sent++;
       } catch (e) {
         console.error(`Reminder failed for ${enrollment.user.email}:`, e);
       }
