@@ -5,11 +5,9 @@ import { prisma } from '@/lib/db';
 export interface CertificateViewer { id: string; role: string }
 
 /**
- * `full`: the reference proves the holder shared it (unguessable token or record
- * id) or the viewer owns/administers the certificate.
- * `limited`: only a sequential certificate number was presented. The number is
- * printed on older certificates, so it must keep confirming validity, but it can
- * be guessed, so it never reveals the full name or the document itself.
+ * `full`: an authenticated, active viewer owns/administers the certificate.
+ * `limited`: public verification only, regardless of the reference format.
+ * References locate records; they never grant document access.
  */
 export type CertificateAccess = 'full' | 'limited';
 
@@ -17,6 +15,11 @@ const TOKEN = /^[A-Za-z0-9_-]{20,64}$/;
 const NUMBER = /^KQ\d{4}-\d{1,9}$/i;
 
 export const newVerifyToken = () => randomBytes(16).toString('base64url');
+
+export function canAccessCertificateDocument(certificate: { userId: string; course: { instructorId: string } }, viewer?: CertificateViewer | null): boolean {
+  return !!viewer && (viewer.id === certificate.userId || ['ADMIN', 'OWNER'].includes(viewer.role)
+    || (viewer.role === 'INSTRUCTOR' && viewer.id === certificate.course.instructorId));
+}
 
 export async function resolveCertificate(reference: unknown, viewer?: CertificateViewer | null):
   Promise<{ certificate: Certificate & { course: { instructorId: string; durationHours: number | null; createdAt: Date } }; access: CertificateAccess } | null> {
@@ -26,15 +29,14 @@ export async function resolveCertificate(reference: unknown, viewer?: Certificat
   if (NUMBER.test(reference)) {
     const certificate = await prisma.certificate.findUnique({ where: { certificateNumber: reference.toUpperCase() }, include });
     if (!certificate) return null;
-    const trusted = !!viewer && (viewer.id === certificate.userId || ['ADMIN', 'OWNER'].includes(viewer.role)
-      || (viewer.role === 'INSTRUCTOR' && viewer.id === certificate.course.instructorId));
+    const trusted = canAccessCertificateDocument(certificate, viewer);
     return { certificate, access: trusted ? 'full' : 'limited' };
   }
   if (!TOKEN.test(reference)) return null;
   const certificate = await prisma.certificate.findFirst({
     where: { OR: [{ verifyToken: reference }, { id: reference }] }, include,
   });
-  return certificate ? { certificate, access: 'full' } : null;
+  return certificate ? { certificate, access: canAccessCertificateDocument(certificate, viewer) ? 'full' : 'limited' } : null;
 }
 
 /**

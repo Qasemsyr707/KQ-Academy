@@ -185,7 +185,7 @@ test('PostgreSQL: progress never enrols; free courses enrol only through the ser
   await assert.rejects(certificates.issueCertificate(ids.student, ids.course), denied(403));
 });
 
-test('PostgreSQL: certificate numbers can be guessed, so they reveal little; the token reveals all', { skip, timeout: 60000 }, async t => {
+test('PostgreSQL: all public references verify without granting private document access', { skip, timeout: 60000 }, async t => {
   const prisma = createTestPrisma();
   const { progress, certificates } = load(prisma);
   const access = loadTs('../src/lib/certificate-access.ts', { '@/lib/db': { prisma } });
@@ -207,8 +207,16 @@ test('PostgreSQL: certificate numbers can be guessed, so they reveal little; the
   assert.equal((await access.resolveCertificate(certificate.certificateNumber, { id: ids.student, role: 'STUDENT' })).access, 'full');
   assert.equal((await access.resolveCertificate(certificate.certificateNumber, { id: ids.teacher, role: 'INSTRUCTOR' })).access, 'full');
   assert.equal((await access.resolveCertificate(certificate.certificateNumber, { id: 'someone', role: 'ADMIN' })).access, 'full');
-  assert.equal((await access.resolveCertificate(certificate.verifyToken, null)).access, 'full');
-  assert.equal((await access.resolveCertificate(certificate.id, null)).access, 'full');
+  assert.equal((await access.resolveCertificate(certificate.verifyToken, null)).access, 'limited');
+  assert.equal((await access.resolveCertificate(certificate.id, null)).access, 'limited');
+  for (const reference of [certificate.certificateNumber, certificate.id, certificate.verifyToken]) {
+    for (const [viewer, expected] of [
+      [null, 'limited'], [{ id: ids.other, role: 'STUDENT' }, 'limited'],
+      [{ id: ids.student, role: 'STUDENT' }, 'full'], [{ id: ids.teacher, role: 'INSTRUCTOR' }, 'full'],
+      [{ id: ids.other, role: 'INSTRUCTOR' }, 'limited'], [{ id: 'admin', role: 'ADMIN' }, 'full'],
+      [{ id: 'owner', role: 'OWNER' }, 'full'],
+    ]) assert.equal((await access.resolveCertificate(reference, viewer)).access, expected);
+  }
   for (const bad of ['KQ2026-99999999', 'x', '../etc/passwd', 'a'.repeat(65), '', null, 'AAAAAAAAAAAAAAAAAAAAAA']) {
     assert.equal(await access.resolveCertificate(bad, null), null);
   }
@@ -221,7 +229,7 @@ test('PostgreSQL: certificate numbers can be guessed, so they reveal little; the
   assert.deepEqual(new Set(references), new Set([legacy.id]));
   assert.equal(access.isLegacyCertificate(legacy), true);
   const viaId = await access.resolveCertificate(legacy.id, null);
-  assert.equal(viaId.access, 'full');
+  assert.equal(viaId.access, 'limited');
   assert.deepEqual(await prisma.certificate.findUniqueOrThrow({ where: { id: certificate.id } }), legacy);
   // Its old number still verifies (limited), so printed certificates are not broken.
   assert.equal((await access.resolveCertificate(legacy.certificateNumber, null)).access, 'limited');

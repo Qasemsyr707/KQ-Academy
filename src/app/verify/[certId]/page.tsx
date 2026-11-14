@@ -28,8 +28,7 @@ export default async function VerifyCertificatePage({
   }
   const found = await resolveCertificate(resolvedParams.certId, await getCourseViewer().catch(() => null));
   const certificate = found?.certificate;
-  // A bare certificate number confirms validity but, because numbers can be
-  // guessed, shows a masked name and no document. The holder's link shows all.
+  // Every reference verifies publicly; only authorized viewers see documents.
   const full = found?.access === 'full';
 
   if (!certificate) {
@@ -81,7 +80,7 @@ export default async function VerifyCertificatePage({
               {full ? certificate.studentName : maskName(certificate.studentName)}
               {!full && (
                 <div style={{ fontSize: '0.85rem', fontWeight: 'normal', color: 'rgba(255,255,255,0.55)', marginTop: '0.4rem' }}>
-                  Name partly hidden for privacy. Scan the QR code on the certificate or use the holder&apos;s link to see full details.
+                  Name partly hidden for privacy. Sign in with an authorized account to access the original document.
                 </div>
               )}
             </div>

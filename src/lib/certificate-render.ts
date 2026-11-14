@@ -4,17 +4,22 @@ import { prisma } from '@/lib/db';
 import { generateCertificateBuffer } from '@/lib/certificate';
 import { certificateDates, certificateHours, isLegacyCertificate, publicReference, resolveCertificate } from '@/lib/certificate-access';
 import { limitRequest, RATE_RULES } from '@/lib/rate-limit';
-import { getCourseViewer } from '@/lib/course-access';
+import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 
-/** Shared PNG/PDF delivery. A bare certificate number only works for its owner or staff. */
+const PRIVATE_HEADERS = { 'Cache-Control': 'private, no-store', 'CDN-Cache-Control': 'no-store', Vary: 'Cookie, Authorization', 'X-Robots-Tag': 'noindex' };
+
+/** Private delivery: every reference requires a verified active owner or staff. */
 export async function certificateDocument(req: Request, reference: string, format: 'png' | 'pdf') {
   try {
     const limited = limitRequest(req, RATE_RULES.certificateDocument);
-    if (limited) return limited;
-    const viewer = await getCourseViewer(req).catch(() => null);
+    if (limited) {
+      for (const [key, value] of Object.entries(PRIVATE_HEADERS)) limited.headers.set(key, value);
+      return limited;
+    }
+    const viewer = await requireRequestUser(req);
     const found = await resolveCertificate(reference, viewer);
     if (!found || found.access !== 'full') {
-      return NextResponse.json({ error: 'Certificate not found' }, { status: 404, headers: { 'Cache-Control': 'private, no-store' } });
+      return NextResponse.json({ error: 'Certificate not found' }, { status: 404, headers: PRIVATE_HEADERS });
     }
     const { certificate } = found;
     const legacy = isLegacyCertificate(certificate);
@@ -33,8 +38,7 @@ export async function certificateDocument(req: Request, reference: string, forma
       certificateNumber: certificate.certificateNumber || certificate.id,
       verifyReference: publicReference(certificate),
     });
-    // Personal document: never stored by shared caches, short private reuse only.
-    const headers: Record<string, string> = { 'Cache-Control': 'private, max-age=300', Vary: 'Cookie, Authorization', 'X-Robots-Tag': 'noindex' };
+    const headers = PRIVATE_HEADERS;
     if (format === 'png') return new NextResponse(new Uint8Array(png), { status: 200, headers: { ...headers, 'Content-Type': 'image/png' } });
 
     const pdf = await PDFDocument.create();
@@ -47,7 +51,10 @@ export async function certificateDocument(req: Request, reference: string, forma
       'Content-Disposition': `inline; filename="KQ-Certificate-${certificate.certificateNumber}.pdf"`,
     } });
   } catch (error) {
+    if (error instanceof RequestUserError) {
+      return NextResponse.json({ error: 'Certificate access denied' }, { status: error.status, headers: PRIVATE_HEADERS });
+    }
     console.error(`Certificate ${format} generation error:`, error);
-    return NextResponse.json({ error: 'Failed to generate certificate' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to generate certificate' }, { status: 500, headers: PRIVATE_HEADERS });
   }
 }

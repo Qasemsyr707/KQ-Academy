@@ -3,12 +3,11 @@ import { certificateHours, certificateUrls, maskName, publicReference, resolveCe
 import { getCourseViewer } from '@/lib/course-access';
 import { limitRequest, RATE_RULES } from '@/lib/rate-limit';
 
-const HEADERS = { 'Cache-Control': 'private, no-store' };
+const HEADERS = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 
 /**
- * Certificate verification for the mobile app. The holder's link (unguessable
- * reference) returns everything; a bare certificate number confirms validity
- * with a masked name and no document links, unless the caller owns it.
+ * Public references confirm validity with a masked name and no document links.
+ * Only authenticated owners and authorized staff receive private details.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ certId: string }> }) {
   const limited = limitRequest(request, RATE_RULES.verify);
