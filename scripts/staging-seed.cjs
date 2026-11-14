@@ -5,8 +5,10 @@
  *   KQ_STAGING=true node scripts/staging-seed.cjs
  *
  * Refuses to run unless KQ_STAGING=true, the configured site address is not the
- * production domain, and the database looks fresh (fewer than 25 accounts), so it
- * cannot be pointed at production or at a restored copy of it by mistake.
+ * production domain, and the database holds no real-looking data (fewer than 25
+ * accounts of its own, and no payments, enrollments or certificates belonging to
+ * accounts it did not create), so it cannot be pointed at production or at a
+ * restored copy of it by mistake.
  * Creates four accounts on the reserved `.invalid` domain (no e-mail can ever be
  * delivered to them), sample courses, and one certificate in the original
  * (template 1.0) format. Running it again changes nothing that already exists.
@@ -39,9 +41,18 @@ async function main() {
 
   const prisma = new PrismaClient();
   try {
+    const outsider = { user: { email: { not: { endsWith: '@kq-staging.invalid' } } } };
     const users = await prisma.user.count();
     const seeded = await prisma.user.count({ where: { email: { endsWith: '@kq-staging.invalid' } } });
     if (users - seeded >= 25) refuse(`the database already has ${users - seeded} real-looking accounts; it may be a production copy.`);
+    const [payments, enrollments, certificates] = await Promise.all([
+      prisma.payment.count({ where: outsider }),
+      prisma.enrollment.count({ where: outsider }),
+      prisma.certificate.count({ where: outsider }),
+    ]);
+    if (payments + enrollments + certificates > 0) {
+      refuse(`found ${payments} payments, ${enrollments} enrollments and ${certificates} certificates of accounts this script did not create; it may be a production copy.`);
+    }
 
     const hash = await bcrypt.hash(password, 10);
     const account = (id, name, role, extra = {}) => prisma.user.upsert({
