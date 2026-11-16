@@ -38,12 +38,14 @@ export async function reviewManualPayment(paymentId: string, status: ManualRevie
       throw new CheckoutError(409, 'تمت معالجة الدفعة أو تغييرها؛ يرجى تحديث الصفحة');
     }
 
+    let enrollmentCreated = false;
     if (status === 'APPROVED') {
-      await tx.enrollment.upsert({
-        where: { userId_courseId: { userId: payment.userId, courseId: payment.courseId } },
-        update: {},
-        create: { userId: payment.userId, courseId: payment.courseId, progress: 0 },
-      });
+      // An enrollment is unique per student and course, while a student may pay
+      // for the same course more than once. Only the payment that actually creates
+      // the enrollment announces it; an existing enrollment (and its progress) is left alone.
+      enrollmentCreated = (await tx.enrollment.createMany({
+        data: [{ userId: payment.userId, courseId: payment.courseId, progress: 0 }], skipDuplicates: true,
+      })).count === 1;
       const amount = context.amountMinor / 100;
       await tx.user.update({
         where: { id: payment.course.instructorId },
@@ -55,7 +57,7 @@ export async function reviewManualPayment(paymentId: string, status: ManualRevie
     }
 
     if (status === 'APPROVED') {
-      await notifyEnrollment(tx, { userId: payment.userId, courseId: payment.courseId, courseTitle: payment.course.title,
+      if (enrollmentCreated) await notifyEnrollment(tx, { userId: payment.userId, courseId: payment.courseId, courseTitle: payment.course.title,
         instructorId: payment.course.instructorId, eventKey: payment.id });
     } else {
       await notify(tx, { userId: payment.userId, title: 'تعذّر تأكيد الدفع',

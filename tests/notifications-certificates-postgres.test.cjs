@@ -15,7 +15,8 @@ function load(prisma) {
   const progress = loadTs('../src/lib/course-progress.ts', mocks);
   mocks['@/lib/course-progress'] = progress;
   const certificates = loadTs('../src/lib/certificate-issue.ts', mocks);
-  return { notifications, progress, certificates };
+  const adminReview = loadTs('../src/lib/payments/admin-review.ts', mocks);
+  return { notifications, progress, certificates, adminReview };
 }
 
 async function fixture(prisma, { quizzes = 1, price = 10 } = {}) {
@@ -271,3 +272,38 @@ test('PostgreSQL: a certificate is never dated before the course requirements we
   assert.equal(end, dates.issueDate);
 });
 
+
+test('PostgreSQL: two manual payments for one course, approved concurrently and retried, announce the enrollment exactly once', { skip, timeout: 120000 }, async t => {
+  const prisma = createTestPrisma();
+  const { adminReview } = load(prisma);
+  const { ids, cleanup } = await fixture(prisma);
+  t.after(async () => {
+    try {
+      await prisma.payment.deleteMany({ where: { userId: ids.student } });
+      await cleanup();
+    } finally { await prisma.$disconnect(); }
+  });
+  const payments = [];
+  for (let i = 0; i < 2; i++) {
+    const id = `${ids.course}_pay${i}`;
+    const snapshot = { version: 1, paymentId: id, userId: ids.student, courseId: ids.course, currency: 'USD', amountMinor: 1000, state: 'READY' };
+    await prisma.payment.create({ data: { id, userId: ids.student, courseId: ids.course, amount: 10, paymentMethod: 'MANUAL',
+      provider: 'MANUAL', status: 'PENDING', providerResponse: JSON.stringify(snapshot) } });
+    payments.push(id);
+  }
+  // Both reviewers act at once, and each request is repeated (double click / retried request).
+  const results = await Promise.allSettled([...payments, ...payments, ...payments].map(id => adminReview.reviewManualPayment(id, 'APPROVED')));
+  for (const result of results) assert.equal(result.status, 'fulfilled', result.reason?.message);
+
+  const stored = await prisma.payment.findMany({ where: { userId: ids.student } });
+  assert.deepEqual(stored.map(payment => payment.status), ['APPROVED', 'APPROVED']);
+  assert.equal(await prisma.enrollment.count({ where: { userId: ids.student, courseId: ids.course } }), 1);
+  assert.equal(await prisma.notification.count({ where: { userId: ids.student, title: 'تم تسجيلك في الكورس' } }), 1);
+  assert.equal(await prisma.notification.count({ where: { userId: ids.teacher, title: 'طالب جديد في كورسك' } }), 1);
+  // Payments are still credited one by one; nothing is taken from the student's wallet.
+  const [teacher, student] = await Promise.all([
+    prisma.user.findUnique({ where: { id: ids.teacher } }), prisma.user.findUnique({ where: { id: ids.student } }),
+  ]);
+  assert.equal(teacher.walletUSD, 20);
+  assert.equal(student.walletUSD, 0);
+});

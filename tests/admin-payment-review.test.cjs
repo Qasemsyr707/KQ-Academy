@@ -30,15 +30,31 @@ function makePayment(currency = 'USD', amount = 25) {
 
 function harness({ payment = makePayment(), role = 'ADMIN', banned = false, session = true,
   enrollment = { id: 'enrollment-1', userId: BUYER_ID, courseId: COURSE_ID, progress: 67 },
-  failCredit = false, failEnrollment = false, lostClaim = false } = {}) {
-  let state = { payment: structuredClone(payment), enrollment: structuredClone(enrollment), walletUSD: 0, walletSYP: 0 };
+  failCredit = false, failEnrollment = false, lostClaim = false, extraPayments = [] } = {}) {
+  let state = { payment: structuredClone(payment), more: structuredClone(extraPayments), enrollment: structuredClone(enrollment),
+    walletUSD: 0, walletSYP: 0, notes: [] };
+  const rowFor = (working, id) => [working.payment, ...working.more].find(row => row?.id === id);
   let queue = Promise.resolve();
   const events = [];
   const credits = [];
-  const upserts = [];
+  const creates = [];
   const transitions = [];
   const mocks = {
     '@/lib/auth': { authOptions: {} },
+    // Records notifications in the transaction's staged state, with the database's unique dedupe key.
+    '@/lib/notifications': (() => {
+      const store = (tx, userId, key, title) => {
+        const dedupeKey = `${key}:${userId}`;
+        if (!tx.notes.some(note => note.dedupeKey === dedupeKey)) tx.notes.push({ userId, dedupeKey, title });
+      };
+      return {
+        notify: async (tx, input) => store(tx, input.userId, input.dedupeKey, input.title),
+        notifyEnrollment: async (tx, e) => {
+          store(tx, e.userId, `enrolled:${e.eventKey}`, 'تم تسجيلك في الكورس');
+          store(tx, e.instructorId, `new-student:${e.eventKey}`, 'طالب جديد في كورسك');
+        },
+      };
+    })(),
     'next-auth': { getServerSession: async () => session ? { user: { id: 'reviewer', role: 'ADMIN' } } : null },
     '@/lib/db': { prisma: { user: { findUnique: async ({ where }) => {
       assert.equal(where.id, 'reviewer');
@@ -57,25 +73,30 @@ function harness({ payment = makePayment(), role = 'ADMIN', banned = false, sess
         payment: {
           findUnique: async ({ where }) => {
             events.push('read-payment');
-            return working.payment?.id === where.id ? structuredClone(working.payment) : null;
+            const row = rowFor(working, where.id);
+            return row ? structuredClone(row) : null;
           },
           updateMany: async ({ where, data }) => {
             transitions.push({ where, data });
-            const matches = working.payment && Object.entries(where).every(([key, value]) => working.payment[key] === value);
+            const row = rowFor(working, where.id);
+            const matches = row && Object.entries(where).every(([key, value]) => row[key] === value);
             if (lostClaim || !matches) return { count: 0 };
-            Object.assign(working.payment, data);
+            Object.assign(row, data);
             return { count: 1 };
           },
         },
-        enrollment: { upsert: async args => {
-          upserts.push(args);
+        // createMany + skipDuplicates: the database's ON CONFLICT DO NOTHING, reporting how many rows were created.
+        enrollment: { createMany: async args => {
+          creates.push(args);
           if (failEnrollment) throw new Error('Simulated enrollment failure');
-          const pair = args.where.userId_courseId;
-          assert.deepEqual(pair, { userId: BUYER_ID, courseId: COURSE_ID });
-          if (working.enrollment) Object.assign(working.enrollment, args.update);
-          else working.enrollment = { id: 'new-enrollment', ...args.create };
-          return structuredClone(working.enrollment);
+          assert.equal(args.skipDuplicates, true);
+          assert.equal(args.data.length, 1);
+          assert.deepEqual({ userId: args.data[0].userId, courseId: args.data[0].courseId }, { userId: BUYER_ID, courseId: COURSE_ID });
+          if (working.enrollment) return { count: 0 };
+          working.enrollment = { id: 'new-enrollment', ...args.data[0] };
+          return { count: 1 };
         } },
+        notes: working.notes,
         user: { update: async args => {
           credits.push(args);
           if (failCredit) throw new Error('Simulated instructor credit failure');
@@ -98,7 +119,7 @@ function harness({ payment = makePayment(), role = 'ADMIN', banned = false, sess
   return {
     patch: loadTs('../src/app/api/admin/payments/[id]/route.ts', mocks).PATCH,
     approve: loadTs('../src/app/api/admin/payments/approve/route.ts', mocks).POST,
-    events, credits, upserts, transitions,
+    events, credits, creates, transitions,
     get state() { return state; },
   };
 }
@@ -109,10 +130,10 @@ function request(body, method = 'POST') {
   });
 }
 const context = () => ({ params: Promise.resolve({ id: PAYMENT_ID }) });
-function approve(h, kind, fields = {}) {
+function approve(h, kind, fields = {}, id = PAYMENT_ID) {
   return kind === 'patch'
-    ? h.patch(request({ status: 'APPROVED', ...fields }, 'PATCH'), context())
-    : h.approve(request({ paymentId: PAYMENT_ID, ...fields }));
+    ? h.patch(request({ status: 'APPROVED', ...fields }, 'PATCH'), { params: Promise.resolve({ id }) })
+    : h.approve(request({ paymentId: id, ...fields }));
 }
 
 test('both admin payment endpoints enforce current database ADMIN/OWNER roles before payment access', async () => {
@@ -142,7 +163,7 @@ test('manual approval derives the buyer/course/instructor from the stored paymen
     assert.equal(h.state.payment.status, 'APPROVED');
     assert.equal(JSON.parse(h.state.payment.providerResponse).state, 'VERIFIED');
     assert.equal(h.state.enrollment.progress, 67);
-    assert.deepEqual(h.upserts[0].update, {});
+    assert.equal(h.creates[0].skipDuplicates, true);
     assert.equal(h.credits[0].where.id, INSTRUCTOR_ID);
     assert.equal(h.state.walletUSD, 25);
     assert.equal(h.state.walletSYP, 0);
@@ -168,7 +189,7 @@ test('replaying approval across the two endpoints does not credit twice or reset
   assert.equal(h.state.walletUSD, 25);
   assert.equal(h.state.enrollment.progress, 67);
   assert.equal(h.credits.length, 1);
-  assert.equal(h.upserts.length, 1);
+  assert.equal(h.creates.length, 1);
   assert.equal(h.transitions.length, 1);
 });
 
@@ -178,7 +199,7 @@ test('concurrent manual approvals share one state transition and one instructor 
   assert.deepEqual(responses.map(response => response.status), [200, 200]);
   assert.equal(h.transitions.length, 1);
   assert.equal(h.credits.length, 1);
-  assert.equal(h.upserts.length, 1);
+  assert.equal(h.creates.length, 1);
   assert.equal(h.state.walletUSD, 25);
   assert.equal(h.state.enrollment.progress, 0);
 });
@@ -195,7 +216,7 @@ test('rejection is terminal, replayable and never creates enrollment or instruct
   assert.equal(h.state.enrollment, null);
   assert.equal(h.state.walletUSD, 0);
   assert.equal(h.credits.length, 0);
-  assert.equal(h.upserts.length, 0);
+  assert.equal(h.creates.length, 0);
   assert.equal(h.transitions.length, 1);
 });
 
@@ -244,7 +265,7 @@ test('lost PENDING claim cannot perform enrollment or instructor credit', async 
   assert.equal(h.state.payment.status, 'PENDING');
   assert.equal(h.state.enrollment, null);
   assert.equal(h.credits.length, 0);
-  assert.equal(h.upserts.length, 0);
+  assert.equal(h.creates.length, 0);
 });
 
 test('failure after claiming a payment rolls back its status, enrollment and instructor credit', async t => {
@@ -269,4 +290,80 @@ test('missing payment produces 404 for an authorized reviewer without any write'
   assert.equal((await approve(h, 'approve')).status, 404);
   assert.equal(h.transitions.length, 0);
   assert.equal(h.credits.length, 0);
+});
+
+// Staging scenario: one student, two separate manual transfers for the same course, each approved on its own.
+const SECOND_ID = 'payment-2';
+const secondPayment = () => ({
+  ...makePayment(), id: SECOND_ID,
+  providerResponse: JSON.stringify({ ...JSON.parse(makePayment().providerResponse), paymentId: SECOND_ID }),
+});
+const enrollmentNotes = h => h.state.notes.filter(note => note.dedupeKey.startsWith('enrolled:'));
+const instructorNotes = h => h.state.notes.filter(note => note.dedupeKey.startsWith('new-student:'));
+
+test('two approved payments for one course create one enrollment and one enrollment notification, with both payments recorded', async () => {
+  for (const kind of ['patch', 'approve']) {
+    const h = harness({ enrollment: null, extraPayments: [secondPayment()] });
+    assert.equal((await approve(h, kind, {}, PAYMENT_ID)).status, 200);
+    assert.equal((await approve(h, kind, {}, SECOND_ID)).status, 200);
+    assert.deepEqual([h.state.payment.status, h.state.more[0].status], ['APPROVED', 'APPROVED']);
+    assert.equal(h.creates.length, 2);
+    assert.equal(enrollmentNotes(h).length, 1);
+    assert.equal(enrollmentNotes(h)[0].userId, BUYER_ID);
+    assert.equal(enrollmentNotes(h)[0].dedupeKey, `enrolled:${PAYMENT_ID}:${BUYER_ID}`);
+    assert.equal(instructorNotes(h).length, 1);
+    // Historical payment handling is unchanged: each approved payment is still credited to the instructor.
+    assert.equal(h.credits.length, 2);
+    assert.equal(h.state.walletUSD, 50);
+  }
+});
+
+test('concurrent approval of two payments for one course announces the enrollment once', async () => {
+  const h = harness({ enrollment: null, extraPayments: [secondPayment()] });
+  const responses = await Promise.all([
+    approve(h, 'patch', {}, PAYMENT_ID), approve(h, 'approve', {}, SECOND_ID),
+    approve(h, 'patch', {}, SECOND_ID), approve(h, 'approve', {}, PAYMENT_ID),
+  ]);
+  assert.deepEqual(responses.map(response => response.status), [200, 200, 200, 200]);
+  assert.deepEqual([h.state.payment.status, h.state.more[0].status], ['APPROVED', 'APPROVED']);
+  assert.equal(enrollmentNotes(h).length, 1);
+  assert.equal(instructorNotes(h).length, 1);
+  assert.equal(h.state.notes.length, 2);
+});
+
+test('retrying an approved payment, before or after a second approval, adds no notification', async () => {
+  const h = harness({ enrollment: null, extraPayments: [secondPayment()] });
+  await approve(h, 'approve', {}, PAYMENT_ID);
+  await approve(h, 'patch', {}, PAYMENT_ID);
+  await approve(h, 'approve', {}, SECOND_ID);
+  await approve(h, 'patch', {}, PAYMENT_ID);
+  await approve(h, 'patch', {}, SECOND_ID);
+  assert.equal(h.state.notes.length, 2);
+  assert.equal(h.credits.length, 2);
+});
+
+test('approving a payment for a student who is already enrolled sends no enrollment notice and keeps progress', async () => {
+  const h = harness();
+  assert.equal((await approve(h, 'approve')).status, 200);
+  assert.equal(h.state.payment.status, 'APPROVED');
+  assert.equal(h.state.enrollment.progress, 67);
+  assert.equal(h.state.notes.length, 0);
+});
+
+test('a rejected payment keeps its own notification, replays do not repeat it, and it never announces an enrollment', async () => {
+  const h = harness({ enrollment: null, extraPayments: [secondPayment()] });
+  for (let i = 0; i < 2; i++) assert.equal((await h.patch(request({ status: 'REJECTED' }, 'PATCH'), context())).status, 200);
+  assert.deepEqual(h.state.notes.map(note => note.dedupeKey), [`payment-rejected:${PAYMENT_ID}:${BUYER_ID}`]);
+  // A later approved payment still announces the enrollment it creates.
+  assert.equal((await approve(h, 'approve', {}, SECOND_ID)).status, 200);
+  assert.equal(enrollmentNotes(h).length, 1);
+  assert.equal(h.state.notes.length, 3);
+});
+
+test('a failure rolls back the enrollment notification together with the approval', async t => {
+  t.mock.method(console, 'error', () => {});
+  const h = harness({ failCredit: true, enrollment: null });
+  assert.equal((await approve(h, 'approve')).status, 500);
+  assert.equal(h.state.notes.length, 0);
+  assert.equal(h.state.enrollment, null);
 });
