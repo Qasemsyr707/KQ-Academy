@@ -66,18 +66,15 @@ export default function LiveClient({ initialStreams, initialInstructors }: { ini
     if (!editingInstructor) return;
     setIsSubmitting(true);
     try {
-      // Re-use the users API to update maxLiveStreams
-      const res = await fetch(`/api/admin/users/${editingInstructor.id}`, {
+      // Dedicated route: it changes the quota only, never the wallet, ban or role.
+      const res = await fetch(`/api/admin/users/${editingInstructor.id}/live-limit`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          role: 'INSTRUCTOR', // keep role
-          maxLiveStreams: editQuota
-        })
+        body: JSON.stringify({ maxLiveStreams: editQuota })
       });
       const data = await res.json();
       if (res.ok) {
-        setInstructors(instructors.map(ins => ins.id === editingInstructor.id ? { ...ins, maxLiveStreams: parseInt(editQuota) || 5 } : ins));
+        setInstructors(instructors.map(ins => ins.id === editingInstructor.id ? { ...ins, maxLiveStreams: data.user.maxLiveStreams } : ins));
         setEditingInstructor(null);
         alert('تم التحديث بنجاح');
       } else {
