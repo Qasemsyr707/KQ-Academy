@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { requireRoleApi } from '@/lib/rbac';
 
 // GET /api/admin/bundles — list all bundles
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Role from the database (not the session token), so a removed admin loses access at once.
+    const staff = await requireRoleApi(['ADMIN']);
+    if (staff.errorResponse) return staff.errorResponse;
     const bundles = await prisma.courseBundle.findMany({
       include: { courses: { include: { course: { select: { id: true, title: true, price: true } } } } },
       orderBy: { createdAt: 'desc' }
@@ -23,10 +21,9 @@ export async function GET() {
 // POST /api/admin/bundles — create bundle
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Role from the database (not the session token), so a removed admin loses access at once.
+    const staff = await requireRoleApi(['ADMIN']);
+    if (staff.errorResponse) return staff.errorResponse;
     const { title, description, price, priceSYP, courseIds } = await req.json();
     if (!title || !price || !courseIds?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

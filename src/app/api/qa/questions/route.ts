@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireRoleApi } from '@/lib/rbac';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -37,10 +38,9 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user || ((session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'OWNER')) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
+    // Role from the database (not the session token), so a removed admin loses access at once.
+    const staff = await requireRoleApi(['ADMIN']);
+    if (staff.errorResponse) return staff.errorResponse;
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

@@ -1,18 +1,13 @@
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { requireRolePage } from '@/lib/rbac';
 import { Award, ExternalLink, Search } from 'lucide-react';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminCertificatesPage() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session || !session.user || (session.user as any).role !== 'ADMIN') {
-    redirect('/login');
-  }
+  // Role from the database (not the session token); the owner is allowed too.
+  await requireRolePage(['ADMIN'], '/login');
 
   const certificates = await prisma.certificate.findMany({
     include: {

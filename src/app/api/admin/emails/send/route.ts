@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { requireRoleApi } from '@/lib/rbac';
 import { sendPromotionalEmail } from '@/lib/email';
 
 // POST /api/admin/emails/send — Send email campaign
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
+    // Role from the database (not the session token), so a removed admin loses access at once.
+    const staff = await requireRoleApi(['ADMIN']);
+    if (staff.errorResponse) return staff.errorResponse;
 
     const { subject, body, targetAudience } = await req.json();
     // targetAudience: 'ALL' | 'STUDENTS' | 'INSTRUCTORS' | 'INACTIVE'
