@@ -28,7 +28,7 @@ export type CourseContentUpdate = Partial<{
 const LIMITS = { title: 200, description: 20000, category: 100, includes: 50, include: 300, url: 2048, dataUrl: 3 * 1024 * 1024 * 4 / 3 + 64 };
 
 /** Image sources the site can display: https, same-site paths, base64 raster data URLs, or the default gradient. */
-function validThumbnail(value: string): boolean {
+export function validThumbnail(value: string): boolean {
   if (/^data:image\/(?:jpeg|png|webp|gif|avif);base64,[A-Za-z0-9+/=]+$/.test(value)) return value.length <= LIMITS.dataUrl;
   // The default the create endpoint stores for courses without an image.
   if (/^linear-gradient\(\d{1,3}deg, #[0-9a-f]{3,8} \d{1,3}%, #[0-9a-f]{3,8} \d{1,3}%\)$/i.test(value)) return true;

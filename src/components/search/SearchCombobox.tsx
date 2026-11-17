@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import Image from 'next/image';
+import CourseCover from '@/components/ui/CourseCover';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Loader2, Search, SearchX, Tag, X } from 'lucide-react';
+import { Loader2, Search, SearchX, Tag, X } from 'lucide-react';
 import { coursePriceLabel, formatNumber } from '@/lib/format';
 import styles from './SearchCombobox.module.css';
 
@@ -132,9 +132,7 @@ export default function SearchCombobox({ value, onValueChange, onCategorySelect,
         {item.type === 'course' ? (
           <>
             <span className={styles.thumb} aria-hidden="true">
-              {item.thumbnail
-                ? <Image src={item.thumbnail} alt="" fill unoptimized sizes="48px" className={styles.thumbImage} loading="lazy" />
-                : <BookOpen size={18} strokeWidth={1.6} />}
+              <CourseCover src={item.thumbnail} sizes="48px" iconSize={18} />
             </span>
             <span className={styles.text}>
               <span className={styles.title}>{item.label}</span>

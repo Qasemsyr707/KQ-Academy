@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import CourseCover from '@/components/ui/CourseCover';
 import type { CSSProperties } from 'react';
 import { ArrowLeft, BookOpen, CheckCircle2, GraduationCap, Lock, Play, PlayCircle, Search, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 import styles from './Home.module.css';
@@ -92,17 +92,7 @@ export default function HomeHero({ course }: { course: HeroCourse }) {
               </div>
 
               <div className={styles.player}>
-                {course?.thumbnail ? (
-                  <Image
-                    src={course.thumbnail}
-                    alt=""
-                    fill
-                    unoptimized
-                    sizes="(max-width: 960px) 90vw, 520px"
-                    className={styles.playerImage}
-                    loading="eager"
-                  />
-                ) : null}
+                {course ? <CourseCover src={course.thumbnail} sizes="(max-width: 960px) 90vw, 520px" priority className={styles.playerImage} /> : null}
                 <div className={styles.playerShade} />
                 <span className={styles.play}><Play size={26} fill="currentColor" /></span>
                 <div className={styles.timeline}><span /></div>

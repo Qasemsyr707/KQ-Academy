@@ -67,7 +67,7 @@
   .card:hover::before {
     opacity: 1;
   }
-  .card:hover .image {
+  .card:hover .media img {
     transform: scale(1.06);
   }
   .card:hover .cta svg {
@@ -325,7 +325,7 @@
   .card {
     transform: none;
   }
-  .card:hover .image {
+  .card:hover .media img {
     transform: none;
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import CourseCover from '@/components/ui/CourseCover';
 import { motion } from 'framer-motion';
 import { BookOpen, Trophy, Clock, Bell, Flame, TrendingUp, PlayCircle, Bot, Video, Headphones, Wallet, Settings, LayoutDashboard, ChevronLeft, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -231,7 +232,8 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                       >
-                        <div style={{ width: '100px', height: '68px', borderRadius: '10px', background: enrollment.course.thumbnail ? `url(${enrollment.course.thumbnail}) center/cover` : '#222', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                        <div style={{ width: '100px', height: '68px', borderRadius: '10px', background: '#222', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                          <CourseCover src={enrollment.course.thumbnail} sizes="100px" iconSize={18} />
                           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <PlayCircle size={28} color="var(--primary)" />
                           </div>

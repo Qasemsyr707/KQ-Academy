@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Upload, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { BookOpen, DollarSign } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import CourseTaxonomyFields, { type TaxonomyValue } from '@/components/course/CourseTaxonomyFields';
+import CoverPicker from '@/components/course/CoverPicker';
 
 export default function CreateCoursePage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
@@ -19,8 +18,8 @@ export default function CreateCoursePage() {
   const [priceUSD, setPriceUSD] = useState('');
   const [taxonomy, setTaxonomy] = useState<TaxonomyValue>({ categoryId: '', tags: [], trainingType: '' });
   const [courseType, setCourseType] = useState('SKILL');
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  // Uploaded 1280x720 cover URL, prepared and previewed by CoverPicker.
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
   
   // Dynamic features state
   const [includes, setIncludes] = useState<string[]>([]);
@@ -37,67 +36,11 @@ export default function CreateCoursePage() {
     setIncludes(includes.filter((_, i) => i !== index));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('حجم الصورة يجب أن يكون أقل من 5 ميغابايت');
-        return;
-      }
-      setThumbnailFile(file);
-      setThumbnailPreview(URL.createObjectURL(file));
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      let uploadedThumbnailUrl = '';
-
-      if (thumbnailFile) {
-        // Compress image using Canvas to reduce upload size.
-        uploadedThumbnailUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(thumbnailFile);
-          reader.onload = (event) => {
-            const img = new window.Image();
-            img.src = event.target?.result as string;
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const MAX_WIDTH = 800;
-              const MAX_HEIGHT = 600;
-              let width = img.width;
-              let height = img.height;
-
-              if (width > height) {
-                if (width > MAX_WIDTH) {
-                  height *= MAX_WIDTH / width;
-                  width = MAX_WIDTH;
-                }
-              } else {
-                if (height > MAX_HEIGHT) {
-                  width *= MAX_HEIGHT / height;
-                  height = MAX_HEIGHT;
-                }
-              }
-
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx?.drawImage(img, 0, 0, width, height);
-              
-              // Compress to JPEG with 70% quality (usually under 150KB)
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-              resolve(dataUrl);
-            };
-            img.onerror = (e) => reject(new Error('فشل قراءة الصورة'));
-          };
-          reader.onerror = error => reject(error);
-        });
-      }
-
       if (!taxonomy.categoryId) {
         throw new Error('يرجى اختيار تصنيف الكورس');
       }
@@ -114,7 +57,7 @@ export default function CreateCoursePage() {
           categoryId: taxonomy.categoryId,
           tags: taxonomy.tags,
           trainingType: taxonomy.trainingType || null,
-          thumbnail: uploadedThumbnailUrl,
+          thumbnail: thumbnail ?? undefined,
           includes: includes,
           durationHours
         })
@@ -195,45 +138,8 @@ export default function CreateCoursePage() {
           <CourseTaxonomyFields value={taxonomy} onChange={setTaxonomy} courseType={courseType} />
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>الصورة المصغرة للكورس</label>
-            <input 
-              type="file" 
-              accept="image/png, image/jpeg, image/gif" 
-              ref={fileInputRef} 
-              onChange={handleImageChange} 
-              style={{ display: 'none' }} 
-            />
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              style={{ 
-                background: 'rgba(0,0,0,0.3)', 
-                border: '2px dashed rgba(255,255,255,0.1)', 
-                borderRadius: '16px', 
-                padding: thumbnailPreview ? '0' : '2rem', 
-                textAlign: 'center', 
-                cursor: 'pointer',
-                overflow: 'hidden',
-                position: 'relative',
-                width: '100%',
-                maxWidth: '300px',
-                aspectRatio: '1 / 1',
-                margin: '0 auto',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center'
-              }}>
-              {thumbnailPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={thumbnailPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
-              ) : (
-                <>
-                  <ImageIcon size={48} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-                  <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>اضغط هنا لرفع صورة</p>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>PNG, JPG, GIF (Max. 5MB)</p>
-                </>
-              )}
-            </div>
+            <span style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>صورة غلاف الكورس</span>
+            <CoverPicker value={thumbnail} onChange={setThumbnail} disabled={loading} />
           </div>
 
           <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>

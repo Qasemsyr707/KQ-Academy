@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { Star, User, PlayCircle, ChevronDown, Award, Infinity as InfinityIcon, BookOpen, Globe, Calendar, Check, Subtitles, MonitorSmartphone, FileText, X, ChevronLeft, Users } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import CourseCover from '@/components/ui/CourseCover';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -169,9 +170,7 @@ export default function CourseDetailsClient({ course, isEnrolled }: { course: Co
                 <LessonMediaPlayer directUrl={course.previewVideoUrl} title={course.title} />
               ) : (
                 <>
-                  {course.thumbnail ? (
-                    <Image src={course.thumbnail} alt="" fill unoptimized sizes="370px" className={styles.previewImage} loading="eager" />
-                  ) : null}
+                  <CourseCover src={course.thumbnail} sizes="(max-width: 960px) 100vw, 370px" priority className={styles.previewImage} />
                   <div className={styles.previewOverlay}>
                     <span className={styles.previewPlay} aria-hidden="true"><PlayCircle size={34} /></span>
                     <span className={styles.previewLabel}>معاينة هذه الدورة</span>

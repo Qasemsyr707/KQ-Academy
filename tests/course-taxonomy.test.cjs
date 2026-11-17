@@ -300,3 +300,14 @@ test('a category with courses is never deleted, and cannot leave or enter the sc
   assert.equal((await h.category.DELETE(json('DELETE', {}), params('cat_design'))).status, 200);
   assert.equal((await h.category.DELETE(json('DELETE', {}), params('cat_design'))).status, 404);
 });
+
+test('creating a course accepts only a cover image the site can show', async () => {
+  for (const thumbnail of ['javascript:alert(1)', 'http://insecure.example/a.jpg', '//evil.example/a.png', 'data:image/svg+xml;base64,PHN2Zz4=', 42]) {
+    const h = harness({ role: 'INSTRUCTOR', userId: 'teacher-1' });
+    assert.equal((await h.courses.POST(json('POST', { title: 'كورس', categoryId: 'cat_ai-tools', thumbnail }))).status, 400, String(thumbnail));
+    assert.equal(h.db.writes.length, 0);
+  }
+  const h = harness({ role: 'INSTRUCTOR', userId: 'teacher-1' });
+  assert.equal((await h.courses.POST(json('POST', { title: 'كورس', categoryId: 'cat_ai-tools', thumbnail: '/api/files/cover-1' }))).status, 201);
+  assert.equal(h.db.writes.find(([kind]) => kind === 'course.create')[1].thumbnail, '/api/files/cover-1');
+});

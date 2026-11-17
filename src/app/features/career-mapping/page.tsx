@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Map, Code, TrendingUp, BookOpen, CheckCircle, Lock, PlayCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
+import CourseCover from '@/components/ui/CourseCover';
 
 const iconMap: Record<string, any> = {
   Code: Code,
@@ -127,7 +127,7 @@ export default function CareerMappingPage() {
                           <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', overflow: 'hidden', display: 'flex', transition: 'all 0.3s' }} className="hover:bg-white/5">
                             {course.thumbnail && (
                               <div style={{ width: '250px', position: 'relative' }}>
-                                <Image src={course.thumbnail} alt={course.title} fill style={{ objectFit: 'cover' }} />
+                                <CourseCover src={course.thumbnail} alt={course.title} sizes="250px" />
                                 {!isFirst && (
                                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Lock size={32} color="#fff" />

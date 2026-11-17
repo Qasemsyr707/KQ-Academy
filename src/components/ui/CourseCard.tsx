@@ -1,16 +1,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { CSSProperties, ReactNode } from 'react';
-import { ArrowLeft, Award, BookOpen, Star, User } from 'lucide-react';
+import { ArrowLeft, Award, Star, User } from 'lucide-react';
 import styles from './CourseCard.module.css';
+import CourseCover from './CourseCover';
 
-/**
- * Courses created without an image store a CSS gradient as their "thumbnail".
- * Only real image sources go to <Image>; anything else shows the placeholder
- * (a gradient as an image URL was requested as a page path and returned 404).
- */
-const isImageSource = (value: string | null | undefined): value is string =>
-  !!value && /^(https?:\/\/|\/(?!\/)|data:image\/(?:jpeg|png|webp|gif|avif);base64,)/i.test(value);
 
 export type CourseCardProps = {
   href: string;
@@ -73,24 +67,8 @@ export default function CourseCard({
     >
       <Link href={href} className={styles.link} prefetch={prefetch}>
         <div className={styles.media}>
-          {isImageSource(thumbnail) ? (
-            // Thumbnails come from several origins (uploads, CDN, legacy data URLs),
-            // so they are served as-is inside a fixed aspect-ratio box (no layout shift).
-            <Image
-              src={thumbnail}
-              alt=""
-              fill
-              unoptimized
-              sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 25vw"
-              className={styles.image}
-              loading={priority ? 'eager' : 'lazy'}
-              fetchPriority={priority ? 'high' : undefined}
-            />
-          ) : (
-            <div className={styles.placeholder} aria-hidden="true">
-              <BookOpen size={40} strokeWidth={1.4} />
-            </div>
-          )}
+          {/* 16:9 frame: cover-fit for 16:9-like images, whole image over a blurred copy otherwise, placeholder when missing. */}
+          <CourseCover src={thumbnail} sizes="(max-width: 640px) 100vw, (max-width: 1100px) 50vw, 25vw" priority={priority} />
           <div className={styles.mediaShade} aria-hidden="true" />
           {category ? <span className={`kq-badge ${styles.category}`}>{category}</span> : null}
           {featured ? (

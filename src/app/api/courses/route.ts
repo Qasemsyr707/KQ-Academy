@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
 import { resolveCourseTaxonomy, TaxonomyError } from '@/lib/course-taxonomy';
 import { invalidateCatalogueSearch } from '@/lib/course-search';
+import { validThumbnail } from '@/lib/course-update';
 
 export async function POST(req: Request) {
   try {
@@ -18,6 +19,10 @@ export async function POST(req: Request) {
 
     if (!title) {
       return NextResponse.json({ error: 'عنوان الكورس مطلوب' }, { status: 400 });
+    }
+    // The cover must be an image the site can show (https, same-site path, raster data URL).
+    if (thumbnail !== undefined && thumbnail !== null && thumbnail !== '' && (typeof thumbnail !== 'string' || !validThumbnail(thumbnail))) {
+      return NextResponse.json({ error: 'صورة الغلاف غير صالحة' }, { status: 400 });
     }
     const courseType = type === 'CURRICULUM' ? 'CURRICULUM' : 'SKILL';
     // Category (required), tags and training type come only from active, valid choices.

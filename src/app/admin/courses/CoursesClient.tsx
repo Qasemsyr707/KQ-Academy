@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Edit, Trash2, CheckCircle, XCircle, Book, DollarSign, Image as ImageIcon, Users } from 'lucide-react';
-import Image from 'next/image';
+import { Search, Edit, Trash2, CheckCircle, XCircle, Book, DollarSign, Users } from 'lucide-react';
+import CourseCover from '@/components/ui/CourseCover';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
 export default function CoursesClient({ initialCourses, instructors }: { initialCourses: any[], instructors: any[] }) {
@@ -144,13 +144,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                 <td style={{ padding: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.1)', flexShrink: 0, position: 'relative' }}>
-                      {course.thumbnail ? (
-                        <Image src={course.thumbnail} alt={course.title} fill style={{ objectFit: 'cover' }} unoptimized />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <ImageIcon size={20} color="rgba(255,255,255,0.3)" />
-                        </div>
-                      )}
+                      <CourseCover src={course.thumbnail} sizes="50px" iconSize={18} />
                     </div>
                     <div>
                       <div style={{ fontWeight: 'bold', color: '#fff', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
