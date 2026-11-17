@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Search, Edit, Trash2, CheckCircle, XCircle, Shield, Users as UsersIcon, Crown, Ban, Video } from 'lucide-react';
 
-const OWNER_EMAILS = ['qasemalsokhny@gmail.com'];
 
-export default function UsersClient({ initialUsers, currentUserEmail }: { initialUsers: any[], currentUserEmail: string }) {
+export default function UsersClient({ initialUsers, currentUserRole }: { initialUsers: any[], currentUserRole: string }) {
+  // The server enforces these rules; the UI only hides actions it would refuse.
+  const isCurrentUserOwner = currentUserRole === 'OWNER';
   const [users, setUsers] = useState(initialUsers);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState('ALL');
@@ -97,7 +98,8 @@ export default function UsersClient({ initialUsers, currentUserEmail }: { initia
     
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
       });
       const data = await res.json();
       
@@ -162,8 +164,8 @@ export default function UsersClient({ initialUsers, currentUserEmail }: { initia
           </thead>
           <tbody>
             {filteredUsers.map(user => {
-              const isUserOwner = OWNER_EMAILS.includes(user.email.toLowerCase());
-              const isCurrentUserOwner = OWNER_EMAILS.includes(currentUserEmail.toLowerCase());
+              const isUserOwner = user.role === 'OWNER';
+              const canManage = !isUserOwner && (user.role !== 'ADMIN' || isCurrentUserOwner);
               
               return (
                 <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: user.isBanned ? 'rgba(239, 68, 68, 0.05)' : 'transparent' }}>
@@ -208,19 +210,17 @@ export default function UsersClient({ initialUsers, currentUserEmail }: { initia
                     <div><strong>USD:</strong> ${user.walletUSD.toLocaleString()}</div>
                   </td>
                   <td style={{ padding: '1rem', textAlign: 'center' }}>
-                    {(!isUserOwner || isCurrentUserOwner) ? (
+                    {canManage ? (
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
                         <button onClick={() => handleEditClick(user)} style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: '#3b82f6', borderRadius: '8px', cursor: 'pointer', padding: '0.5rem' }}>
                           <Edit size={16} />
                         </button>
-                        {!isUserOwner && (
-                          <button onClick={() => handleDelete(user.id, user.name)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', borderRadius: '8px', cursor: 'pointer', padding: '0.5rem' }}>
-                            <Trash2 size={16} />
-                          </button>
-                        )}
+                        <button onClick={() => handleDelete(user.id, user.name)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', borderRadius: '8px', cursor: 'pointer', padding: '0.5rem' }}>
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     ) : (
-                      <span title="محمي (مخصص للمالك فقط)"><Shield size={18} color="rgba(255,255,255,0.2)" /></span>
+                      <span title={isUserOwner ? 'حساب المالك محمي' : 'إدارة المدراء متاحة للمالك فقط'}><Shield size={18} color="rgba(255,255,255,0.2)" /></span>
                     )}
                   </td>
                 </tr>
@@ -265,7 +265,7 @@ export default function UsersClient({ initialUsers, currentUserEmail }: { initia
                 >
                   <option value="STUDENT" style={{ background: 'var(--ink-3)' }}>طالب (STUDENT)</option>
                   <option value="INSTRUCTOR" style={{ background: 'var(--ink-3)' }}>مدرب (INSTRUCTOR)</option>
-                  <option value="ADMIN" style={{ background: 'var(--ink-3)' }}>مدير (ADMIN)</option>
+                  {isCurrentUserOwner && <option value="ADMIN" style={{ background: 'var(--ink-3)' }}>مدير (ADMIN)</option>}
                 </select>
               </div>
 
