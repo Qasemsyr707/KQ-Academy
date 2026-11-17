@@ -5,6 +5,8 @@ import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { safeMediaUrl } from '@/lib/media-url';
 import { mobileCourseSelect } from '@/lib/public-course';
 import { publicCourseWhere } from '@/lib/catalogue-visibility';
+import { resolveCourseTaxonomy } from '@/lib/course-taxonomy';
+import { invalidateCatalogueSearch } from '@/lib/course-search';
 
 const privateHeaders = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 
@@ -43,6 +45,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'يرجى إدخال عنوان ونوع وسعر وصورة صالحين للكورس' }, { status: 400, headers: privateHeaders });
     }
 
+    // The mobile app sends a category name. It is linked to the taxonomy when it names
+    // exactly one active category; otherwise the text is kept as before (no app break).
+    const courseType = type === 'CURRICULUM' ? 'CURRICULUM' : 'SKILL';
+    const categoryText = typeof category === 'string' && category.trim() ? category.trim() : 'عام';
+    const taxonomy = await resolveCourseTaxonomy(prisma, { category: categoryText }, { courseType, requireCategory: true }).catch(() => null);
+
     const course = await prisma.course.create({
       data: {
         title: title.trim(),
@@ -51,11 +59,13 @@ export async function POST(req: Request) {
         price: amount,
         // Ownership comes from the current authenticated account, never a body ID.
         instructorId: user.id,
-        category: typeof category === 'string' && category.trim() ? category.trim() : 'عام',
+        category: taxonomy?.category ?? categoryText,
+        ...(taxonomy?.categoryId ? { categoryId: taxonomy.categoryId } : {}),
         thumbnail,
       }
     });
 
+    invalidateCatalogueSearch();
     return NextResponse.json(course, { status: 201, headers: privateHeaders });
   } catch (error) {
     if (error instanceof RequestUserError) {

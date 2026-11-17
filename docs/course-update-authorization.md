@@ -18,7 +18,8 @@
 
 | الحقل | المدرّب صاحب الكورس | المدير / المالك | المسار المخصص |
 | --- | --- | --- | --- |
-| `title`, `description`, `thumbnail`, `includes`, `previewVideoUrl`, `durationHours`, `category` | ✓ (بعد التحقق) | ✓ | هذا المسار |
+| `title`, `description`, `thumbnail`, `includes`, `previewVideoUrl`, `durationHours` | ✓ (بعد التحقق) | ✓ | هذا المسار |
+| `categoryId` / `category` / `tags` / `trainingType` (Phase 2) | ✓ (تصنيفات فعّالة فقط، عبر `resolveCourseTaxonomy`) | ✓ | هذا المسار |
 | `price`, `priceSYP`, `type`, `isFeatured`, `instructorId`, `status` | ✗ | ✗ هنا | `PUT /api/admin/courses/[id]` (للمدير فقط) |
 | النشر | — | — | `POST /api/courses/[id]/publish` |
 | `rating` | ✗ | ✗ | يُحسب من التقييمات |
@@ -30,6 +31,6 @@
   - الحدود: الطول، وعدد الميزات، والمدة.
 - المالك (`OWNER`) صار له ما للمدير على كورسات غيره، كما في بقية الصلاحيات (`checkRole`).
 
-## ملاحظة للدمج مع Phase 2
+## حالة الدمج مع Phase 2 (في `feat/phase2.1-20261117`)
 
-فرع البحث يضيف التحقق من حقول التصنيف (`categoryId`, `tags`, `trainingType`) في المسار نفسه. عند الدمج تُضاف هذه الحقول إلى قائمة السماح، ويبقى تحققها في `resolveCourseTaxonomy`.
+تم الدمج: حقول التصنيف تُفصل عن الجسم وتُتحقق بـ `resolveCourseTaxonomy` (بنوع الكورس من القاعدة، لا من الطلب)، وبقية الجسم عبر قائمة السماح؛ أي حقل خارج المجموعتين يرفض الطلب كله قبل أي كتابة. `category` لم يعد نصاً حراً.

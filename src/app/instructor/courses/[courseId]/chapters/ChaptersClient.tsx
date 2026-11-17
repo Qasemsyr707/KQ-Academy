@@ -9,6 +9,8 @@ import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
 import { AttachmentLinks } from '@/components/AttachmentLinks';
 import { LessonVideoEditor } from '@/components/LessonVideoEditor';
 import CourseTaxonomyEditor from '@/components/course/CourseTaxonomyEditor';
+import CourseDetailsEditor from '@/components/course/CourseDetailsEditor';
+import CourseReviewStatus from '@/components/course/CourseReviewStatus';
 
 export default function ChaptersClient({ course }: { course: any }) {
   const router = useRouter();
@@ -27,7 +29,7 @@ export default function ChaptersClient({ course }: { course: any }) {
   const [isAddingIntroVideo, setIsAddingIntroVideo] = useState(false);
   const [isIntroUploading, setIsIntroUploading] = useState(false);
   const [introVideoFile, setIntroVideoFile] = useState<File | null>(null);
-  const introUpload = useBunnyUpload({ courseId: course.id, purpose: 'preview' });
+  const introUpload = useBunnyUpload({ courseId: course.id, purpose: 'preview', target: `preview:${course.id}` });
   const introSaving = useRef(false);
 
   // Video editing is separate from the lesson attachment controls.
@@ -247,8 +249,10 @@ export default function ChaptersClient({ course }: { course: any }) {
             </Link>
             <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>إدارة محتوى الكورس</h1>
             <p style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{course.title}</p>
+            <CourseReviewStatus courseId={course.id} status={course.status} />
           </div>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <CourseDetailsEditor course={course} />
             <CourseTaxonomyEditor course={course} />
             <button onClick={() => setIsEditingIncludes(true)} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>
               <Settings size={20} /> ميزات الكورس
@@ -541,7 +545,7 @@ export default function ChaptersClient({ course }: { course: any }) {
                     className="input-field"
                     style={{ padding: '0.8rem' }}
                   />
-                  <BunnyUploadStatus state={introUpload.state} progress={introUpload.progress} onPause={introUpload.pause} busy={isIntroUploading} />
+                  <BunnyUploadStatus state={introUpload.state} progress={introUpload.progress} detail={introUpload.detail} onPause={introUpload.pause} onCancel={introUpload.cancel} busy={isIntroUploading} />
                   <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
                     هذا الفيديو سيظهر لجميع الزوار في صفحة تفاصيل الكورس (مجاناً) لتشجيعهم على الاشتراك.
                   </p>

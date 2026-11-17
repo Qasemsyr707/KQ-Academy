@@ -6,6 +6,11 @@ const { loadTs } = require('./load-ts.cjs');
 
 const COURSE = 'course-1';
 const OWNER_ID = 'teacher-owner';
+// Minimal taxonomy for the classification fields handled by the same request.
+const CATEGORIES = [
+  { id: 'cat_ai', slug: 'ai', name: 'الذكاء الاصطناعي', normalizedName: 'الذكاء الاصطناعي', aliases: ['AI'], isActive: true, parent: null },
+  { id: 'cat_old', slug: 'old', name: 'موقوف', normalizedName: 'موقوف', aliases: [], isActive: false, parent: null },
+];
 const PREVIEW = 'https://iframe.mediadelivery.net/embed/123/0b8f5e0e-4a5f-4c5e-9f0e-1d2c3b4a5f60';
 
 /** Route with an in-memory course and a role fake that follows rbac's rule (OWNER passes every role check). */
@@ -19,10 +24,17 @@ function harness({ role = 'INSTRUCTOR', userId = OWNER_ID, session = true } = {}
         : { authorized: false, errorResponse: Response.json({ error: 'غير مصرح' }, { status: 403 }) },
     },
     '@/lib/bunny-upload-server': { assertBunnyVideoReady: async () => {}, BunnyServerError: class extends Error {} },
-    '@/lib/db': { prisma: { course: {
-      findUnique: async ({ where }) => (where.id === COURSE ? { instructorId: course.instructorId } : null),
-      update: async ({ where, data }) => { writes.push(data); Object.assign(course, data); return { id: where.id, ...course }; },
-    } } },
+    '@/lib/db': { prisma: {
+      course: {
+        findUnique: async ({ where }) => (where.id === COURSE ? { instructorId: course.instructorId, type: course.type } : null),
+        update: async ({ where, data }) => { writes.push(data); Object.assign(course, data); return { id: where.id, ...course }; },
+      },
+      category: {
+        findUnique: async ({ where }) => CATEGORIES.find(c => c.id === where.id || c.normalizedName === where.normalizedName) ?? null,
+        findMany: async () => CATEGORIES.filter(c => c.isActive),
+      },
+    } },
+    '@/lib/course-search': { invalidateCatalogueSearch: () => {} },
   };
   const route = loadTs('../src/app/api/courses/[id]/route.ts', mocks);
   const put = (body, id = COURSE) => route.PUT(new Request(`https://academy.test/api/courses/${id}`, {
@@ -76,15 +88,15 @@ test('the existing course-management requests keep working (features list, intro
 
 test('content fields are validated before they are stored', async () => {
   const h = harness();
-  const ok = await h.put({ title: '  عنوان جديد  ', description: 'وصف', durationHours: '12.5', category: 'البرمجة',
+  const ok = await h.put({ title: '  عنوان جديد  ', description: 'وصف', durationHours: '12.5',
     thumbnail: 'https://cdn.example.com/course.jpg' });
   assert.equal(ok.status, 200);
-  assert.deepEqual(h.writes.at(-1), { title: 'عنوان جديد', description: 'وصف', durationHours: 12.5, category: 'البرمجة', thumbnail: 'https://cdn.example.com/course.jpg' });
+  assert.deepEqual(h.writes.at(-1), { title: 'عنوان جديد', description: 'وصف', durationHours: 12.5, thumbnail: 'https://cdn.example.com/course.jpg' });
   for (const thumbnail of ['/api/files/abc123', 'data:image/png;base64,iVBORw0KGgo=', 'linear-gradient(135deg, #1a2b3c 0%, #0f172a 100%)', null]) {
     assert.equal((await h.put({ thumbnail })).status, 200, String(thumbnail));
   }
   const bad = [
-    { title: '' }, { title: '   ' }, { title: 'x'.repeat(201) }, { title: 7 }, { category: '' },
+    { title: '' }, { title: '   ' }, { title: 'x'.repeat(201) }, { title: 7 }, { category: '' }, { categoryId: 'cat_old' }, { categoryId: 'nope' },
     { includes: 'شهادة' }, { includes: [1] }, { includes: Array.from({ length: 51 }, () => 'x') },
     { durationHours: 5000 }, { durationHours: -1 }, { durationHours: true }, { durationHours: 'abc' },
     { thumbnail: 'javascript:alert(1)' }, { thumbnail: 'http://insecure.example/a.jpg' }, { thumbnail: '//evil.example/a.png' },
@@ -115,4 +127,31 @@ test('nested relation writes are still refused before any lookup', async () => {
     assert.equal(h.writes.length, 0);
   }
   for (const body of [null, [], 'text']) assert.equal((await harness().put(body)).status, 400);
+});
+
+test('classification fields are accepted with content fields, and validated against active categories', async () => {
+  const h = harness();
+  const res = await h.put({ title: 'عنوان', categoryId: 'cat_ai', tags: ['ChatGPT', 'chatgpt'], trainingType: 'PRACTICAL' });
+  assert.equal(res.status, 200);
+  assert.deepEqual(h.writes.at(-1), { title: 'عنوان', categoryId: 'cat_ai', category: 'الذكاء الاصطناعي', tags: ['ChatGPT'], trainingType: 'PRACTICAL' });
+  // An older client sending the category name: linked when it names exactly one active category.
+  assert.equal((await h.put({ category: 'AI' })).status, 200);
+  assert.equal(h.writes.at(-1).categoryId, 'cat_ai');
+});
+
+test('one forbidden or invalid field refuses the whole request: nothing is written', async () => {
+  for (const body of [
+    { title: 'عنوان', categoryId: 'cat_ai', price: 0 },
+    { description: 'وصف', tags: ['x1'], isFeatured: true },
+    { categoryId: 'cat_ai', instructorId: 'attacker' },
+    { title: 'عنوان', categoryId: 'cat_old' },
+    { title: 'عنوان', trainingType: 'HYBRID' },
+    { thumbnail: 'javascript:alert(1)', categoryId: 'cat_ai' },
+  ]) {
+    const h = harness();
+    const res = await h.put(body);
+    assert.ok([400, 403].includes(res.status), JSON.stringify(body));
+    assert.deepEqual(h.writes, [], JSON.stringify(body));
+    assert.equal(h.course.title, 'Old');
+  }
 });
