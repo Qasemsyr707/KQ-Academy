@@ -25,14 +25,19 @@ async function httpFixture(t, { users, login = Object.keys(users), course }) {
   const courseId = course ? `${p}_course` : null;
   t.after(async () => {
     try {
-      const all = Object.values(ids);
-      await prisma.payment.deleteMany({ where: { userId: { in: all } } });
-      await prisma.enrollment.deleteMany({ where: { userId: { in: all } } });
+      // Users created by a test through the API (registration) carry the same prefix in their email.
+      const registered = (await prisma.user.findMany({ where: { email: { startsWith: `${p}_` } }, select: { id: true } })).map(u => u.id);
+      const all = [...new Set([...Object.values(ids), ...registered])];
+      const courses = (await prisma.course.findMany({ where: { OR: [{ instructorId: { in: all } }, ...(courseId ? [{ id: courseId }] : [])] }, select: { id: true } })).map(x => x.id);
+      const touching = { OR: [{ userId: { in: all } }, { courseId: { in: courses } }] };
+      await prisma.certificate.deleteMany({ where: touching });
+      await prisma.payment.deleteMany({ where: touching });
+      await prisma.enrollment.deleteMany({ where: touching });
       await prisma.walletTransaction.deleteMany({ where: { userId: { in: all } } });
-      await prisma.coupon.deleteMany({ where: { code: { contains: tag } } });
+      await prisma.coupon.deleteMany({ where: { OR: [{ code: { contains: tag } }, { courseId: { in: courses } }] } });
       await prisma.courseBundle.deleteMany({ where: { title: { contains: tag } } });
       await prisma.subscriptionPlan.deleteMany({ where: { name: { contains: tag } } });
-      if (courseId) await prisma.course.deleteMany({ where: { id: courseId } });
+      await prisma.course.deleteMany({ where: { id: { in: courses } } });
       await prisma.user.deleteMany({ where: { id: { in: all } } });
     } finally { await prisma.$disconnect(); }
   });
