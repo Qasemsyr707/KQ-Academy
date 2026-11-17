@@ -116,7 +116,8 @@ test('aliases are unambiguous: no alias names two categories, or another categor
 
 test('the generated migration and preflight SQL are up to date with categories.json', () => {
   for (const [file, text] of Object.entries(generator.generate())) {
-    assert.equal(fs.readFileSync(file, 'utf8'), text, `${path.basename(file)} is stale: run node scripts/generate-taxonomy-sql.cjs`);
+    // Line endings depend on the checkout (core.autocrlf on Windows), not on the generator.
+    assert.equal(fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n'), text, `${path.basename(file)} is stale: run node scripts/generate-taxonomy-sql.cjs`);
   }
   const up = fs.readFileSync(generator.OUT.up, 'utf8');
   assert.match(up, /ON CONFLICT DO NOTHING/);
