@@ -120,6 +120,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
         >
           <option value="ALL" style={{ background: '#000' }}>جميع الحالات</option>
           <option value="PUBLISHED" style={{ background: '#000' }}>منشور (Published)</option>
+          <option value="DRAFT" style={{ background: '#000' }}>مسودة (Draft)</option>
           <option value="PENDING" style={{ background: '#000' }}>قيد المراجعة (Pending)</option>
           <option value="REJECTED" style={{ background: '#000' }}>مرفوض (Rejected)</option>
         </select>
@@ -166,10 +167,10 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                 <td style={{ padding: '1rem' }}>
                   <span style={{ 
                     padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold',
-                    background: course.status === 'PUBLISHED' ? 'rgba(34, 197, 94, 0.1)' : course.status === 'PENDING' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: course.status === 'PUBLISHED' ? '#22c55e' : course.status === 'PENDING' ? '#fbbf24' : '#ef4444'
+                    background: course.status === 'PUBLISHED' ? 'rgba(34, 197, 94, 0.1)' : course.status === 'PENDING' ? 'rgba(251, 191, 36, 0.1)' : course.status === 'DRAFT' ? 'rgba(148, 163, 184, 0.12)' : 'rgba(239, 68, 68, 0.1)',
+                    color: course.status === 'PUBLISHED' ? '#22c55e' : course.status === 'PENDING' ? '#fbbf24' : course.status === 'DRAFT' ? '#cbd5e1' : '#ef4444'
                   }}>
-                    {course.status === 'PUBLISHED' ? 'منشور' : course.status === 'PENDING' ? 'قيد المراجعة' : 'مرفوض'}
+                    {course.status === 'PUBLISHED' ? 'منشور' : course.status === 'PENDING' ? 'قيد المراجعة' : course.status === 'DRAFT' ? 'مسودة' : 'مرفوض'}
                   </span>
                 </td>
                 <td style={{ padding: '1rem', textAlign: 'center' }}>
@@ -226,6 +227,7 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   onChange={e => setEditStatus(e.target.value)}
                   style={{ width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', outline: 'none' }}
                 >
+                  <option value="DRAFT" style={{ background: 'var(--ink-3)' }}>مسودة لدى المدرّب (لا تظهر للطلاب)</option>
                   <option value="PENDING" style={{ background: 'var(--ink-3)' }}>قيد المراجعة (لا يظهر للطلاب)</option>
                   <option value="PUBLISHED" style={{ background: 'var(--ink-3)' }}>منشور (يظهر للطلاب ومتاح للبيع)</option>
                   <option value="REJECTED" style={{ background: 'var(--ink-3)' }}>مرفوض (محجوب بالكامل)</option>
@@ -292,6 +294,12 @@ export default function CoursesClient({ initialCourses, instructors }: { initial
                   ))}
                 </select>
               </div>
+
+              {editingCourse.status !== 'PUBLISHED' && editStatus === 'PUBLISHED' ? (
+                <p role="note" style={{ margin: 0, fontSize: '0.85rem', color: '#fbbf24' }}>
+                  السعر أدناه هو ما اقترحه المدرّب. النشر يعتمده سعراً نهائياً للطلاب، فراجعه قبل الحفظ (0 = مجاني).
+                </p>
+              ) : null}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>

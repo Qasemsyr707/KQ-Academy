@@ -186,7 +186,9 @@ test('creating a course requires a valid category and stores its name, tags and 
   const [, data] = h.db.writes.find(([kind]) => kind === 'course.create');
   assert.deepEqual({ category: data.category, categoryId: data.categoryId, tags: data.tags, trainingType: data.trainingType, type: data.type },
     { category: 'أدوات الذكاء الاصطناعي', categoryId: 'cat_ai-tools', tags: ['GPT'], trainingType: 'PRACTICAL', type: 'SKILL' });
-  assert.equal(h.invalidations, 1);
+  // An instructor's new course is a DRAFT (course-review.ts): not public, so search is untouched.
+  assert.equal(data.status, 'DRAFT');
+  assert.equal(h.invalidations, 0);
 });
 
 test('updating a course validates classification fields and never stores them unchecked', async () => {

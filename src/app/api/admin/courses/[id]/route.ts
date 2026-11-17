@@ -3,6 +3,7 @@ import { requireRoleApi } from '@/lib/rbac';
 import { prisma } from '@/lib/db';
 import { assertTypeFitsCategory, TaxonomyError } from '@/lib/course-taxonomy';
 import { invalidateCatalogueSearch } from '@/lib/course-search';
+import { CoursePolicyError, isCourseStatus, parseCoursePrice, publishPrices } from '@/lib/course-review';
 
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -10,17 +11,27 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     if (!authorized) return errorResponse;
 
     const params = await props.params;
-    const { status, title, price, priceSYP, instructorId, type, isFeatured, durationHours } = await req.json();
+    const body = await req.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new CoursePolicyError(400, 'بيانات غير صالحة');
+    const { status, title, instructorId, type, isFeatured, durationHours } = body;
+    if (status !== undefined && !isCourseStatus(status)) throw new CoursePolicyError(400, 'حالة الكورس غير صالحة');
+    const current = await prisma.course.findUnique({ where: { id: params.id }, select: { status: true } });
+    if (!current) return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
+    // Publishing is an approval of the price too: both prices must be stated in this request
+    // (the admin form sends them). An empty or invalid price is never turned into "free".
+    const prices = status === 'PUBLISHED' && current.status !== 'PUBLISHED'
+      ? publishPrices(body)
+      : { price: parseCoursePrice(body.price, 'السعر بالدولار'), priceSYP: parseCoursePrice(body.priceSYP, 'السعر بالليرة السورية') };
     const hours = Number(durationHours);
     if (type) await assertTypeFitsCategory(prisma, params.id, type);
 
     const course = await prisma.course.update({
       where: { id: params.id },
-      data: { 
+      data: {
         status,
         ...(title && { title }),
-        ...(price !== undefined && { price: parseFloat(price) || 0 }),
-        ...(priceSYP !== undefined && { priceSYP: parseFloat(priceSYP) || 0 }),
+        ...(prices.price !== undefined && { price: prices.price }),
+        ...(prices.priceSYP !== undefined && { priceSYP: prices.priceSYP }),
         ...(instructorId && { instructorId }),
         ...(type && { type }),
         ...(isFeatured !== undefined && { isFeatured }),
@@ -36,7 +47,10 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     invalidateCatalogueSearch();
     return NextResponse.json({ message: 'تم تحديث الكورس بنجاح', course }, { status: 200 });
   } catch (error) {
-    if (error instanceof TaxonomyError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof TaxonomyError || error instanceof CoursePolicyError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    if (error instanceof SyntaxError) return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 });
     console.error('Update Admin Course API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
   }

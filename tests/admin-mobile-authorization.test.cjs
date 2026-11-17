@@ -69,19 +69,37 @@ test('authorized mobile course creation uses current ownership and preserves mob
     }));
     assert.equal(response.status, 201);
     assertPrivate(response);
+    // The forged status/instructorId are ignored; without both prices nobody publishes from here:
+    // 12.50 is stored as the proposed price of a DRAFT (course-review.ts).
     const expected = { title: 'Physics', description: '', category: 'Science', type: 'CURRICULUM', price: 12.5,
-      instructorId: USER.id, thumbnail: 'https://images.academy.test/course.jpg' };
+      status: 'DRAFT', instructorId: USER.id, thumbnail: 'https://images.academy.test/course.jpg' };
     assert.deepEqual(h.calls.slice(1), [{ name: 'course.create', args: { data: expected } }]);
     assert.deepEqual(await response.json(), { id: 'new-course', ...expected });
   }
 });
 
-test('mobile course defaults remain free skill courses owned by the current instructor', async () => {
+test('mobile: staff stating both prices publish directly; an instructor stays a draft whatever it sends', async () => {
+  for (const [role, status] of [['ADMIN', 'PUBLISHED'], ['OWNER', 'PUBLISHED'], ['INSTRUCTOR', 'DRAFT']]) {
+    const h = harness({ user: { role } });
+    const response = await h.course.POST(request('/api/mobile/courses', { title: 'Priced', price: 20, priceSYP: '250000', status: 'PUBLISHED', isFeatured: true }));
+    assert.equal(response.status, 201);
+    const { data } = h.calls[1].args;
+    assert.equal(data.status, status, role);
+    assert.equal(data.price, 20);
+    assert.equal(data.priceSYP, 250000);
+    assert.equal(data.isFeatured, undefined);
+  }
+  const bad = harness({ user: { role: 'ADMIN' } });
+  assert.equal((await bad.course.POST(request('/api/mobile/courses', { title: 'x', price: 1, priceSYP: '-5' }))).status, 400);
+  assert.deepEqual(bad.calls.map(call => call.name), ['auth']);
+});
+
+test('mobile course defaults: an unpriced draft owned by the current instructor, never a published free course', async () => {
   const h = harness();
   const response = await h.course.POST(request('/api/mobile/courses', { title: 'Free course' }));
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { id: 'new-course', title: 'Free course', description: '', type: 'SKILL',
-    price: 0, instructorId: USER.id, category: 'عام', thumbnail: null });
+    price: 0, status: 'DRAFT', instructorId: USER.id, category: 'عام', thumbnail: null });
 });
 
 test('invalid mobile course payloads cannot cause database writes or accidental free-price coercion', async () => {

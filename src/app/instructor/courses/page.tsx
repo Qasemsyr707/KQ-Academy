@@ -60,7 +60,14 @@ export default async function InstructorCoursesPage() {
                       <div style={{ position: 'relative', width: 96, aspectRatio: '16 / 9', borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--ink-2)' }}>
                         <CourseCover src={course.thumbnail} sizes="96px" iconSize={18} />
                       </div>
-                      <span>{course.title}</span>
+                      <span style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span>{course.title}</span>
+                        {course.status !== 'PUBLISHED' ? (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.75 }}>
+                            {{ DRAFT: 'مسودة', PENDING: 'قيد مراجعة الإدارة', REJECTED: 'مرفوض — عدّله وأعد تقديمه' }[course.status] ?? course.status}
+                          </span>
+                        ) : null}
+                      </span>
                     </div>
                   </td>
                   <td style={{ padding: '1.5rem 1rem', color: 'var(--primary)', fontWeight: 'bold' }}>${course.price.toLocaleString()}</td>

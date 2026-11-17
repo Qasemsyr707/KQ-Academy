@@ -6,7 +6,9 @@
  * endpoint and stays out of reach here:
  *   - price, priceSYP, type, isFeatured, instructorId, status (moderation)
  *       -> PUT /api/admin/courses/[id] (administrators only)
- *   - publishing a course                      -> POST /api/courses/[id]/publish
+ *   - sending for review (instructor)          -> POST /api/courses/[id]/submit
+ *   - publishing a course (administrators)     -> POST /api/courses/[id]/publish
+ *     (review cycle and price policy: course-review.ts)
  *   - rating                                   -> derived from reviews
  *   - id, createdAt, updatedAt                 -> never written by clients
  *   - relations (chapters, attachments, ...)   -> their ownership-checked endpoints
