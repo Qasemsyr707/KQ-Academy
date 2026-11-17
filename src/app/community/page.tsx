@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, Heart, Share2, Users, TrendingUp, Star, Send, BookOpen, Loader2 } from 'lucide-react';
+import { MessageSquare, Heart, Share2, Users, TrendingUp, Star, Send, BookOpen, Loader2, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+// Same digits on the server and in every browser (a bare toLocaleString() broke hydration, React #418).
+import { formatNumber } from '@/lib/format';
 
 const topStudents = [
   { name: 'أحمد الخالد', points: 4850, courses: 12, avatar: 'أ', color: '#cba153' },
@@ -20,6 +22,11 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  // The API returns pages of 30 newest posts; a full page means there may be more.
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const viewer = session?.user as { id?: string; role?: string } | undefined;
+  const canDelete = (authorId: string) => !!viewer?.id && (viewer.id === authorId || viewer.role === 'ADMIN' || viewer.role === 'OWNER');
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -28,6 +35,7 @@ export default function CommunityPage() {
         if (res.ok) {
           const data = await res.json();
           setPosts(data);
+          setHasMore(Array.isArray(data) && data.length === 30);
         }
       } catch (e) {
         console.error(e);
@@ -36,6 +44,28 @@ export default function CommunityPage() {
     };
     fetchPosts();
   }, []);
+
+  const loadMore = async () => {
+    const last = posts.at(-1);
+    if (!last) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/community?before=${encodeURIComponent(last.createdAt)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPosts(prev => [...prev, ...data.filter((p: { id: string }) => !prev.some(x => x.id === p.id))]);
+        setHasMore(data.length === 30);
+      }
+    } catch { /* keep the current list */ }
+    setLoadingMore(false);
+  };
+
+  const deletePost = async (id: string) => {
+    if (!confirm('حذف هذا المنشور وتعليقاته نهائياً؟')) return;
+    const res = await fetch(`/api/community/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
+    if (res.ok) setPosts(prev => prev.filter(p => p.id !== id));
+    else alert((await res.json().catch(() => ({}))).error || 'تعذّر حذف المنشور');
+  };
 
   const [activeCommentsPostId, setActiveCommentsPostId] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
@@ -273,6 +303,12 @@ export default function CommunityPage() {
                       {new Date(post.createdAt).toLocaleDateString('ar-SA')}
                     </div>
                   </div>
+                  {canDelete(post.userId) ? (
+                    <button type="button" onClick={() => deletePost(post.id)} aria-label="حذف المنشور" title="حذف المنشور"
+                      style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)', cursor: 'pointer', padding: '0.4rem' }}>
+                      <Trash2 size={17} aria-hidden="true" />
+                    </button>
+                  ) : null}
                 </div>
 
                 <p style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 1.7, marginBottom: '1rem', whiteSpace: 'pre-wrap' }}>
@@ -396,6 +432,11 @@ export default function CommunityPage() {
               </div>
             ))
           )}
+          {hasMore ? (
+            <button type="button" className="btn" onClick={loadMore} disabled={loadingMore} style={{ alignSelf: 'center' }}>
+              {loadingMore ? 'جارٍ التحميل…' : 'عرض منشورات أقدم'}
+            </button>
+          ) : null}
         </div>
 
         {/* Sidebar - Leaderboard */}
@@ -437,7 +478,7 @@ export default function CommunityPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{s.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
-                      {s.points.toLocaleString()} نقطة · {s.courses} كورس
+                      {formatNumber(s.points)} نقطة · {s.courses} كورس
                     </div>
                   </div>
                 </div>
