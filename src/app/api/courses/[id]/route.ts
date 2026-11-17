@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
 import { assertBunnyVideoReady, BunnyServerError } from '@/lib/bunny-upload-server';
+import { courseContentUpdate, CourseUpdateError } from '@/lib/course-update';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,20 +31,29 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
     }
 
-    if (course.instructorId !== (session.user as any).id && (session.user as any).role !== 'ADMIN') {
+    // The course's instructor, or an administrator/owner of the platform.
+    const user = session.user as { id?: string; role?: string };
+    if (course.instructorId !== user.id && !['ADMIN', 'OWNER'].includes(user.role ?? '')) {
       return NextResponse.json({ error: 'غير مصرح لك بتعديل هذا الكورس' }, { status: 403 });
     }
 
-    if (body.previewVideoUrl) await assertBunnyVideoReady(body.previewVideoUrl);
+    // Content fields only, validated; price, status, type, featuring and ownership
+    // are changed through their own endpoints (see course-update.ts).
+    const { includes, ...data } = courseContentUpdate(body);
+    if (data.previewVideoUrl) await assertBunnyVideoReady(data.previewVideoUrl);
 
     // Update the course
     const updatedCourse = await prisma.course.update({
       where: { id: id },
-      data: body
+      // A JSON column is cleared with DbNull, not null.
+      data: { ...data, ...(includes !== undefined && { includes: includes ?? Prisma.DbNull }) }
     });
 
     return NextResponse.json(updatedCourse);
   } catch (error) {
+    if (error instanceof CourseUpdateError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
+    }
     if (error instanceof BunnyServerError) {
       return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
     }
