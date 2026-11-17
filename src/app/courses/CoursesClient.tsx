@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, BookOpen, Star, User, X, SlidersHorizontal, ArrowUpDown, Tag } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import CourseCard from '@/components/ui/CourseCard';
+import SearchCombobox from '@/components/search/SearchCombobox';
 import { backdrop, drawerFromStart, fadeUp } from '@/lib/motion';
 import styles from './Courses.module.css';
 import { coursePriceLabel } from '@/lib/format';
@@ -22,10 +22,13 @@ type CatalogCourse = {
   instructor: { name: string | null; image?: string | null };
 };
 
+/** A category filter: a taxonomy slug (main or sub) or a legacy category text. */
+type CategoryOption = { value: string; label: string; count: number; parent?: string | null };
+
 type Props = {
   initialCourses: CatalogCourse[];
   featuredCourses?: CatalogCourse[];
-  categories?: string[];
+  categories?: CategoryOption[];
   instructors?: string[];
   /** Total matches on the server for the initial (URL) filters. */
   initialTotal?: number;
@@ -60,11 +63,12 @@ export default function CoursesClient({
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<{ term: string; items: { type: string; label: string; href: string }[] }>({ term: '', items: [] });
-  const [suggestOpen, setSuggestOpen] = useState(false);
   // The server already rendered the results for the URL's filters.
   const firstRun = useRef(true);
   const requestId = useRef(0);
+  // Set when a suggestion opens another page: a pending catalogue update must not
+  // replace that navigation with the catalogue URL.
+  const leaving = useRef(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Filters State
@@ -93,6 +97,7 @@ export default function CoursesClient({
     if (firstRun.current) { firstRun.current = false; return; }
     const id = ++requestId.current;
     const timer = setTimeout(async () => {
+      if (leaving.current) return;
       setLoading(true);
       try {
         const params = buildParams();
@@ -116,20 +121,6 @@ export default function CoursesClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, category, type, price, rating, instructor, sort, router, pathname]);
 
-  // Instant suggestions while typing.
-  useEffect(() => {
-    const term = q.trim();
-    if (term.length < 2) return;
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/courses/suggest?q=${encodeURIComponent(term)}`, { signal: controller.signal });
-        if (res.ok) setSuggestions({ term, items: (await res.json()).suggestions || [] });
-      } catch { /* aborted or offline: no suggestions */ }
-    }, 180);
-    return () => { clearTimeout(timer); controller.abort(); };
-  }, [q]);
-
   const loadMore = async () => {
     setLoadingMore(true);
     try {
@@ -147,9 +138,6 @@ export default function CoursesClient({
     }
     setLoadingMore(false);
   };
-
-  // Suggestions belong to the current text only (stale ones are never shown).
-  const visibleSuggestions = suggestions.term === q.trim() && suggestions.term.length >= 2 ? suggestions.items : [];
 
   const activeFilters = [category, price, rating, instructor].filter(value => value !== 'الكل').length
     + (showTypeFilter && type !== 'الكل' ? 1 : 0) + (q.trim() ? 1 : 0);
@@ -187,7 +175,11 @@ export default function CoursesClient({
         </label>
         <select id={`${idPrefix}-category`} value={category} onChange={e => setCategory(e.target.value)} className="input-field" style={{ cursor: 'pointer' }}>
           <option value="الكل">جميع الأقسام</option>
-          {categories.map((c, i) => <option key={i} value={c}>{c}</option>)}
+          {/* A link may name a category that has no public course right now: keep it selectable. */}
+          {category !== 'الكل' && !categories.some(c => c.value === category) ? <option value={category}>{category}</option> : null}
+          {categories.map(c => (
+            <option key={c.value} value={c.value}>{c.parent ? `— ${c.label}` : c.label} ({c.count})</option>
+          ))}
         </select>
       </div>
 
@@ -266,46 +258,10 @@ export default function CoursesClient({
         {description ? (
           <p className={styles.heroText} data-enter="" style={{ '--enter-i': 2 } as React.CSSProperties}>{description}</p>
         ) : null}
-        <div className={styles.search} role="search" data-enter="" style={{ '--enter-i': 2 } as React.CSSProperties}>
-          <span className={styles.searchIcon} aria-hidden="true">
-            <Search size={22} />
-          </span>
-          <label htmlFor="catalog-search" className="sr-only">ابحث عن كورس، مدرب، أو مهارة</label>
-          <input
-            id="catalog-search"
-            type="search"
-            placeholder="ابحث عن كورس، مدرب، أو مهارة..."
-            value={q}
-            onChange={e => { setQ(e.target.value); setSuggestOpen(true); }}
-            onFocus={() => setSuggestOpen(true)}
-            onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
-            onKeyDown={e => { if (e.key === 'Escape' || e.key === 'Enter') setSuggestOpen(false); }}
-            className={styles.searchInput}
-            autoComplete="off"
-            enterKeyHint="search"
-            role="combobox"
-            aria-expanded={suggestOpen && visibleSuggestions.length > 0}
-            aria-controls="catalog-suggestions"
-            aria-autocomplete="list"
-          />
-          {q ? (
-            <button type="button" className={styles.clearSearch} onClick={() => setQ('')} aria-label="مسح البحث">
-              <X size={18} aria-hidden="true" />
-            </button>
-          ) : null}
-          {suggestOpen && visibleSuggestions.length > 0 ? (
-            <ul id="catalog-suggestions" className={styles.suggestions} role="listbox" aria-label="اقتراحات البحث">
-              {visibleSuggestions.map(item => (
-                <li key={item.href} role="option" aria-selected="false">
-                  <Link href={item.href} className={styles.suggestion} onMouseDown={e => e.preventDefault()} onClick={() => setSuggestOpen(false)}>
-                    {item.type === 'category' ? <Tag size={15} aria-hidden="true" /> : <BookOpen size={15} aria-hidden="true" />}
-                    <span className={styles.suggestionLabel}>{item.label}</span>
-                    {item.type === 'category' ? <span className={styles.suggestionKind}>قسم</span> : null}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+        <div className={styles.searchSlot} data-enter="" style={{ '--enter-i': 2 } as React.CSSProperties}>
+          <SearchCombobox value={q} onValueChange={setQ} inputId="catalog-search"
+            onCategorySelect={value => { setCategory(value); setQ(''); }}
+            onNavigate={() => { leaving.current = true; }} />
         </div>
       </header>
 

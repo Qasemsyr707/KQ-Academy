@@ -67,7 +67,17 @@ model Course {
   type        String   @default("SKILL") // SKILL, CURRICULUM
   price       Float    @default(0) // USD
   priceSYP    Float    @default(0) // SYP
+  // Display name of the course's category. Kept for compatibility (filters, the
+  // curriculum switch, mobile clients); a course linked to the taxonomy stores
+  // its category's Arabic name here.
   category    String
+  // Structured category (main or subcategory). Null for courses whose legacy
+  // text has not been mapped yet; they stay searchable by that text.
+  categoryId  String?
+  taxonomy    Category? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  tags        String[]  @default([])
+  // PRACTICAL | THEORETICAL | PROFESSIONAL | ACADEMIC | TECHNICAL | MIXED; null = not set.
+  trainingType String?
   thumbnail       String?
   previewVideoUrl String?
   includes        Json?    // Stores array of strings or objects for course features
@@ -94,6 +104,32 @@ model Course {
   bundles      BundleCourse[]
   attachments  Attachment[]
   liveClasses  LiveClass[]
+
+  @@index([categoryId])
+}
+
+/// Course taxonomy: main categories (parentId = null) and their subcategories.
+/// Managed by administrators; instructors only choose from active entries.
+model Category {
+  id             String     @id @default(cuid())
+  slug           String     @unique
+  name           String
+  nameEn         String?
+  /// Arabic-folded, lower-case name. Unique, so spelling variants of one name
+  /// ("الذكاء الإصطناعي" / "الذكاء الاصطناعي") cannot become two categories.
+  normalizedName String     @unique
+  /// Alternative names and synonyms used by search ("ai", "تسويق").
+  aliases        String[]   @default([])
+  parentId       String?
+  parent         Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children       Category[] @relation("CategoryTree")
+  order          Int        @default(0)
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  courses        Course[]
+
+  @@index([parentId])
 }
 
 model Chapter {

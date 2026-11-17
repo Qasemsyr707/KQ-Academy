@@ -1,0 +1,310 @@
+/* Catalogue search with live suggestions. Warm charcoal surface, ivory text, soft gold focus. */
+.root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 700px;
+  margin-inline: auto;
+  padding: 0.4rem 0.4rem 0.4rem 1rem;
+  border-radius: 18px;
+  border: 1px solid var(--line-2);
+  background: var(--ink-3);
+  box-shadow: var(--shadow-md), var(--inner-highlight);
+  transition: border-color var(--dur-2) var(--ease-out), box-shadow var(--dur-3) var(--ease-out);
+  text-align: start;
+}
+
+.root:focus-within {
+  border-color: var(--line-gold-strong);
+  box-shadow: var(--shadow-md), 0 0 0 4px rgba(201, 164, 92, 0.12), 0 0 28px -6px var(--gold-glow);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  padding-inline: 0.85rem 0.25rem;
+  color: var(--text-3);
+  transition: color var(--dur-2) var(--ease-out);
+}
+
+.root:focus-within .icon {
+  color: var(--gold-300);
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.95rem 0.5rem !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text-1);
+  font-size: 1.05rem !important;
+  outline: none;
+}
+
+/* The browser's own clear button would duplicate ours. */
+.input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.clear {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+
+.clear:hover,
+.clear:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-1);
+}
+
+/* ----- Suggestions panel ----- */
+.panel {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 0.55rem);
+  z-index: 40;
+  border-radius: 18px;
+  border: 1px solid var(--line-2);
+  background: var(--ink-3);
+  box-shadow: var(--shadow-md), 0 18px 48px -24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(201, 164, 92, 0.06);
+  overflow: hidden;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .panel[data-open] {
+    animation: reveal 160ms var(--ease-out);
+  }
+}
+
+.list {
+  margin: 0;
+  padding: 0.4rem;
+  list-style: none;
+  max-height: min(62vh, 27rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.list[hidden] {
+  display: none;
+}
+
+.group {
+  padding: 0.55rem 0.75rem 0.3rem;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--gold-300);
+}
+
+.group:not(:first-child) {
+  margin-top: 0.3rem;
+  border-top: 1px solid var(--line-1);
+  padding-top: 0.7rem;
+}
+
+.option {
+  border-radius: 12px;
+}
+
+.optionLink {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.5rem 0.6rem;
+  border-radius: 12px;
+  color: var(--text-1);
+  text-decoration: none;
+  transition: background-color var(--dur-2) var(--ease-out);
+}
+
+.option[data-active] .optionLink,
+.optionLink:hover {
+  background: var(--gold-soft);
+  box-shadow: inset 0 0 0 1px var(--line-gold);
+}
+
+.thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--ink-2);
+  color: var(--text-3);
+}
+
+.thumbImage {
+  object-fit: cover;
+}
+
+.categoryIcon {
+  background: var(--gold-soft);
+  color: var(--gold-300);
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.55rem;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.meta > span + span::before {
+  content: '·';
+  margin-inline-end: 0.55rem;
+  color: var(--text-3);
+}
+
+.price {
+  color: var(--gold-200);
+  font-weight: 600;
+  /* Prices mix Latin digits and "ل.س": keep their own direction. */
+  unicode-bidi: isolate;
+}
+
+.loading {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.4rem;
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.5rem 0.6rem;
+}
+
+.skeletonThumb,
+.skeletonLines > span {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--ink-2) 0%, var(--ink-4) 50%, var(--ink-2) 100%);
+  background-size: 200% 100%;
+}
+
+.skeletonThumb {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+
+.skeletonLines {
+  display: grid;
+  flex: 1;
+  gap: 0.45rem;
+}
+
+.skeletonLines > span:first-child { width: 70%; height: 0.8rem; }
+.skeletonLines > span:last-child { width: 40%; height: 0.65rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeletonThumb,
+  .skeletonLines > span {
+    animation: shimmer 1.2s linear infinite;
+  }
+}
+
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+.empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1.1rem 1.15rem;
+  color: var(--text-3);
+}
+
+.emptyTitle {
+  margin: 0 0 0.25rem;
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.emptyHint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .root {
+    padding-inline-start: 0.6rem;
+    border-radius: 16px;
+  }
+
+  .icon {
+    padding-inline: 0.45rem 0.15rem;
+  }
+
+  .input {
+    font-size: 1rem !important;
+  }
+
+  .list {
+    max-height: min(56vh, 24rem);
+  }
+}
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}

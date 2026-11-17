@@ -2,9 +2,10 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Upload, DollarSign, List, Image as ImageIcon } from 'lucide-react';
+import { BookOpen, Upload, DollarSign, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import CourseTaxonomyFields, { type TaxonomyValue } from '@/components/course/CourseTaxonomyFields';
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -16,8 +17,7 @@ export default function CreateCoursePage() {
   const [priceSYP, setPriceSYP] = useState('');
   const [durationHours, setDurationHours] = useState('');
   const [priceUSD, setPriceUSD] = useState('');
-  const [category, setCategory] = useState('');
-  const [customCategory, setCustomCategory] = useState('');
+  const [taxonomy, setTaxonomy] = useState<TaxonomyValue>({ categoryId: '', tags: [], trainingType: '' });
   const [courseType, setCourseType] = useState('SKILL');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -98,9 +98,8 @@ export default function CreateCoursePage() {
         });
       }
 
-      const finalCategory = category === 'أخرى' ? customCategory : category;
-      if (!finalCategory) {
-        throw new Error('يرجى اختيار التصنيف أو كتابته');
+      if (!taxonomy.categoryId) {
+        throw new Error('يرجى اختيار تصنيف الكورس');
       }
 
       const courseRes = await fetch('/api/courses', {
@@ -112,7 +111,9 @@ export default function CreateCoursePage() {
           type: courseType,
           price: priceUSD,
           priceSYP: priceSYP,
-          category: finalCategory,
+          categoryId: taxonomy.categoryId,
+          tags: taxonomy.tags,
+          trainingType: taxonomy.trainingType || null,
           thumbnail: uploadedThumbnailUrl,
           includes: includes,
           durationHours
@@ -162,7 +163,7 @@ export default function CreateCoursePage() {
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>نوع الكورس</label>
             <div style={{ position: 'relative' }}>
-              <select required value={courseType} onChange={e => { setCourseType(e.target.value); setCategory(''); }} style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', appearance: 'none' }}>
+              <select required value={courseType} onChange={e => { setCourseType(e.target.value); setTaxonomy(current => ({ ...current, categoryId: '' })); }} style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', appearance: 'none' }}>
                 <option value="SKILL">كورس مهاري عام (برمجة، لغات، أعمال...)</option>
                 <option value="CURRICULUM">منهاج دراسي (بكالوريا، تاسع...)</option>
               </select>
@@ -191,57 +192,7 @@ export default function CreateCoursePage() {
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>التصنيف</label>
-            <div style={{ position: 'relative' }}>
-              <List size={20} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)' }} />
-              <select required value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', appearance: 'none' }}>
-                <option value="" disabled>اختر تصنيفاً...</option>
-                {courseType === 'CURRICULUM' ? (
-                  <>
-                    <option value="الصف الأول">الصف الأول</option>
-                    <option value="الصف الثاني">الصف الثاني</option>
-                    <option value="الصف الثالث">الصف الثالث</option>
-                    <option value="الصف الرابع">الصف الرابع</option>
-                    <option value="الصف الخامس">الصف الخامس</option>
-                    <option value="الصف السادس">الصف السادس</option>
-                    <option value="الصف السابع">الصف السابع</option>
-                    <option value="الصف الثامن">الصف الثامن</option>
-                    <option value="الصف التاسع">الصف التاسع</option>
-                    <option value="الصف العاشر">الصف العاشر</option>
-                    <option value="الحادي عشر">الحادي عشر</option>
-                    <option value="البكالوريا - علمي">البكالوريا - علمي</option>
-                    <option value="البكالوريا - أدبي">البكالوريا - أدبي</option>
-                    <option value="البكالوريا - تجاري">البكالوريا - تجاري</option>
-                    <option value="البكالوريا - صناعي">البكالوريا - صناعي</option>
-                    <option value="البكالوريا - نسوي">البكالوريا - نسوي</option>
-                    <option value="البكالوريا - زراعي">البكالوريا - زراعي</option>
-                    <option value="البكالوريا - معلوماتية">البكالوريا - معلوماتية</option>
-                    <option value="التعليم الشرعي">التعليم الشرعي</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="البرمجة">البرمجة</option>
-                    <option value="التصميم">التصميم</option>
-                    <option value="اللغات">اللغات</option>
-                    <option value="العلوم">العلوم</option>
-                    <option value="التسويق">التسويق</option>
-                    <option value="الأعمال">الأعمال</option>
-                    <option value="الطب والصحة">الطب والصحة</option>
-                    <option value="الهندسة">الهندسة</option>
-                    <option value="الفنون والموسيقى">الفنون والموسيقى</option>
-                    <option value="تطوير الذات">تطوير الذات</option>
-                    <option value="أخرى">أخرى (كتابة يدوية)</option>
-                  </>
-                )}
-              </select>
-            </div>
-            {courseType === 'SKILL' && category === 'أخرى' && (
-              <div style={{ marginTop: '0.8rem' }}>
-                <input required type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="اكتب التصنيف هنا..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(203,161,83,0.5)', color: '#fff' }} />
-              </div>
-            )}
-          </div>
+          <CourseTaxonomyFields value={taxonomy} onChange={setTaxonomy} courseType={courseType} />
 
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>الصورة المصغرة للكورس</label>

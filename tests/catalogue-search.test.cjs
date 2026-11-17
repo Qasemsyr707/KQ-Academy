@@ -27,7 +27,8 @@ function load(env = {}) {
   if ('KQ_HIDE_CURRICULUM' in env) process.env.KQ_HIDE_CURRICULUM = env.KQ_HIDE_CURRICULUM; else delete process.env.KQ_HIDE_CURRICULUM;
   const mocks = {
     'next/cache': { unstable_cache: fn => fn },
-    '@/lib/db': { prisma: { notification: {}, course: { findMany: async args => { calls.push(args); return CATALOGUE; } } } },
+    // No taxonomy rows: these tests cover courses whose category is still plain text.
+    '@/lib/db': { prisma: { notification: {}, course: { findMany: async args => { calls.push(args); return CATALOGUE; } }, category: { findMany: async () => [] } } },
   };
   const visibility = loadTs('../src/lib/catalogue-visibility.ts', mocks);
   mocks['@/lib/catalogue-visibility'] = visibility;
@@ -117,11 +118,15 @@ test('sorting uses the real USD price (it used SYP only), and paging is stable',
 
 test('suggestions return matching courses and categories with real links', async t => {
   const { search, restore } = load(); t.after(restore);
-  assert.deepEqual(await search.suggestCourses('a'), []);
+  assert.deepEqual(await search.suggestCourses(''), []);
+  assert.deepEqual(await search.suggestCourses('   '), []);
+  // One letter is enough; it matches the start of words only.
+  assert.deepEqual((await search.suggestCourses('a')).filter(i => i.type === 'course').map(i => i.id).sort(), ['c4', 'c6']);
   const items = await search.suggestCourses('تسويق');
   assert.ok(items.some(i => i.type === 'course' && i.href === '/courses/c7'));
-  assert.ok(items.some(i => i.type === 'category' && i.href.startsWith('/courses?category=')));
-  assert.ok(items.length <= 7);
+  // A category text without a taxonomy entry is still suggested, with its real filter link.
+  assert.ok(items.some(i => i.type === 'category' && i.href === `/courses?category=${encodeURIComponent('التسويق')}` && i.count === 2));
+  assert.ok(items.length <= 10);
 });
 
 test('the curriculum switch hides school content from every public query and is reversible', async t => {

@@ -4,6 +4,14 @@ import type { CSSProperties, ReactNode } from 'react';
 import { ArrowLeft, Award, BookOpen, Star, User } from 'lucide-react';
 import styles from './CourseCard.module.css';
 
+/**
+ * Courses created without an image store a CSS gradient as their "thumbnail".
+ * Only real image sources go to <Image>; anything else shows the placeholder
+ * (a gradient as an image URL was requested as a page path and returned 404).
+ */
+const isImageSource = (value: string | null | undefined): value is string =>
+  !!value && /^(https?:\/\/|\/(?!\/)|data:image\/(?:jpeg|png|webp|gif|avif);base64,)/i.test(value);
+
 export type CourseCardProps = {
   href: string;
   title: string;
@@ -65,7 +73,7 @@ export default function CourseCard({
     >
       <Link href={href} className={styles.link} prefetch={prefetch}>
         <div className={styles.media}>
-          {thumbnail ? (
+          {isImageSource(thumbnail) ? (
             // Thumbnails come from several origins (uploads, CDN, legacy data URLs),
             // so they are served as-is inside a fixed aspect-ratio box (no layout shift).
             <Image

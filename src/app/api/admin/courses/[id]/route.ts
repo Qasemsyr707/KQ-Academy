@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireRoleApi } from '@/lib/rbac';
 import { prisma } from '@/lib/db';
+import { assertTypeFitsCategory, TaxonomyError } from '@/lib/course-taxonomy';
+import { invalidateCatalogueSearch } from '@/lib/course-search';
 
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -10,6 +12,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const params = await props.params;
     const { status, title, price, priceSYP, instructorId, type, isFeatured, durationHours } = await req.json();
     const hours = Number(durationHours);
+    if (type) await assertTypeFitsCategory(prisma, params.id, type);
 
     const course = await prisma.course.update({
       where: { id: params.id },
@@ -30,8 +33,10 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       }
     });
 
+    invalidateCatalogueSearch();
     return NextResponse.json({ message: 'تم تحديث الكورس بنجاح', course }, { status: 200 });
   } catch (error) {
+    if (error instanceof TaxonomyError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error('Update Admin Course API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
   }
@@ -78,6 +83,8 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     await prisma.course.delete({
       where: { id: params.id }
     });
+    // A deleted course must disappear from search and suggestions immediately.
+    invalidateCatalogueSearch();
 
     return NextResponse.json({ message: 'تم حذف الكورس نهائياً' }, { status: 200 });
   } catch (error) {

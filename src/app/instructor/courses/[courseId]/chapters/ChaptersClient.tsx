@@ -8,6 +8,7 @@ import { BunnyUploadPaused, useBunnyUpload } from '@/hooks/use-bunny-upload';
 import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
 import { AttachmentLinks } from '@/components/AttachmentLinks';
 import { LessonVideoEditor } from '@/components/LessonVideoEditor';
+import CourseTaxonomyEditor from '@/components/course/CourseTaxonomyEditor';
 
 export default function ChaptersClient({ course }: { course: any }) {
   const router = useRouter();
@@ -248,6 +249,7 @@ export default function ChaptersClient({ course }: { course: any }) {
             <p style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{course.title}</p>
           </div>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <CourseTaxonomyEditor course={course} />
             <button onClick={() => setIsEditingIncludes(true)} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)' }}>
               <Settings size={20} /> ميزات الكورس
             </button>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
+import { invalidateCatalogueSearch } from '@/lib/course-search';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,6 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       data: { status: 'PUBLISHED' }
     });
 
+    invalidateCatalogueSearch();
     return NextResponse.json({ success: true, course: updatedCourse });
 
   } catch (error) {
