@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { assertBunnyVideoReady, BunnyServerError, isBunnyVideoId } from '@/lib/bunny-upload-server';
+import { assertBunnyVideoReady, assertBunnyVideoUnused, BunnyServerError, isBunnyVideoId } from '@/lib/bunny-upload-server';
 import { assertOwnedDocumentReference } from '@/lib/owned-document';
 import { PrivateFileError } from '@/lib/private-file-storage';
 import { createHash } from 'node:crypto';
@@ -64,6 +64,7 @@ export async function POST(req: Request) {
     if (!isLive) {
       await assertOwnedDocumentReference({ id: user.id, role: user.role }, reference);
       await assertBunnyVideoReady(reference);
+      await assertBunnyVideoUnused(reference);
     }
 
     // Determine order

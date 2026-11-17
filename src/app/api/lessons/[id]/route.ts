@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { assertBunnyVideoReady, BunnyServerError } from '@/lib/bunny-upload-server';
+import { assertBunnyVideoReady, assertBunnyVideoUnused, BunnyServerError } from '@/lib/bunny-upload-server';
 import { normalizeLessonVideoReference } from '@/lib/lesson-video';
 import { assertOwnedDocumentReference } from '@/lib/owned-document';
 import { PrivateFileError } from '@/lib/private-file-storage';
@@ -35,6 +35,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       data.videoUrl = normalizeLessonVideoReference(body.videoUrl, body.videoSource);
       await assertOwnedDocumentReference({ id: user.id, role: user.role }, data.videoUrl);
       await assertBunnyVideoReady(data.videoUrl);
+      await assertBunnyVideoUnused(data.videoUrl, id);
     } else if (Object.hasOwn(body, 'videoSource')) {
       return NextResponse.json({ error: 'يرجى إدخال رابط فيديو صالح' }, { status: 400, headers });
     }

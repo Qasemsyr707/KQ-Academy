@@ -113,7 +113,7 @@ export default function UploadShortClient({ courses, initialShorts }: { courses:
             </label>
           </div>
 
-          <BunnyUploadStatus state={videoUpload.state} progress={videoUpload.progress} onPause={videoUpload.pause} onResume={() => { void handleUpload(); }} busy={isUploading} />
+          <BunnyUploadStatus state={videoUpload.state} progress={videoUpload.progress} detail={videoUpload.detail} onPause={videoUpload.pause} onResume={() => { void handleUpload(); }} onCancel={videoUpload.cancel} busy={isUploading} />
 
           <button 
             onClick={handleUpload} 

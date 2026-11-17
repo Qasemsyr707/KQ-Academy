@@ -26,6 +26,7 @@ function harness(t, { user = USER, owner = USER.id, status = 4, providerStatus =
       update: async args => { writes.push({ type: 'course', ...args }); return args.data; },
     },
     lesson: {
+      findFirst: async () => null,
       count: async () => 0,
       create: async args => { writes.push({ type: 'lesson', ...args }); return { id: 'lesson-1', ...args.data }; },
     },

@@ -35,6 +35,9 @@ function harness(t, { user = USER, owner = USER.id, videoStatus = 4,
   const prisma = {
     chapter: { findUnique: async () => owner ? { course: { instructorId: owner } } : null },
     lesson: {
+      // Duplicate-link check: another lesson already using this Bunny video.
+      findFirst: async ({ where }) => [...rows.values()].find(row => typeof row.videoUrl === 'string'
+        && row.videoUrl.toLowerCase().includes(where.videoUrl.contains.toLowerCase()) && row.id !== where.NOT?.id) ?? null,
       findUnique: async args => {
         const row = rows.get(args.where.id);
         return row ? { ...row, ...(args.include ? { chapter: { course: { instructorId: owner } } } : {}) } : null;
