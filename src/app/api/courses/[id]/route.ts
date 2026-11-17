@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
 import { assertBunnyVideoReady, BunnyServerError } from '@/lib/bunny-upload-server';
 import { resolveCourseTaxonomy, TAXONOMY_FIELDS, TaxonomyError } from '@/lib/course-taxonomy';
+import { courseContentUpdate, CourseUpdateError } from '@/lib/course-update';
 import { invalidateCatalogueSearch } from '@/lib/course-search';
+
+const PRIVATE = { 'Cache-Control': 'private, no-store' };
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -31,36 +35,44 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
     }
 
-    if (course.instructorId !== (session.user as any).id && (session.user as any).role !== 'ADMIN') {
+    // The course's instructor, or an administrator/owner of the platform.
+    const user = session.user as { id?: string; role?: string };
+    if (course.instructorId !== user.id && !['ADMIN', 'OWNER'].includes(user.role ?? '')) {
       return NextResponse.json({ error: 'غير مصرح لك بتعديل هذا الكورس' }, { status: 403 });
     }
 
-    if (body.previewVideoUrl) await assertBunnyVideoReady(body.previewVideoUrl);
-
-    // Classification fields are validated (active category, tags, training type);
-    // they never reach the database as sent.
+    // Everything is validated before anything is written: one refused field refuses the whole request.
+    // - classification (category, tags, training type): active categories only, checked against the course's own type;
+    // - content (title, description, cover, features, intro video, duration): allow-list in course-update.ts;
+    // - anything else (price, status, featuring, ownership, rating, ...) is refused here.
+    const contentBody: Record<string, unknown> = { ...body };
+    for (const field of TAXONOMY_FIELDS) delete contentBody[field];
+    const { includes, ...content } = courseContentUpdate(contentBody);
     const touchesTaxonomy = TAXONOMY_FIELDS.some(field => Object.hasOwn(body, field));
     const taxonomy = touchesTaxonomy
-      ? await resolveCourseTaxonomy(prisma, body, { courseType: typeof body.type === 'string' ? body.type : course.type, requireCategory: false })
+      ? await resolveCourseTaxonomy(prisma, body, { courseType: course.type, requireCategory: false })
       : {};
-    const data = { ...body };
-    for (const field of TAXONOMY_FIELDS) delete data[field];
+    if (content.previewVideoUrl) await assertBunnyVideoReady(content.previewVideoUrl);
 
     // Update the course
     const updatedCourse = await prisma.course.update({
       where: { id: id },
-      data: { ...data, ...taxonomy }
+      data: {
+        ...content, ...taxonomy,
+        // A JSON column is cleared with DbNull, not null.
+        ...(includes !== undefined && { includes: includes ?? Prisma.DbNull }),
+      }
     });
     // Title, image or classification may have changed: search shows the new values at once.
     invalidateCatalogueSearch();
 
     return NextResponse.json(updatedCourse);
   } catch (error) {
-    if (error instanceof TaxonomyError) {
-      return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
+    if (error instanceof CourseUpdateError || error instanceof TaxonomyError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: PRIVATE });
     }
     if (error instanceof BunnyServerError) {
-      return NextResponse.json({ error: error.message }, { status: error.status, headers: { 'Cache-Control': 'private, no-store' } });
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: PRIVATE });
     }
     console.error('Update Course API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
