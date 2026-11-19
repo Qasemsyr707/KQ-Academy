@@ -76,6 +76,11 @@ function harness(t, { user = USER, owner = USER.id, videoStatus = 4,
     '@/lib/db': { prisma },
     '@/lib/auth': { authOptions: {} },
     'next-auth': { getServerSession: async () => user ? { user } : null },
+    '@/lib/rbac': {
+      requireRoleApi: async () => user?.id && ['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role)
+        ? { authorized: true, session: { user } }
+        : { authorized: false, errorResponse: Response.json({ error: 'forbidden' }, { status: 403 }) },
+    },
   };
   const helper = loadTs('../src/lib/bunny-upload-server.ts', mocks);
   mocks['@/lib/bunny-upload-server'] = helper;
@@ -154,7 +159,7 @@ test('missing, unready, failed, unavailable, and mismatched videos cannot create
 
 test('role and ownership are checked before create or edit reaches Bunny', async t => {
   for (const [config, expected] of [
-    [{ user: null }, 401], [{ user: { id: 'student-1', role: 'STUDENT' } }, 401],
+    [{ user: null }, 403], [{ user: { id: 'student-1', role: 'STUDENT' } }, 403],
     [{ owner: 'another-teacher' }, 403],
   ]) {
     await t.test(JSON.stringify(config), async child => {

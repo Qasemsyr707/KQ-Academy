@@ -40,7 +40,11 @@ function harness(t, { user = USER, owner = USER.id, status = 4, providerStatus =
     '@/lib/db': { prisma },
     '@/lib/auth': { authOptions: {} },
     'next-auth': { getServerSession: async () => user ? { user } : null },
-    '@/lib/rbac': { requireRoleApi: async () => ({ authorized: true, session: { user } }) },
+    '@/lib/rbac': {
+      requireRoleApi: async () => user?.id && ['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role)
+        ? { authorized: true, session: { user } }
+        : { authorized: false, errorResponse: Response.json({ error: 'forbidden' }, { status: 403 }) },
+    },
   };
   // Share the real helper instance so instanceof keeps its production behavior.
   const helper = loadTs('../src/lib/bunny-upload-server.ts', mocks);

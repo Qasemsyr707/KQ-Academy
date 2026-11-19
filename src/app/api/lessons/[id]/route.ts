@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRoleApi } from '@/lib/rbac';
 import { prisma } from '@/lib/db';
 import { assertBunnyVideoReady, BunnyServerError } from '@/lib/bunny-upload-server';
 import { normalizeLessonVideoReference } from '@/lib/lesson-video';
@@ -11,11 +10,10 @@ const headers = { 'Cache-Control': 'private, no-store' };
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user;
-    if (!user?.id || !['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role ?? '')) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401, headers });
-    }
+    // A session role can be stale after a ban or downgrade; use the current DB role.
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    if (!authorized) return errorResponse;
+    const user = session.user;
     const { id } = await params;
     const existing = await prisma.lesson.findUnique({ where: { id }, include: { chapter: { select: { course: { select: { instructorId: true } } } } } });
     if (!existing) return NextResponse.json({ error: 'الدرس غير موجود' }, { status: 404, headers });

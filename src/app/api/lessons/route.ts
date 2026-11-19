@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRoleApi } from '@/lib/rbac';
 import { assertBunnyVideoReady, BunnyServerError, isBunnyVideoId } from '@/lib/bunny-upload-server';
 import { assertOwnedDocumentReference } from '@/lib/owned-document';
 import { PrivateFileError } from '@/lib/private-file-storage';
@@ -10,11 +9,10 @@ import { normalizeLessonVideoReference } from '@/lib/lesson-video';
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as { id?: string; role?: string } | undefined;
-    if (!user?.id || !['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role ?? '')) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
+    // A session role can be stale after a ban or downgrade; use the current DB role.
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    if (!authorized) return errorResponse;
+    const user = session.user as { id: string; role: string };
 
     const body = await req.json();
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
