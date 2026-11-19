@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { Globe } from 'lucide-react';
 import BrandLogo from '@/components/ui/BrandLogo';
 import styles from './Footer.module.css';
+import { curriculumHidden } from '@/lib/catalogue-visibility';
 
 const footerLinks = [
   {
@@ -34,7 +35,8 @@ const footerLinks = [
     ],
   },
   {
-    title: 'المناهج الدراسية السورية',
+    title: 'المناهج الدراسية',
+    curriculum: true,
     links: [
       { label: 'البكالوريا - الفرع العلمي', href: '/curriculum?grade=12-science' },
       { label: 'البكالوريا - الفرع الأدبي', href: '/curriculum?grade=12-literary' },
@@ -57,7 +59,7 @@ const footerLinks = [
       { label: 'شروط الاستخدام', href: '/terms' },
       { label: 'سياسة الخصوصية', href: '/privacy' },
       { label: 'سياسة الاسترجاع', href: '/refund' },
-      { label: 'خريطة الموقع', href: '/sitemap' },
+      { label: 'خريطة الموقع', href: '/sitemap.xml' },
     ],
   },
 ];
@@ -82,7 +84,7 @@ export default function Footer() {
               <span className={styles.brandName}>KQ Academy</span>
             </Link>
             <p className={styles.tagline}>
-              منصة تعليم إلكتروني متكاملة للمناهج السورية والمهارات المهنية.
+              منصة تعليم إلكتروني تجمع المعرفة والمهارات العملية في مكان واحد.
             </p>
             <ul className={styles.socials} aria-label="حساباتنا على وسائل التواصل">
               {socialLinks.map(social => (
@@ -100,7 +102,7 @@ export default function Footer() {
           </div>
 
           <div className={styles.columns}>
-            {footerLinks.map((section, index) => (
+            {footerLinks.filter(section => !('curriculum' in section && section.curriculum && curriculumHidden())).map((section, index) => (
               <nav
                 key={section.title}
                 className={styles.column}

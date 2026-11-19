@@ -1,67 +1,40 @@
-import { prisma } from '@/lib/db';
 import CoursesClient from './CoursesClient';
 import { Suspense } from 'react';
 import { CatalogLoading } from '@/components/ui/Skeletons';
+import { searchCourses, type SearchResult } from '@/lib/course-search';
+import { curriculumHidden } from '@/lib/catalogue-visibility';
 
-
-// يُحدَّث كل 5 دقائق بدلاً من force-dynamic الذي يستهلك bandwidth لكل زيارة
-export const revalidate = 300;
+const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)?.slice(0, 200) || undefined;
 
 export default async function CoursesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const resolvedParams = await searchParams;
+  const params = await searchParams;
 
-  let categories: string[] = [];
-  let instructors: string[] = [];
-  let initialCourses: any[] = [];
-  let featuredCourses: any[] = [];
-
+  // The server renders the results for the filters in the URL, so a shared or
+  // reloaded search link shows the right courses immediately.
+  let result: SearchResult = { courses: [], total: 0, page: 1, pageSize: 12, hasMore: false, facets: { categories: [], instructors: [] } };
+  let featured: SearchResult['courses'] = [];
   try {
-    // Extract all available filters for the UI
-    const allCourses = await prisma.course.findMany({
-      where: { status: 'PUBLISHED' },
-      select: { category: true, type: true, instructor: { select: { name: true } } }
+    result = await searchCourses({
+      q: first(params.q), category: first(params.category), type: first(params.type), price: first(params.price),
+      rating: first(params.rating), instructor: first(params.instructor), sort: first(params.sort),
     });
-
-    categories = Array.from(new Set(allCourses.map(c => c.category))).filter(Boolean) as string[];
-    instructors = Array.from(new Set(allCourses.map(c => c.instructor?.name)))
-      .filter((name): name is string => typeof name === 'string' && name.length > 0);
-
-    initialCourses = await prisma.course.findMany({
-      where: { status: 'PUBLISHED' },
-      include: {
-        instructor: {
-          select: { name: true, image: true }
-        },
-        _count: {
-          select: { enrollments: true, reviews: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 20
-    });
-
-    featuredCourses = await prisma.course.findMany({
-      where: { status: 'PUBLISHED', isFeatured: true },
-      include: {
-        instructor: { select: { name: true, image: true } },
-        _count: { select: { enrollments: true, reviews: true } }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    featured = (await searchCourses({ pageSize: 48 })).courses.filter(course => course.isFeatured);
   } catch (error) {
-    // إذا كانت قاعدة البيانات غير متاحة (quota exceeded أو خطأ شبكة)
-    // نعرض الصفحة فارغة بدلاً من إرجاع 500
+    // If the database is unavailable, show an empty catalogue instead of a 500.
     console.error('[CoursesPage] DB error:', error);
   }
 
-return (
-  <Suspense fallback={<CatalogLoading />}>
-    <CoursesClient
-      initialCourses={initialCourses}
-      featuredCourses={featuredCourses}
-      categories={categories}
-      instructors={instructors}
-    />
-  </Suspense>
-);
+  return (
+    <Suspense fallback={<CatalogLoading />}>
+      <CoursesClient
+        initialCourses={result.courses}
+        initialTotal={result.total}
+        initialHasMore={result.hasMore}
+        featuredCourses={featured}
+        categories={result.facets.categories.map(category => category.value)}
+        instructors={result.facets.instructors}
+        showTypeFilter={!curriculumHidden()}
+      />
+    </Suspense>
+  );
 }

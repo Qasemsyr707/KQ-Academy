@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { protectCoursePlaybackLinks } from '@/lib/course-playback-links';
 import { getCourseAccess, getCourseViewer } from '@/lib/course-access';
 import { mobileCourseSelect } from '@/lib/public-course';
+import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 
 const privateHeaders = { 'Cache-Control': 'private, no-store', 'CDN-Cache-Control': 'no-store', Vary: 'Cookie, Authorization' };
 
@@ -14,7 +15,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       select: mobileCourseSelect
     });
 
-    if (!course || (course.status !== 'PUBLISHED'
+    if (!course || (!isPubliclyOffered(course)
       && !(await getCourseAccess(course, await getCourseViewer(req))).canView)) {
       return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404, headers: privateHeaders });
     }

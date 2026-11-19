@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Node's CommonJS test runner. */
+// These tests pin the publication rule and the exact cached queries; the temporary
+// curriculum switch has its own tests (catalogue-search.test.cjs).
+process.env.KQ_HIDE_CURRICULUM = 'false';
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const { isValidElement } = require('react');
@@ -29,7 +32,7 @@ const SPECS = [
     },
   },
   {
-    name: 'sitemap', modulePath: '../src/app/sitemap.ts', model: 'course', key: 'public-sitemap-courses-v1',
+    name: 'sitemap', modulePath: '../src/app/sitemap.ts', model: 'course', key: 'public-sitemap-courses-v2',
     rows: [{ id: 'course-1', updatedAt: MODIFIED }],
     query: { where: { status: 'PUBLISHED' }, select: { id: true, updatedAt: true } },
   },
@@ -93,15 +96,15 @@ function assertOutput(spec, output, Client) {
     return;
   }
   assert.deepEqual(output.map(item => item.url), [
-    'https://kqacademy.com', 'https://kqacademy.com/courses',
-    'https://kqacademy.com/login', 'https://kqacademy.com/register',
-    'https://kqacademy.com/courses/course-1',
+    'https://www.kqacademy.com', 'https://www.kqacademy.com/courses',
+    'https://www.kqacademy.com/login', 'https://www.kqacademy.com/register',
+    'https://www.kqacademy.com/courses/course-1',
   ]);
   assert.equal(output[0].changeFrequency, 'daily');
   assert.equal(output[0].priority, 1);
   assert.ok(output[0].lastModified instanceof Date);
   assert.deepEqual(output[4], {
-    url: 'https://kqacademy.com/courses/course-1', lastModified: MODIFIED, changeFrequency: 'weekly', priority: 0.8,
+    url: 'https://www.kqacademy.com/courses/course-1', lastModified: MODIFIED, changeFrequency: 'weekly', priority: 0.8,
   });
 }
 
@@ -155,8 +158,8 @@ test('sitemap database failure returns static links without caching fallback and
 
   const fallback = await h.entry();
   assert.deepEqual(fallback.map(item => item.url), [
-    'https://kqacademy.com', 'https://kqacademy.com/courses',
-    'https://kqacademy.com/login', 'https://kqacademy.com/register',
+    'https://www.kqacademy.com', 'https://www.kqacademy.com/courses',
+    'https://www.kqacademy.com/login', 'https://www.kqacademy.com/register',
   ]);
   assert.deepEqual(logs, [['Failed to fetch published courses for sitemap']]);
   assert.equal(h.queries.length, 1);

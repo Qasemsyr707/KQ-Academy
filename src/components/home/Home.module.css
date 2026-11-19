@@ -256,9 +256,20 @@
   letter-spacing: -0.01em;
 }
 
+/* Brand name on its own line, then the promise in gold: a clear two-step hierarchy. */
+.heroBrand {
+  display: block;
+  font-family: var(--font-latin, inherit);
+  letter-spacing: -0.02em;
+}
+
 .heroTitleGold {
-  display: inline-block;
+  display: block;
+  margin-top: 0.18em;
   padding-bottom: 0.08em;
+  font-size: 0.62em;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .heroLead {
@@ -1036,23 +1047,53 @@ a.chip:hover {
 }
 
 .marquee {
-  display: flex;
   overflow: hidden;
   width: 100%;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+  /* The strip is always LTR, whatever the page direction. */
+  direction: ltr;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
 }
 
 .marqueeTrack {
+  --logo-gap: clamp(2rem, 4.5vw, 4rem);
   display: flex;
+  flex-wrap: nowrap;
+  /* Exactly as wide as its two groups: never squeezed to the viewport. */
   width: max-content;
+  min-width: max-content;
+  will-change: transform;
 }
 
 .marqueeGroup {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: clamp(3rem, 6vw, 5.5rem);
-  padding-right: clamp(3rem, 6vw, 5.5rem);
+  gap: var(--logo-gap);
+  /* Trailing space equals the gap, so group two starts exactly one gap after group one ends. */
+  padding: 0 var(--logo-gap) 0 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* Fixed footprint for every logo: widths never depend on image loading. */
+.logoSlot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Wide enough for the widest wordmark at every screen size. */
+  width: 140px;
+  height: 44px;
+  overflow: hidden;
+}
+
+.logoSlot img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 @keyframes marquee {
@@ -1062,14 +1103,41 @@ a.chip:hover {
 
 @media (prefers-reduced-motion: no-preference) {
   .marqueeTrack {
-    animation: marquee 48s linear infinite;
+    animation: marquee 56s linear infinite;
   }
   .marquee:hover .marqueeTrack {
     animation-play-state: paused;
   }
 }
 
+/* No motion: one centred, wrapping row of logos instead of a cut-off strip. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .marqueeTrack {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+  .marqueeGroup {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 1.5rem;
+    padding: 0 var(--gutter);
+  }
+  .marqueeGroup[data-duplicate] {
+    display: none;
+  }
+}
+
 .logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
   filter: brightness(0) invert(1);
   opacity: 0.38;
   transition: opacity var(--dur-3) var(--ease-out);
@@ -1077,6 +1145,14 @@ a.chip:hover {
 
 .logo:hover {
   opacity: 0.85;
+}
+
+.trustedNote {
+  margin-top: 1.75rem;
+  padding-inline: var(--gutter);
+  text-align: center;
+  color: var(--text-3);
+  font-size: 0.82rem;
 }
 
 /* ==========================================================================
@@ -1270,6 +1346,7 @@ a.chip:hover {
 
 /* Partner logos on the ivory band: dark monochrome instead of white */
 :global(.kq-section-light) .logo {
+  color: #000;
   filter: brightness(0);
   opacity: 0.42;
 }

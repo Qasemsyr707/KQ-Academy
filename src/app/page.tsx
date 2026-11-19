@@ -10,13 +10,14 @@ import TrustedBy from '@/components/home/TrustedBy';
 import FinalCta from '@/components/home/FinalCta';
 import styles from '@/components/home/Home.module.css';
 import { formatNumber } from '@/lib/format';
+import { publicCourseWhere } from '@/lib/catalogue-visibility';
 
 export const dynamic = 'force-dynamic';
 
 async function getCourses() {
   try {
     const courses = await prisma.course.findMany({
-      where: { status: 'PUBLISHED' },
+      where: publicCourseWhere(),
       include: { instructor: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 8,
@@ -30,7 +31,7 @@ async function getCourses() {
 async function getFeaturedCourses() {
   try {
     const courses = await prisma.course.findMany({
-      where: { status: 'PUBLISHED', isFeatured: true },
+      where: publicCourseWhere({ isFeatured: true }),
       include: { instructor: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 4,
@@ -101,7 +102,7 @@ export default async function HomePage() {
             id="latest-title"
             eyebrow={<><BookOpen size={14} aria-hidden="true" /> جديد المنصة</>}
             title="أحدث الكورسات"
-            lead="المناهج السورية والمهارات المهنية في مكان واحد"
+            lead="كورسات عملية في مجالات متنوعة، في مكان واحد"
             action={{ href: '/courses', label: 'عرض الكل' }}
           />
 

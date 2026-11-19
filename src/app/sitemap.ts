@@ -2,15 +2,16 @@ import { MetadataRoute } from 'next';
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { unstable_cache } from 'next/cache';
+import { publicCourseWhere } from '@/lib/catalogue-visibility';
 
 const getPublishedCourses = unstable_cache(() => prisma.course.findMany({
-  where: { status: 'PUBLISHED' },
+  where: publicCourseWhere(),
   select: { id: true, updatedAt: true },
-}), ['public-sitemap-courses-v1'], { revalidate: 300 });
+}), ['public-sitemap-courses-v2'], { revalidate: 300 });
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
-  const baseUrl = 'https://kqacademy.com';
+  const baseUrl = 'https://www.kqacademy.com';
 
   // Get dynamic courses
   let courses: Awaited<ReturnType<typeof getPublishedCourses>> = [];

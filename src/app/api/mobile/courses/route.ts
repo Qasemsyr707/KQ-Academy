@@ -4,13 +4,14 @@ import { protectCoursePlaybackLinks } from '@/lib/course-playback-links';
 import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { safeMediaUrl } from '@/lib/media-url';
 import { mobileCourseSelect } from '@/lib/public-course';
+import { publicCourseWhere } from '@/lib/catalogue-visibility';
 
 const privateHeaders = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 
 export async function GET() {
   try {
     const courses = await prisma.course.findMany({
-      where: { status: 'PUBLISHED' },
+      where: publicCourseWhere(),
       select: mobileCourseSelect,
       orderBy: { createdAt: 'desc' }
     });
