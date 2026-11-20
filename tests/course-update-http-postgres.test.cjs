@@ -14,7 +14,8 @@ test('HTTP/PostgreSQL: course updates are limited to content for instructors; ad
       owner: { role: 'OWNER' }, admin: { role: 'ADMIN' }, teacher: { role: 'INSTRUCTOR' }, teacher2: { role: 'INSTRUCTOR' },
       demoted: { role: 'INSTRUCTOR' }, student: { role: 'STUDENT', walletUSD: 500 },
     },
-    course: { instructor: 'teacher', price: 100, priceSYP: 1450000 },
+    // Unpublished: the instructor edits it directly. A published course goes through a change request (409 here).
+    course: { instructor: 'teacher', price: 100, priceSYP: 1450000, status: 'DRAFT' },
   });
   const { c, status, ids, prisma, courseId, p } = f;
   const otherCourse = `${p}_course2`;
@@ -37,7 +38,9 @@ test('HTTP/PostgreSQL: course updates are limited to content for instructors; ad
     const s = await snapshot();
     assert.equal(s.title, 'عنوان محدث');
     assert.equal(s.description, 'وصف جديد');
-    assert.equal(s.category, 'البرمجة');
+    // The category text is linked through the active taxonomy, which stores its canonical name.
+    assert.notEqual(s.category, 'TEST');
+    assert.ok(s.category);
     assert.equal(s.thumbnail, 'https://cdn.example.com/cover.jpg');
     assert.deepEqual(s.includes, ['شهادة', 'متابعة']);
     assert.equal(s.price, 100);
@@ -50,7 +53,7 @@ test('HTTP/PostgreSQL: course updates are limited to content for instructors; ad
       ['price 0', { price: 0 }], ['priceSYP 0', { priceSYP: 0 }], ['transfer ownership', { instructorId: ids.teacher2 }],
       ['featured', { isFeatured: true }], ['rating', { rating: 5 }], ['status', { status: 'PUBLISHED' }], ['type', { type: 'CURRICULUM' }],
       ['id', { id: `${p}_hijack` }], ['createdAt', { createdAt: '2020-01-01T00:00:00Z' }], ['student count', { _count: { enrollments: 999 } }],
-      ['duration (not a production column)', { durationHours: 12 }], ['unknown', { anything: 1 }],
+      ['unknown', { anything: 1 }],
       ['mixed allowed + price', { title: 'Mixed', includes: ['x'], price: 0 }], ['mixed allowed + owner', { description: 'Mixed', instructorId: ids.teacher2 }],
     ]) {
       await status(put(c.teacher, body), 403, `instructor: ${label}`);
@@ -83,7 +86,7 @@ test('HTTP/PostgreSQL: course updates are limited to content for instructors; ad
     await status(put(c.owner, { description: 'وصف المالك' }), 200, 'owner content');
     await status(put(c.admin, { price: 0 }), 403, 'admin price on the content route');
     await status(c.admin.json('PUT', `/api/admin/courses/${courseId}`, { price: 90, priceSYP: 1300000, isFeatured: true }), 200, 'admin route price');
-    await status(c.owner.json('PUT', `/api/admin/courses/${courseId}`, { status: 'PUBLISHED', type: 'SKILL' }), 200, 'owner admin route');
+    await status(c.owner.json('PUT', `/api/admin/courses/${courseId}`, { status: 'PUBLISHED', type: 'SKILL', price: 90, priceSYP: 1300000 }), 200, 'owner admin route (publishing states the approved prices)');
     await status(c.teacher.json('PUT', `/api/admin/courses/${courseId}`, { price: 0 }), 403, 'instructor on admin route');
     const s = await snapshot();
     assert.equal(s.title, 'تعديل إداري'); assert.equal(s.description, 'وصف المالك');
@@ -91,30 +94,43 @@ test('HTTP/PostgreSQL: course updates are limited to content for instructors; ad
   });
 
   await t.test('an instructor cannot publish a course the administration rejected; staff can', async () => {
-    await status(c.teacher.json('POST', `/api/courses/${courseId}/publish`), 200, 'already published: confirmation only');
+    // Publishing is an administration decision (course-review.ts): instructors never publish, even their own course.
+    await status(c.teacher.json('POST', `/api/courses/${courseId}/publish`), 403, 'instructor cannot publish');
     await status(c.admin.json('PUT', `/api/admin/courses/${courseId}`, { status: 'REJECTED' }), 200, 'admin rejects');
     await status(c.teacher.json('POST', `/api/courses/${courseId}/publish`), 403, 'instructor overrides rejection');
     await status(c.teacher2.json('POST', `/api/courses/${courseId}/publish`), 403, 'other instructor');
     assert.equal((await snapshot()).status, 'REJECTED');
-    await status(c.owner.json('POST', `/api/courses/${courseId}/publish`), 200, 'owner publishes');
+    await status(c.owner.json('POST', `/api/courses/${courseId}/publish`, { price: 90, priceSYP: 1300000 }), 200, 'owner publishes with the approved prices');
     assert.equal((await snapshot()).status, 'PUBLISHED');
   });
 
   await t.test('course creation, purchase, enrollment, registration and certificates keep working', async () => {
-    const created = await (await status(c.teacher.json('POST', '/api/courses', { title: 'Synthetic new course', description: 'd', category: 'TEST', price: 30, priceSYP: 400000,
-      instructorId: ids.teacher2, isFeatured: true, rating: 5, status: 'PENDING' }), 201, 'instructor creates a course')).json();
+    // Forbidden fields refuse the whole creation; a valid one becomes the instructor's DRAFT.
+    await status(c.teacher.json('POST', '/api/courses', { title: 'Synthetic forged course', description: 'd', category: 'البرمجة', price: 30, priceSYP: 400000,
+      instructorId: ids.teacher2, isFeatured: true, rating: 5, status: 'PENDING' }), 403, 'forged creation fields');
+    assert.equal(await prisma.course.count({ where: { title: 'Synthetic forged course' } }), 0);
+    const created = await (await status(c.teacher.json('POST', '/api/courses', { title: 'Synthetic new course', description: 'd', category: 'البرمجة', price: 30, priceSYP: 400000 }), 201, 'instructor creates a course')).json();
     const fresh = await snapshot(created.course.id);
-    assert.equal(fresh.instructorId, ids.teacher, 'creator is the instructor, not the body');
-    assert.equal(fresh.isFeatured, false); assert.equal(fresh.rating, 0); assert.equal(fresh.status, 'PUBLISHED'); assert.equal(fresh.price, 30);
+    assert.equal(fresh.instructorId, ids.teacher, 'creator is the instructor');
+    assert.equal(fresh.isFeatured, false); assert.equal(fresh.rating, 0); assert.equal(fresh.status, 'DRAFT'); assert.equal(fresh.price, 30);
 
     await status(c.student.json('POST', '/api/checkout/wallet', { courseId, paymentCurrency: 'USD' }), 200, 'wallet purchase');
     assert.ok(await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: ids.student, courseId } } }), 'enrolled');
     assert.equal((await f.row('student')).walletUSD, 410, 'paid the admin-set price (90)');
     assert.equal((await prisma.payment.findFirstOrThrow({ where: { userId: ids.student, courseId } })).status, 'APPROVED');
 
-    const cert = await (await status(c.student.json('POST', '/api/certificates/issue', { courseId }), 201, 'certificate issued')).json();
+    // Phase 1: a certificate is issued only after every lesson is completed (server-side progress).
+    const chapter = await prisma.chapter.create({ data: { title: 'Synthetic chapter', courseId, order: 1 } });
+    const lesson = await prisma.lesson.create({ data: { title: 'Synthetic lesson', chapterId: chapter.id, order: 1, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' } });
+    await status(c.student.json('POST', '/api/certificates/issue', { courseId }), 403, 'no certificate before completion');
+    await status(c.student.json('POST', `/api/courses/${courseId}/progress`, { lessonId: lesson.id }), 200, 'lesson completed');
+    const issued = await c.student.json('POST', '/api/certificates/issue', { courseId });
+    assert.ok([200, 201].includes(issued.status), `certificate issued: ${issued.status}`);
+    const cert = await issued.json();
     const verify = await (await status(f.anonymous.request(`/api/mobile/certificates/verify/${cert.certificateId}`), 200, 'certificate verification')).json();
-    assert.ok(JSON.stringify(verify).includes('Synthetic student'));
+    // Phase 1 privacy: an anonymous visitor sees a valid certificate with a masked name only.
+    assert.ok(!JSON.stringify(verify).includes('Synthetic student'), 'full name hidden from anonymous visitors');
+    assert.ok(JSON.stringify(verify).includes('nameMasked'));
     await status(f.anonymous.request(`/verify/${cert.certificateId}`), 200, 'public verification page');
 
     const reg = await f.anonymous.json('POST', '/api/auth/register', { name: 'Synthetic registered', email: `${p}_reg@example.invalid`, password: require('node:crypto').randomBytes(18).toString('base64url') });

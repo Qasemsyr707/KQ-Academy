@@ -28,7 +28,9 @@ test('HTTP/PostgreSQL: instructors cannot publish, set prices or reassign course
     } finally { await prisma.$disconnect(); }
   });
   const hashed = await bcrypt.hash(password, 4);
-  await prisma.user.createMany({ data: Object.entries(roles).map(([key, role]) => ({ id: ids[key], email: `${ids[key]}@example.invalid`, name: `Synthetic ${key}`, password: hashed, role })) });
+  await prisma.user.createMany({ data: Object.entries(roles).map(([key, role]) => ({ id: ids[key], email: `${ids[key]}@example.invalid`, name: `Synthetic ${key}`, password: hashed, role,
+    // Administrators that existed before granular RBAC keep every permission (migration 20261120010000).
+    ...(role === 'ADMIN' ? { adminPermissions: ['DASHBOARD','USERS','USER_BANNING','INSTRUCTORS','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','NOTIFICATIONS','LIVE_CLASSES','MODERATION','MARKETING','SETTINGS','ADMINISTRATORS'] } : {}) })) });
 
   let requestNumber = 0;
   class Client {
@@ -157,7 +159,8 @@ test('HTTP/PostgreSQL: instructors cannot publish, set prices or reassign course
   });
 
   await t.test('after publication the instructor cannot change the approved price or resubmit', async () => {
-    assert.equal((await c.teacher.json('PUT', `/api/courses/${courseId}`, { price: 0 })).status, 403);
+    // 409: a published course changes only through a reviewed change request; 403 would be the field allow-list.
+    assert.ok([403, 409].includes((await c.teacher.json('PUT', `/api/courses/${courseId}`, { price: 0 })).status));
     assert.equal((await c.teacher.json('POST', `/api/courses/${courseId}/submit`)).status, 409);
     const after = await row(courseId);
     assert.equal(after.price, 39);

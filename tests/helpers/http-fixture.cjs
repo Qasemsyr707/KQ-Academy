@@ -2,6 +2,7 @@
 // Real HTTP sessions against an explicit loopback server, with synthetic users in an isolated
 // kq_security_test_* PostgreSQL database. Every row created here is removed after the test.
 const assert = require('node:assert/strict');
+const ALL_ADMIN_PERMISSIONS = ['DASHBOARD','USERS','USER_BANNING','INSTRUCTORS','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','NOTIFICATIONS','LIVE_CLASSES','MODERATION','MARKETING','SETTINGS','ADMINISTRATORS'];
 const { randomUUID, randomBytes } = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const { testDatabaseUrl, createTestPrisma } = require('./security-postgres.cjs');
@@ -37,17 +38,25 @@ async function httpFixture(t, { users, login = Object.keys(users), course }) {
       await prisma.coupon.deleteMany({ where: { OR: [{ code: { contains: tag } }, { courseId: { in: courses } }] } });
       await prisma.courseBundle.deleteMany({ where: { title: { contains: tag } } });
       await prisma.subscriptionPlan.deleteMany({ where: { name: { contains: tag } } });
+      // Course content a test created (Phase 1: a certificate needs completed lessons).
+      await prisma.lessonProgress.deleteMany({ where: { courseId: { in: courses } } });
+      await prisma.lesson.deleteMany({ where: { chapter: { courseId: { in: courses } } } });
+      await prisma.chapter.deleteMany({ where: { courseId: { in: courses } } });
+      await prisma.notification.deleteMany({ where: { userId: { in: all } } });
       await prisma.course.deleteMany({ where: { id: { in: courses } } });
       await prisma.user.deleteMany({ where: { id: { in: all } } });
     } finally { await prisma.$disconnect(); }
   });
   const hashed = await bcrypt.hash(password, 4);
   await prisma.user.createMany({ data: Object.entries(users).map(([key, fields]) => ({
-    id: ids[key], email: email(key), name: `Synthetic ${key}`, password: hashed, ...fields,
+    id: ids[key], email: email(key), name: `Synthetic ${key}`, password: hashed,
+    // Administrators that existed before granular RBAC keep every permission (migration 20261120010000).
+    ...(fields.role === 'ADMIN' && !fields.adminPermissions ? { adminPermissions: ALL_ADMIN_PERMISSIONS } : {}),
+    ...fields,
   })) });
   if (course) {
     await prisma.course.create({ data: { id: courseId, title: `Synthetic course ${tag}`, category: 'TEST', instructorId: ids[course.instructor],
-      status: 'PUBLISHED', price: course.price ?? 100, priceSYP: course.priceSYP ?? 1450000 } });
+      status: course.status ?? 'PUBLISHED', price: course.price ?? 100, priceSYP: course.priceSYP ?? 1450000 } });
   }
 
   let n = 0;
