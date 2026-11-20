@@ -4,6 +4,7 @@ import { requireRequestUser } from '@/lib/request-user';
 import { CheckoutError } from '@/lib/payments/checkout-context';
 import { paymentId, positiveAmount, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 import { checkoutAvailable } from '@/lib/payments/availability';
+import { publicCourseWhere } from '@/lib/catalogue-visibility';
 
 const PUBLIC_PAYMENT_SWITCHES = ['ENABLE_STRIPE', 'ENABLE_PAYPAL', 'ENABLE_TABBY', 'ENABLE_TAMARA', 'ENABLE_WALLET', 'ENABLE_MANUAL'];
 
@@ -16,8 +17,8 @@ export async function GET(req: Request) {
 
     if (!paymentId(courseId)) throw new CheckoutError(400, 'معرف الكورس مفقود');
 
-    const course = await prisma.course.findUnique({
-      where: { id: courseId, status: 'PUBLISHED' },
+    const course = await prisma.course.findFirst({
+      where: publicCourseWhere({ id: courseId }),
       select: { 
         title: true, 
         price: true, 

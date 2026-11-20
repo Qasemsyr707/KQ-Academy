@@ -1,19 +1,29 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRoleApi } from '@/lib/rbac';
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
+    // Re-check the user's role and ban status against the database for every write.
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    if (!authorized) return errorResponse;
 
     const { title, courseId, isFree = false } = await req.json();
 
     if (!title || !courseId) {
       return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 });
+    }
+
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { instructorId: true },
+    });
+    if (!course) {
+      return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
+    }
+    const user = session.user;
+    if (course.instructorId !== user.id && !['ADMIN', 'OWNER'].includes(user.role ?? '')) {
+      return NextResponse.json({ error: 'غير مصرح بإضافة فصل لهذا الكورس' }, { status: 403 });
     }
 
     // Determine order

@@ -9,15 +9,16 @@ import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import MotionLayer from '@/components/motion/MotionLayer';
 import { serializeJsonLd } from '@/lib/safe-json-ld';
+import { curriculumHidden } from '@/lib/catalogue-visibility';
 
 export const metadata: Metadata = {
   title: 'KQ Academy | أكاديمية KQ للتعليم الإلكتروني',
-  description: 'منصة تعليم إلكتروني متكاملة للمناهج السورية والمهارات المهنية. كورسات بكالوريا، تاسع، وتطوير مهني بشهادات معتمدة.',
-  keywords: ['تعليم', 'أكاديمية', 'سوريا', 'بكالوريا', 'تاسع', 'كورسات', 'مهارات', 'برمجة', 'لغات', 'KQ Academy', 'KQ', 'شهادات معتمدة'],
+  description: 'منصة تعليم إلكتروني تجمع المعرفة والمهارات العملية في مكان واحد: البرمجة، الذكاء الاصطناعي، التصميم، التسويق وصناعة المحتوى، مع شهادات إتمام قابلة للتحقق.',
+  keywords: ['تعليم إلكتروني', 'أكاديمية', 'كورسات', 'دورات أونلاين', 'مهارات', 'برمجة', 'ذكاء اصطناعي', 'تصميم', 'تسويق', 'صناعة المحتوى', 'KQ Academy', 'KQ', 'شهادات إتمام'],
   authors: [{ name: 'KQ Academy' }],
   openGraph: {
     title: 'KQ Academy | بوابتك نحو التميز',
-    description: 'أفضل منصة تعليمية سورية للمناهج والدورات المهنية',
+    description: 'تعلّم بذكاء. تقدّم بثقة. كورسات عملية في البرمجة والذكاء الاصطناعي والتصميم والتسويق.',
     url: 'https://kqacademy.com',
     siteName: 'KQ Academy',
     images: [
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'KQ Academy | للتعليم الإلكتروني',
-    description: 'أفضل الكورسات في سوريا بشهادات معتمدة',
+    description: 'كورسات عملية بخطوات واضحة وشهادات إتمام قابلة للتحقق.',
     images: ['https://kqacademy.com/api/og'],
   },
   robots: {
@@ -54,7 +55,7 @@ const orgSchema = {
   "name": "KQ Academy",
   "url": "https://kqacademy.com",
   "logo": "https://kqacademy.com/logo.png",
-  "description": "منصة تعليم إلكتروني متكاملة للمناهج السورية والمهارات المهنية.",
+  "description": "منصة تعليم إلكتروني تجمع المعرفة والمهارات العملية في مكان واحد.",
   "sameAs": [
     "https://facebook.com/kqacademy",
     "https://instagram.com/kqacademy",
@@ -102,7 +103,7 @@ export default function RootLayout({
         </noscript>
         <a href="#main-content" className="skip-link">تخطَّ إلى المحتوى الرئيسي</a>
         <AuthProvider>
-          <Navbar />
+          <Navbar showCurriculum={!curriculumHidden()} />
           {/* Google Analytics - loads only if NEXT_PUBLIC_GA_ID is set */}
           {process.env.NEXT_PUBLIC_GA_ID && (
             <>

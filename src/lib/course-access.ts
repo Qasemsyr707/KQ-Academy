@@ -1,10 +1,11 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 
 export interface CourseViewer { id: string; role: string }
-interface CourseAccessRecord { id: string; instructorId: string; status: string }
+interface CourseAccessRecord { id: string; instructorId: string; status: string; type?: string | null; category?: string | null }
 
 /** Session/JWT role claims are not an authorization source. */
 export async function getCourseViewer(req?: Request): Promise<CourseViewer | null> {
@@ -37,5 +38,5 @@ export async function getCourseAccess(course: CourseAccessRecord, viewer?: Cours
     where: { userId_courseId: { userId: viewer.id, courseId: course.id } },
     select: { id: true },
   });
-  return { isEnrolled, canView: course.status === 'PUBLISHED' || managesCourse(course, viewer) || isEnrolled };
+  return { isEnrolled, canView: isPubliclyOffered(course) || managesCourse(course, viewer) || isEnrolled };
 }

@@ -81,7 +81,10 @@ test('guests receive the same public checkout summary without private data', asy
   assert.match(res.headers.get('cache-control'), /no-store/);
   const body = await res.json();
   assert.deepEqual(body, { course: COURSE, methods: ['WALLET', 'MANUAL'], viewer: { authenticated: false, enrolled: false } });
-  assert.deepEqual(h.calls.course[0].where, { id: 'course_1', status: 'PUBLISHED' }, 'only published courses are sellable');
+  assert.equal(h.calls.course[0].where.id, 'course_1');
+  assert.equal(h.calls.course[0].where.status, 'PUBLISHED');
+  assert.ok(Array.isArray(h.calls.course[0].where.AND));
+  assert.match(JSON.stringify(h.calls.course[0].where.AND), /CURRICULUM/, 'hidden curriculum must not be sellable');
   assert.equal(h.calls.enrollment.length, 0, 'no enrolment lookup for guests');
   assert.equal('wallet' in body, false, 'wallet balances never leave the authenticated endpoint');
 });

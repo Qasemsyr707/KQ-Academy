@@ -2,7 +2,10 @@ import { prisma } from '@/lib/db';
 import CoursesClient from '../courses/CoursesClient';
 import { Suspense } from 'react';
 import { connection } from 'next/server';
+import { redirect } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
+import type { Metadata } from 'next';
+import { curriculumHidden } from '@/lib/catalogue-visibility';
 
 // Cache public catalogue data; defer the first query until a request arrives.
 const getCurriculumCourses = unstable_cache(() => prisma.course.findMany({
@@ -18,8 +21,16 @@ const getCurriculumCourses = unstable_cache(() => prisma.course.findMany({
     orderBy: { createdAt: 'desc' }
   }), ['public-curriculum-courses-v1'], { revalidate: 300 });
 
+export async function generateMetadata(): Promise<Metadata> {
+  // While hidden, the page must not stay in search engines.
+  return curriculumHidden() ? { robots: { index: false, follow: false } } : {};
+}
+
 export default async function CurriculumPage() {
   await connection();
+  // Temporarily hidden: a temporary redirect (not a 404 and not permanent), so
+  // old links land on the catalogue and the page can return later unchanged.
+  if (curriculumHidden()) redirect('/courses');
   const courses = await getCurriculumCourses();
 
   return (
