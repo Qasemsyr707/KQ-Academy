@@ -52,7 +52,7 @@ export default function LoginPage() {
       subtitle="أدخل بياناتك لمتابعة دوراتك التدريبية"
       brand={{
         title: <>مرحباً بك مجدداً في <span className="text-gold">K&amp;Q</span></>,
-        text: 'المكان الأول لتطوير مهاراتك واحتراف التكنولوجيا في سوريا والوطن العربي.',
+        text: 'مكانك لتطوير مهاراتك واحتراف التقنية، بخطوات واضحة وفي الوقت الذي يناسبك.',
       }}
     >
       {registered && !error ? (

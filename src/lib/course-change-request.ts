@@ -22,8 +22,13 @@ function price(value: unknown, field: 'price' | 'priceSYP'): number {
 
 /** Validated proposed values, keeping only the fields that differ from the live course. */
 export function parseChangeRequest(body: Record<string, unknown>, live: Record<ChangeField, unknown>): { changes: CourseChanges; previous: CourseChanges } {
-  const { price: rawPrice, priceSYP: rawSYP, ...content } = body;
+  const { price: rawPrice, priceSYP: rawSYP, category, ...content } = body;
   const proposed: CourseChanges = { ...courseContentUpdate(content) };
+  // The category is stored as text here and resolved against the active taxonomy on approval.
+  if (Object.hasOwn(body, 'category')) {
+    if (typeof category !== 'string' || !category.trim() || category.length > 100) throw new CourseUpdateError(400, 'التصنيف غير صالح');
+    proposed.category = category.trim();
+  }
   if (Object.hasOwn(body, 'price')) proposed.price = price(rawPrice, 'price');
   if (Object.hasOwn(body, 'priceSYP')) proposed.priceSYP = price(rawSYP, 'priceSYP');
   const changes: CourseChanges = {};
@@ -49,7 +54,7 @@ export function stillMatches(previous: CourseChanges, live: Record<string, unkno
 }
 
 export const LIVE_SELECT = {
-  title: true, description: true, thumbnail: true, previewVideoUrl: true, includes: true, category: true, price: true, priceSYP: true,
+  title: true, description: true, thumbnail: true, previewVideoUrl: true, includes: true, durationHours: true, category: true, price: true, priceSYP: true,
 } as const;
 
 /** The owner and every unbanned administrator holding the course-review permission. */

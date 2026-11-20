@@ -27,7 +27,8 @@ function load(env = {}) {
   if ('KQ_HIDE_CURRICULUM' in env) process.env.KQ_HIDE_CURRICULUM = env.KQ_HIDE_CURRICULUM; else delete process.env.KQ_HIDE_CURRICULUM;
   const mocks = {
     'next/cache': { unstable_cache: fn => fn },
-    '@/lib/db': { prisma: { notification: {}, course: { findMany: async args => { calls.push(args); return CATALOGUE; } } } },
+    // No taxonomy rows: these tests cover courses whose category is still plain text.
+    '@/lib/db': { prisma: { notification: {}, course: { findMany: async args => { calls.push(args); return CATALOGUE; } }, category: { findMany: async () => [] } } },
   };
   const visibility = loadTs('../src/lib/catalogue-visibility.ts', mocks);
   mocks['@/lib/catalogue-visibility'] = visibility;
@@ -117,11 +118,15 @@ test('sorting uses the real USD price (it used SYP only), and paging is stable',
 
 test('suggestions return matching courses and categories with real links', async t => {
   const { search, restore } = load(); t.after(restore);
-  assert.deepEqual(await search.suggestCourses('a'), []);
+  assert.deepEqual(await search.suggestCourses(''), []);
+  assert.deepEqual(await search.suggestCourses('   '), []);
+  // One letter is enough; it matches the start of words only.
+  assert.deepEqual((await search.suggestCourses('a')).filter(i => i.type === 'course').map(i => i.id).sort(), ['c4', 'c6']);
   const items = await search.suggestCourses('تسويق');
   assert.ok(items.some(i => i.type === 'course' && i.href === '/courses/c7'));
-  assert.ok(items.some(i => i.type === 'category' && i.href.startsWith('/courses?category=')));
-  assert.ok(items.length <= 7);
+  // A category text without a taxonomy entry is still suggested, with its real filter link.
+  assert.ok(items.some(i => i.type === 'category' && i.href === `/courses?category=${encodeURIComponent('التسويق')}` && i.count === 2));
+  assert.ok(items.length <= 10);
 });
 
 test('the curriculum switch hides school content from every public query and is reversible', async t => {
@@ -149,4 +154,18 @@ test('the curriculum switch hides school content from every public query and is 
   assert.deepEqual(shown.visibility.publicCourseWhere(), { status: 'PUBLISHED' });
   assert.equal(shown.visibility.isPubliclyOffered({ status: 'PUBLISHED', type: 'CURRICULUM', category: 'بكالوريا' }), true);
   assert.equal((await shown.search.searchCourses({ type: 'CURRICULUM' })).total, 0);
+});
+
+test('certificate privacy helpers: masked names and no invented duration', t => {
+  const access = loadTs('../src/lib/certificate-access.ts', { '@/lib/db': { prisma: { notification: {} } } });
+  assert.equal(access.maskName('محمد عبد الرحمن'), 'م••• ع••• ا•••');
+  assert.equal(access.maskName(' Sara  Khatib '), 'S••• K•••');
+  // Old certificates carry the hard-coded default (16): it is never printed.
+  assert.equal(access.certificateHours({ courseDuration: 16, templateVersion: '1.0' }, { durationHours: null }), null);
+  assert.equal(access.certificateHours({ courseDuration: 16, templateVersion: '1.0' }, { durationHours: 12.5 }), 12.5);
+  assert.equal(access.certificateHours({ courseDuration: 0, templateVersion: '2.0' }, { durationHours: null }), null);
+  assert.equal(access.certificateHours({ courseDuration: 24, templateVersion: '2.0' }, { durationHours: 30 }), 24);
+  const tokens = new Set(Array.from({ length: 200 }, access.newVerifyToken));
+  assert.equal(tokens.size, 200);
+  assert.ok([...tokens].every(token => /^[A-Za-z0-9_-]{22}$/.test(token)));
 });

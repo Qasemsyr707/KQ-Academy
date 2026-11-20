@@ -1,53 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser } from '@/lib/request-user';
+import { COMMUNITY_HEADERS, COMMUNITY_LIMITS, COMMUNITY_RATES, communityFailure, communityPage, communityText, limitCommunity } from '@/lib/community';
 
-export async function GET() {
+/** Newest posts, one page at a time (`?before=<createdAt of the last post>`). Response shape unchanged: an array. */
+export async function GET(req: Request) {
   try {
+    const { take, before } = communityPage(req.url);
     const posts = await prisma.communityPost.findMany({
+      where: before ? { createdAt: { lt: before } } : undefined,
       include: {
-        user: {
-          select: { name: true, role: true }
-        },
-        _count: {
-          select: { comments: true }
-        }
+        user: { select: { name: true, role: true } },
+        _count: { select: { comments: true } },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take,
     });
-    return NextResponse.json(posts);
+    return NextResponse.json(posts, { headers: COMMUNITY_HEADERS });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
+    return communityFailure(error, 'list posts');
   }
 }
 
-export async function POST(req: NextRequest) {
+/** Signed-in, non-banned members only; same-origin JSON (CSRF), validated, rate-limited per account. */
+export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { content, title } = await req.json();
-    if (!content) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
-    }
-
+    const user = await requireRequestUser(req);
+    const body = await req.json();
+    const content = communityText(body?.content, COMMUNITY_LIMITS.post, 'نص المنشور');
+    const title = body?.title === undefined || body?.title === null || body?.title === ''
+      ? 'منشور جديد' : communityText(body.title, COMMUNITY_LIMITS.title, 'العنوان');
+    limitCommunity(COMMUNITY_RATES.write, user.id);
     const post = await prisma.communityPost.create({
-      data: {
-        title: title || 'منشور جديد',
-        content,
-        userId: (session.user as any).id
-      },
+      data: { title, content, userId: user.id },
       include: {
         user: { select: { name: true, role: true } },
-        _count: { select: { comments: true } }
-      }
+        _count: { select: { comments: true } },
+      },
     });
-
-    return NextResponse.json(post);
+    return NextResponse.json(post, { headers: COMMUNITY_HEADERS });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create post' }, { status: 500 });
+    return communityFailure(error, 'create post');
   }
 }

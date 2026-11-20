@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import CourseCover from '@/components/ui/CourseCover';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -711,7 +712,7 @@ function CheckoutContent() {
           <h2 id="checkout-summary" className={styles.summaryTitle}>ملخص الطلب</h2>
           <div className={styles.product}>
             <div className={styles.thumb}>
-              {data.course.thumbnail ? <Image src={data.course.thumbnail} alt="" fill unoptimized sizes="96px" /> : null}
+              <CourseCover src={data.course.thumbnail} sizes="96px" iconSize={22} />
             </div>
             <div style={{ minWidth: 0 }}>
               <div className={styles.productTitle}>{data.course.title}</div>

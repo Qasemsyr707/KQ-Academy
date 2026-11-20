@@ -12,7 +12,9 @@ const LIBRARY = '1234';
 const KEY = 'test-only-bunny-key';
 const NOW = 1793491200;
 const USER = { id: 'instructor-1', role: 'INSTRUCTOR' };
-const SCOPE = { operationId: '11111111-1111-4111-8111-111111111111', courseId: 'course-a', purpose: 'lesson' };
+// Every create request now names its file (type and size are checked before Bunny is called).
+const VIDEO_FILE = { name: 'lesson.mp4', size: 50 * 1024 * 1024, type: 'video/mp4' };
+const SCOPE = { operationId: '11111111-1111-4111-8111-111111111111', courseId: 'course-a', purpose: 'lesson', file: VIDEO_FILE };
 
 async function harness(t, { user = USER, owner = USER.id, responder = async () => { throw Error('Unexpected Bunny request'); } } = {}) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'kq-bunny-test-'));
@@ -125,7 +127,7 @@ test('malformed JSON, scope, course and title fail before Bunny', async t => {
 
 test('optional unlinked shorts are scoped, but linked shorts must pass course ownership', async t => {
   const { create, calls } = await harness(t, { owner: 'other', responder: async () => pending() });
-  assert.equal((await create(request({ operationId: SCOPE.operationId, purpose: 'short', title: 'Short' }))).status, 200);
+  assert.equal((await create(request({ operationId: SCOPE.operationId, purpose: 'short', title: 'Short', file: VIDEO_FILE }))).status, 200);
   assert.equal((await create(request({ ...SCOPE, purpose: 'short', title: 'Short' }))).status, 403);
   assert.equal(calls.length, 1);
 });

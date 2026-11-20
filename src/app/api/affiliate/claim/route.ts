@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireRequestUser, RequestUserError } from '@/lib/request-user';
+import { readAuthorization, requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { claimAffiliateEarnings } from '@/lib/payments/affiliate-claim';
 import { walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 
@@ -7,7 +7,7 @@ import { walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
 export async function POST(req: Request) {
   try {
     let identityRequest = req;
-    if (!req.headers.has('authorization')) {
+    if (readAuthorization(req.headers).kind === 'none') {
       // The existing browser sends a bodyless POST. Require an explicit matching
       // Origin before using the shared helper only for cookie identity resolution.
       const configuredUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || req.url;

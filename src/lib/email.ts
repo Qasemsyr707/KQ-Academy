@@ -1,15 +1,32 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_test_key');
+// No key, no e-mail: nothing (not even recipient addresses) is sent to the
+// provider when this deployment has no RESEND_API_KEY (e.g. staging).
+const apiKey = process.env.RESEND_API_KEY?.trim();
+const resend = apiKey ? new Resend(apiKey) : null;
 
-const APP_NAME = 'منصة التعلم السوري';
+/** Send through Resend; false when e-mail is disabled or the provider refused it. */
+async function deliver(message: Parameters<Resend['emails']['send']>[0]): Promise<boolean> {
+  if (!resend) {
+    console.warn('[email] RESEND_API_KEY is not set; e-mail not sent');
+    return false;
+  }
+  const { error } = await resend.emails.send(message);
+  if (error) {
+    console.error('[email] provider rejected the message:', error.message);
+    return false;
+  }
+  return true;
+}
+
+const APP_NAME = 'KQ Academy';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@elearning.sy';
 
 // ── Welcome Email ──────────────────────────────────────────────
 export async function sendWelcomeEmail(to: string, name: string, affiliateCode: string) {
   const referralLink = `${APP_URL}/register?ref=${affiliateCode}`;
-  await resend.emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to,
     subject: `مرحباً بك في ${APP_NAME} 🎉`,
@@ -26,7 +43,7 @@ export async function sendWelcomeEmail(to: string, name: string, affiliateCode: 
 
 // ── Course Completion Reminder ─────────────────────────────────
 export async function sendCourseReminderEmail(to: string, name: string, courseTitle: string, courseId: string, progress: number) {
-  await resend.emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to,
     subject: `${name}، أكمل كورس "${courseTitle}" واحصل على شهادتك! 🏆`,
@@ -41,7 +58,7 @@ export async function sendCourseReminderEmail(to: string, name: string, courseTi
 
 // ── Affiliate Commission Earned ────────────────────────────────
 export async function sendAffiliateEarningEmail(to: string, name: string, amount: number, walletBalance: number) {
-  await resend.emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to,
     subject: `🎉 ربحت $${amount.toFixed(2)} عمولة جديدة!`,
@@ -60,7 +77,7 @@ export async function sendAffiliateEarningEmail(to: string, name: string, amount
 
 // ── Bundle Promotional Email ───────────────────────────────────
 export async function sendPromotionalEmail(to: string, name: string, subject: string, body: string) {
-  await resend.emails.send({
+  return deliver({
     from: FROM_EMAIL,
     to,
     subject,

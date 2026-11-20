@@ -1,36 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser } from '@/lib/request-user';
+import { COMMUNITY_HEADERS, COMMUNITY_LIMITS, COMMUNITY_RATES, CommunityError, communityFailure, communityText, limitCommunity } from '@/lib/community';
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { postId, content } = await request.json();
-    const userId = (session.user as any).id;
-
-    if (!postId || !content) {
-      return NextResponse.json({ error: 'Post ID and content are required' }, { status: 400 });
-    }
-
+    const user = await requireRequestUser(request);
+    const body = await request.json();
+    const postId = body?.postId;
+    if (typeof postId !== 'string' || !postId || postId.length > 64) throw new CommunityError(400, 'المنشور غير صالح');
+    const content = communityText(body?.content, COMMUNITY_LIMITS.comment, 'نص التعليق');
+    if (!await prisma.communityPost.findUnique({ where: { id: postId }, select: { id: true } })) throw new CommunityError(404, 'المنشور غير موجود');
+    limitCommunity(COMMUNITY_RATES.write, user.id);
     const comment = await prisma.communityComment.create({
-      data: {
-        postId,
-        content,
-        userId,
-      },
-      include: {
-        user: { select: { id: true, name: true, image: true } }
-      }
+      data: { postId, content, userId: user.id },
+      include: { user: { select: { id: true, name: true, image: true } } },
     });
-
-    return NextResponse.json(comment);
-  } catch (error: any) {
-    console.error('Error creating community comment:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(comment, { headers: COMMUNITY_HEADERS });
+  } catch (error) {
+    return communityFailure(error, 'create comment');
   }
 }

@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { assertBunnyVideoReady, BunnyServerError } from '@/lib/bunny-upload-server';
+import { resolveCourseTaxonomy, TaxonomyError } from '@/lib/course-taxonomy';
+import { invalidateCatalogueSearch } from '@/lib/course-search';
 import { FIELD_LABELS, LIVE_SELECT, stillMatches, type ChangeField, type CourseChanges } from '@/lib/course-change-request';
 
 const headers = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
@@ -37,7 +39,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ request
       if (request.status !== 'PENDING') throw new RequestUserError(409, 'تمت مراجعة هذا الطلب مسبقاً');
       if (request.instructorId === reviewer.id) throw new RequestUserError(403, 'لا يمكنك مراجعة طلبك الخاص');
       await tx.$queryRaw`SELECT id FROM "Course" WHERE id = ${request.courseId} FOR UPDATE`;
-      const course = await tx.course.findUnique({ where: { id: request.courseId }, select: { id: true, ...LIVE_SELECT } });
+      const course = await tx.course.findUnique({ where: { id: request.courseId }, select: { id: true, type: true, ...LIVE_SELECT } });
       if (!course) throw new RequestUserError(404, 'الكورس غير موجود');
       const changes = request.changes as CourseChanges;
       if (decision === 'APPROVE') {
@@ -46,7 +48,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ request
         }
         const data: Prisma.CourseUpdateInput = {};
         for (const [key, value] of Object.entries(changes) as [ChangeField, unknown][]) {
-          if (key === 'includes') data.includes = value === null ? Prisma.DbNull : value as Prisma.InputJsonValue;
+          if (key === 'category') Object.assign(data, await resolveCourseTaxonomy(tx, { category: value }, { courseType: course.type, requireCategory: true }));
+          else if (key === 'includes') data.includes = value === null ? Prisma.DbNull : value as Prisma.InputJsonValue;
           else (data as Record<string, unknown>)[key] = value;
         }
         await tx.course.update({ where: { id: course.id }, data });
@@ -63,10 +66,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ request
       } });
       return { courseId: course.id };
     });
+    if (decision === 'APPROVE') invalidateCatalogueSearch();
     console.info('[course-requests] decision', { requestId, decision, by: reviewer.id });
     return NextResponse.json({ success: true, ...result }, { headers });
   } catch (error) {
-    if (error instanceof RequestUserError || error instanceof BunnyServerError) return NextResponse.json({ error: error.message }, { status: error.status, headers });
+    if (error instanceof RequestUserError || error instanceof BunnyServerError || error instanceof TaxonomyError) return NextResponse.json({ error: error.message }, { status: error.status, headers });
     if (error instanceof SyntaxError) return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400, headers });
     console.error('[course-requests]', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500, headers });

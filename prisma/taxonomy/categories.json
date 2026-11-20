@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "note": "Default KQ Academy course taxonomy. Source of the generated SQL in prisma/manual-migrations; administrators manage categories from /admin/categories afterwards. Ids are cat_<slug>. Aliases are synonyms for search and for mapping legacy category text.",
+  "categories": [
+    {
+      "slug": "ai", "name": "الذكاء الاصطناعي", "nameEn": "Artificial Intelligence",
+      "aliases": ["AI", "ذكاء اصطناعي", "ذكاء أصطناعي", "الذكاء الصناعي", "ذكاء صناعي", "Artificial Intelligence"],
+      "children": [
+        { "slug": "ai-tools", "name": "أدوات الذكاء الاصطناعي", "nameEn": "AI Tools", "aliases": ["ChatGPT", "شات جي بي تي", "Claude", "Gemini", "Copilot"] },
+        { "slug": "prompt-engineering", "name": "هندسة الأوامر", "nameEn": "Prompt Engineering", "aliases": ["Prompt", "Prompting", "برومبت", "البرومبت"] },
+        { "slug": "machine-learning", "name": "تعلم الآلة", "nameEn": "Machine Learning", "aliases": ["ML", "Deep Learning", "التعلم العميق", "تعلم عميق"] },
+        { "slug": "ai-automation", "name": "الأتمتة بالذكاء الاصطناعي", "nameEn": "AI Automation", "aliases": ["Automation", "أتمتة", "n8n", "Zapier", "Make"] },
+        { "slug": "generative-ai-media", "name": "توليد الصور والفيديو بالذكاء الاصطناعي", "nameEn": "Generative AI for Images & Video", "aliases": ["Midjourney", "ميدجورني", "AI Art", "AI Video"] }
+      ]
+    },
+    {
+      "slug": "programming-web", "name": "البرمجة وتطوير الويب", "nameEn": "Programming & Web Development",
+      "aliases": ["البرمجة", "برمجة", "Programming", "Coding", "Code", "Web Development", "تطوير الويب", "تطوير مواقع", "مبرمج"],
+      "children": [
+        { "slug": "programming-fundamentals", "name": "أساسيات البرمجة", "nameEn": "Programming Fundamentals", "aliases": ["Python", "بايثون", "Java", "جافا", "C Sharp", "برمجة للمبتدئين"] },
+        { "slug": "web-frontend", "name": "تطوير الواجهات الأمامية", "nameEn": "Front-end Development", "aliases": ["Frontend", "Front End", "فرونت اند", "HTML", "CSS", "JavaScript", "جافاسكربت", "React", "رياكت"] },
+        { "slug": "web-backend", "name": "تطوير الخوادم والأنظمة الخلفية", "nameEn": "Back-end Development", "aliases": ["Backend", "Back End", "باك اند", "Node", "NodeJS", "PHP", "Laravel", "لارافيل", "Django"] },
+        { "slug": "databases", "name": "قواعد البيانات", "nameEn": "Databases", "aliases": ["Database", "SQL", "MySQL", "PostgreSQL", "MongoDB"] },
+        { "slug": "wordpress-cms", "name": "ووردبريس وأنظمة إدارة المحتوى", "nameEn": "WordPress & CMS", "aliases": ["WordPress", "ووردبريس", "وردبريس", "CMS"] }
+      ]
+    },
+    {
+      "slug": "mobile-apps", "name": "تطوير تطبيقات الموبايل", "nameEn": "Mobile App Development",
+      "aliases": ["تطبيقات الموبايل", "تطبيقات موبايل", "Mobile Apps", "App Development", "برمجة تطبيقات"],
+      "children": [
+        { "slug": "flutter", "name": "تطوير تطبيقات Flutter", "nameEn": "Flutter Development", "aliases": ["Flutter", "فلاتر", "Dart"] },
+        { "slug": "android", "name": "تطوير تطبيقات أندرويد", "nameEn": "Android Development", "aliases": ["Android", "أندرويد", "Kotlin", "كوتلن"] },
+        { "slug": "ios", "name": "تطوير تطبيقات iOS", "nameEn": "iOS Development", "aliases": ["iOS", "Swift", "سويفت", "آيفون"] },
+        { "slug": "no-code-apps", "name": "بناء التطبيقات بدون برمجة", "nameEn": "No-code App Building", "aliases": ["No Code", "NoCode", "بدون كود", "Bubble", "FlutterFlow"] }
+      ]
+    },
+    {
+      "slug": "digital-marketing", "name": "التسويق الرقمي والإعلانات", "nameEn": "Digital Marketing & Advertising",
+      "aliases": ["التسويق", "تسويق", "Marketing", "Digital Marketing", "التسويق الإلكتروني", "تسويق إلكتروني", "ديجيتال ماركتنج"],
+      "children": [
+        { "slug": "paid-ads", "name": "الإعلانات الممولة", "nameEn": "Paid Advertising", "aliases": ["Ads", "Advertising", "إعلانات", "إعلانات ممولة", "Facebook Ads", "Meta Ads", "Google Ads", "TikTok Ads", "إعلانات فيسبوك", "ميتا"] },
+        { "slug": "social-media-marketing", "name": "التسويق عبر وسائل التواصل", "nameEn": "Social Media Marketing", "aliases": ["Social Media", "سوشيال ميديا", "سوشال ميديا", "إدارة صفحات", "Instagram", "انستغرام"] },
+        { "slug": "seo", "name": "تحسين محركات البحث SEO", "nameEn": "SEO", "aliases": ["SEO", "سيو", "Search Engine Optimization"] },
+        { "slug": "email-marketing", "name": "التسويق بالبريد الإلكتروني", "nameEn": "Email Marketing", "aliases": ["Email Marketing", "إيميل ماركتنج"] },
+        { "slug": "marketing-strategy", "name": "استراتيجيات التسويق", "nameEn": "Marketing Strategy", "aliases": ["Marketing Plan", "خطة تسويقية", "Growth"] }
+      ]
+    },
+    {
+      "slug": "ecommerce-sales", "name": "التجارة الإلكترونية والمبيعات", "nameEn": "E-commerce & Sales",
+      "aliases": ["E-commerce", "Ecommerce", "تجارة إلكترونية", "التجارة الالكترونية", "المبيعات", "مبيعات", "Sales"],
+      "children": [
+        { "slug": "online-stores", "name": "المتاجر الإلكترونية", "nameEn": "Online Stores", "aliases": ["Shopify", "شوبيفاي", "WooCommerce", "متجر إلكتروني", "متجر"] },
+        { "slug": "dropshipping", "name": "الدروبشيبينغ", "nameEn": "Dropshipping", "aliases": ["Dropshipping", "دروبشيبينج", "دروب شيبنج"] },
+        { "slug": "marketplaces", "name": "البيع على المنصات العالمية", "nameEn": "Marketplace Selling", "aliases": ["Amazon", "أمازون", "Etsy", "Noon", "نون"] },
+        { "slug": "sales-skills", "name": "مهارات البيع والإقناع", "nameEn": "Selling & Persuasion", "aliases": ["Selling", "البيع", "الإقناع", "Closing"] }
+      ]
+    },
+    {
+      "slug": "graphic-design", "name": "التصميم الجرافيكي", "nameEn": "Graphic Design",
+      "aliases": ["التصميم", "تصميم", "Design", "Graphic Design", "جرافيك", "غرافيك", "تصميم جرافيك"],
+      "children": [
+        { "slug": "photoshop", "name": "فوتوشوب", "nameEn": "Photoshop", "aliases": ["Photoshop", "الفوتوشوب", "فوتو شوب"] },
+        { "slug": "illustrator", "name": "إليستريتور", "nameEn": "Illustrator", "aliases": ["Illustrator", "اليستريتور", "الستريتور"] },
+        { "slug": "branding-logo", "name": "الهوية البصرية والشعارات", "nameEn": "Branding & Logo Design", "aliases": ["Branding", "Logo", "لوجو", "شعار", "هوية بصرية"] },
+        { "slug": "canva", "name": "التصميم باستخدام Canva", "nameEn": "Canva Design", "aliases": ["Canva", "كانفا"] },
+        { "slug": "social-media-design", "name": "تصاميم السوشيال ميديا", "nameEn": "Social Media Design", "aliases": ["Social Media Design", "تصميم بوستات", "بوستات"] }
+      ]
+    },
+    {
+      "slug": "ui-ux", "name": "تصميم واجهات وتجربة المستخدم UI/UX", "nameEn": "UI/UX Design",
+      "aliases": ["UI/UX", "UI UX", "UX", "UI", "UX Design", "UI Design", "تجربة المستخدم", "واجهات المستخدم"],
+      "children": [
+        { "slug": "figma", "name": "التصميم باستخدام Figma", "nameEn": "Figma", "aliases": ["Figma", "فيجما", "فيغما"] },
+        { "slug": "ux-research", "name": "أبحاث تجربة المستخدم", "nameEn": "UX Research", "aliases": ["UX Research", "User Research"] },
+        { "slug": "product-design", "name": "تصميم المنتجات الرقمية", "nameEn": "Digital Product Design", "aliases": ["Product Design"] }
+      ]
+    },
+    {
+      "slug": "content-creation", "name": "صناعة المحتوى", "nameEn": "Content Creation",
+      "aliases": ["Content", "Content Creation", "Content Creator", "صانع محتوى", "محتوى", "المحتوى"],
+      "children": [
+        { "slug": "youtube", "name": "صناعة محتوى يوتيوب", "nameEn": "YouTube Content", "aliases": ["YouTube", "يوتيوب", "اليوتيوب"] },
+        { "slug": "short-video", "name": "الفيديو القصير والريلز", "nameEn": "Short-form Video & Reels", "aliases": ["Reels", "ريلز", "TikTok", "تيك توك", "Shorts"] },
+        { "slug": "copywriting", "name": "كتابة المحتوى والكتابة الإعلانية", "nameEn": "Copywriting", "aliases": ["Copywriting", "كوبي رايتنج", "كتابة إعلانية", "كتابة محتوى"] },
+        { "slug": "podcast", "name": "البودكاست", "nameEn": "Podcasting", "aliases": ["Podcast", "بودكاست"] }
+      ]
+    },
+    {
+      "slug": "photography-editing", "name": "التصوير والمونتاج", "nameEn": "Photography & Video Editing",
+      "aliases": ["مونتاج", "المونتاج", "Montage", "Editing", "Video Editing", "تصوير", "Photography"],
+      "children": [
+        { "slug": "photography", "name": "التصوير الفوتوغرافي", "nameEn": "Photography Skills", "aliases": ["Camera", "كاميرا", "فوتوغرافي"] },
+        { "slug": "mobile-photography", "name": "التصوير بالموبايل", "nameEn": "Mobile Photography", "aliases": ["Mobile Photography", "تصوير موبايل"] },
+        { "slug": "video-editing", "name": "تحرير الفيديو", "nameEn": "Video Editing Software", "aliases": ["Premiere", "بريمير", "CapCut", "كاب كات", "InShot", "إن شوت", "Final Cut", "DaVinci"] },
+        { "slug": "motion-graphics", "name": "الموشن جرافيك", "nameEn": "Motion Graphics", "aliases": ["Motion Graphics", "موشن جرافيك", "موشن", "After Effects", "افتر افكت"] }
+      ]
+    },
+    {
+      "slug": "business-entrepreneurship", "name": "الأعمال وريادة المشاريع", "nameEn": "Business & Entrepreneurship",
+      "aliases": ["الأعمال", "أعمال", "Business", "Entrepreneurship", "ريادة الأعمال", "ريادة أعمال"],
+      "children": [
+        { "slug": "startups", "name": "الشركات الناشئة", "nameEn": "Startups", "aliases": ["Startup", "Startups", "ستارت اب"] },
+        { "slug": "small-business", "name": "إدارة المشاريع الصغيرة", "nameEn": "Small Business Management", "aliases": ["Small Business", "مشروع صغير", "مشاريع صغيرة"] },
+        { "slug": "freelancing", "name": "العمل الحر", "nameEn": "Freelancing", "aliases": ["Freelance", "Freelancing", "فريلانس", "عمل حر", "Upwork", "خمسات"] },
+        { "slug": "business-planning", "name": "التخطيط وخطط العمل", "nameEn": "Business Planning", "aliases": ["Business Plan", "خطة عمل", "دراسة جدوى"] }
+      ]
+    },
+    {
+      "slug": "project-management", "name": "إدارة المشاريع", "nameEn": "Project Management",
+      "aliases": ["Project Management", "إدارة مشاريع", "مدير مشروع"],
+      "children": [
+        { "slug": "pmp", "name": "التحضير لشهادة PMP", "nameEn": "PMP Preparation", "aliases": ["PMP", "بي ام بي"] },
+        { "slug": "agile-scrum", "name": "منهجيات Agile وScrum", "nameEn": "Agile & Scrum", "aliases": ["Agile", "Scrum", "سكرم", "أجايل"] },
+        { "slug": "pm-tools", "name": "أدوات إدارة المشاريع", "nameEn": "Project Management Tools", "aliases": ["Trello", "Jira", "Asana", "ClickUp"] }
+      ]
+    },
+    {
+      "slug": "accounting-finance", "name": "المحاسبة والمالية", "nameEn": "Accounting & Finance",
+      "aliases": ["Accounting", "محاسبة", "Finance", "مالية", "المالية"],
+      "children": [
+        { "slug": "financial-accounting", "name": "المحاسبة المالية", "nameEn": "Financial Accounting", "aliases": ["IFRS", "قيود محاسبية"] },
+        { "slug": "financial-analysis", "name": "التحليل المالي", "nameEn": "Financial Analysis", "aliases": ["Financial Analysis", "قوائم مالية"] },
+        { "slug": "accounting-software", "name": "برامج المحاسبة", "nameEn": "Accounting Software", "aliases": ["QuickBooks", "Odoo", "أودو", "الأمين"] },
+        { "slug": "investing-trading", "name": "الاستثمار والتداول", "nameEn": "Investing & Trading", "aliases": ["Trading", "تداول", "Forex", "فوركس", "Crypto", "كريبتو", "استثمار"] }
+      ]
+    },
+    {
+      "slug": "data-analysis", "name": "تحليل البيانات", "nameEn": "Data Analysis",
+      "aliases": ["Data Analysis", "Data", "Data Science", "علم البيانات", "تحليل بيانات"],
+      "children": [
+        { "slug": "power-bi", "name": "Power BI ولوحات التقارير", "nameEn": "Power BI & Dashboards", "aliases": ["Power BI", "باور بي اي", "Tableau", "Dashboards"] },
+        { "slug": "python-data", "name": "تحليل البيانات بلغة Python", "nameEn": "Data Analysis with Python", "aliases": ["Pandas", "Data Python"] },
+        { "slug": "statistics", "name": "الإحصاء", "nameEn": "Statistics", "aliases": ["Statistics", "إحصاء", "SPSS"] }
+      ]
+    },
+    {
+      "slug": "cybersecurity-networks", "name": "الأمن السيبراني والشبكات", "nameEn": "Cybersecurity & Networking",
+      "aliases": ["Cybersecurity", "Cyber Security", "Security", "أمن سيبراني", "أمن المعلومات", "سايبر"],
+      "children": [
+        { "slug": "ethical-hacking", "name": "الاختراق الأخلاقي", "nameEn": "Ethical Hacking", "aliases": ["Ethical Hacking", "Penetration Testing", "اختراق", "هكر"] },
+        { "slug": "networking", "name": "الشبكات", "nameEn": "Networking", "aliases": ["Networking", "Networks", "CCNA", "شبكات"] },
+        { "slug": "cloud-devops", "name": "الحوسبة السحابية وDevOps", "nameEn": "Cloud & DevOps", "aliases": ["Cloud", "AWS", "Azure", "DevOps", "Linux", "لينكس"] }
+      ]
+    },
+    {
+      "slug": "vocational-crafts", "name": "المهارات المهنية والحرفية", "nameEn": "Vocational & Craft Skills",
+      "aliases": ["مهارات مهنية", "مهارات حرفية", "حرف", "Vocational", "Crafts"],
+      "children": [
+        { "slug": "maintenance-electronics", "name": "الصيانة والإلكترونيات", "nameEn": "Maintenance & Electronics", "aliases": ["صيانة", "Maintenance", "صيانة موبايل", "Electronics"] },
+        { "slug": "tailoring-fashion", "name": "الخياطة والأزياء", "nameEn": "Tailoring & Fashion", "aliases": ["خياطة", "تفصيل", "Fashion", "أزياء"] },
+        { "slug": "beauty-care", "name": "التجميل والعناية", "nameEn": "Beauty & Care", "aliases": ["Makeup", "مكياج", "تجميل", "Beauty"] },
+        { "slug": "cooking", "name": "الطبخ والحلويات", "nameEn": "Cooking & Baking", "aliases": ["Cooking", "طبخ", "حلويات", "Baking"] },
+        { "slug": "handicrafts", "name": "الأشغال اليدوية", "nameEn": "Handicrafts", "aliases": ["Handmade", "أشغال يدوية", "يدوي"] },
+        { "slug": "arts-music", "name": "الفنون والموسيقى", "nameEn": "Arts & Music", "aliases": ["Music", "موسيقى", "عزف", "Arts", "فنون", "رسم", "Drawing"] }
+      ]
+    },
+    {
+      "slug": "practical-training", "name": "التدريب العملي والتطبيقي", "nameEn": "Hands-on & Applied Training",
+      "aliases": ["تدريب عملي", "Practical Training", "Applied Training", "Hands-on"],
+      "children": [
+        { "slug": "workshops", "name": "ورش العمل التطبيقية", "nameEn": "Applied Workshops", "aliases": ["Workshop", "Workshops", "ورشة عمل", "ورش عمل"] },
+        { "slug": "applied-projects", "name": "مشاريع تطبيقية", "nameEn": "Applied Projects", "aliases": ["Projects", "مشاريع عملية", "مشروع تطبيقي"] },
+        { "slug": "field-training", "name": "التدريب الميداني", "nameEn": "Field Training", "aliases": ["Internship", "تدريب ميداني"] }
+      ]
+    },
+    {
+      "slug": "engineering", "name": "الهندسة والبرامج الهندسية", "nameEn": "Engineering & Engineering Software",
+      "aliases": ["الهندسة", "هندسة", "Engineering", "برامج هندسية"],
+      "children": [
+        { "slug": "autocad", "name": "أوتوكاد", "nameEn": "AutoCAD", "aliases": ["AutoCAD", "اوتوكاد", "الأوتوكاد", "Auto CAD"] },
+        { "slug": "revit-bim", "name": "ريفيت ونمذجة BIM", "nameEn": "Revit & BIM", "aliases": ["Revit", "ريفيت", "BIM"] },
+        { "slug": "3d-design", "name": "التصميم والإظهار ثلاثي الأبعاد", "nameEn": "3D Design & Rendering", "aliases": ["3D", "3ds Max", "SketchUp", "سكتش اب", "Blender", "بلندر", "Lumion", "V-Ray"] },
+        { "slug": "structural-analysis", "name": "التحليل والتصميم الإنشائي", "nameEn": "Structural Analysis & Design", "aliases": ["ETABS", "SAP2000", "إنشائي", "Structural"] },
+        { "slug": "electrical-mechanical", "name": "الهندسة الكهربائية والميكانيكية", "nameEn": "Electrical & Mechanical Engineering", "aliases": ["Electrical", "Mechanical", "PLC", "كهرباء", "ميكانيك"] }
+      ]
+    },
+    {
+      "slug": "languages-translation", "name": "اللغات والترجمة", "nameEn": "Languages & Translation",
+      "aliases": ["اللغات", "لغات", "Languages", "Language"],
+      "children": [
+        { "slug": "english", "name": "اللغة الإنجليزية", "nameEn": "English", "aliases": ["English", "انجليزي", "إنكليزي", "انكليزي", "الإنكليزية", "IELTS", "TOEFL", "ايلتس", "توفل"] },
+        { "slug": "arabic", "name": "اللغة العربية", "nameEn": "Arabic", "aliases": ["Arabic", "عربي", "النحو", "نحو"] },
+        { "slug": "german", "name": "اللغة الألمانية", "nameEn": "German", "aliases": ["German", "ألماني", "الماني"] },
+        { "slug": "french", "name": "اللغة الفرنسية", "nameEn": "French", "aliases": ["French", "فرنسي"] },
+        { "slug": "turkish", "name": "اللغة التركية", "nameEn": "Turkish", "aliases": ["Turkish", "تركي"] },
+        { "slug": "translation", "name": "الترجمة", "nameEn": "Translation", "aliases": ["Translation", "ترجمة", "مترجم"] }
+      ]
+    },
+    {
+      "slug": "personal-development", "name": "التطوير الشخصي والمهارات الناعمة", "nameEn": "Personal Development & Soft Skills",
+      "aliases": ["تطوير الذات", "التطوير الذاتي", "Self Development", "Personal Development", "Soft Skills", "مهارات ناعمة"],
+      "children": [
+        { "slug": "communication", "name": "مهارات التواصل والإلقاء", "nameEn": "Communication & Public Speaking", "aliases": ["Communication", "Public Speaking", "الإلقاء", "فن الإلقاء", "تواصل"] },
+        { "slug": "time-management", "name": "إدارة الوقت والعادات", "nameEn": "Time Management & Habits", "aliases": ["Time Management", "إدارة الوقت", "عادات"] },
+        { "slug": "leadership", "name": "القيادة", "nameEn": "Leadership", "aliases": ["Leadership", "قيادة", "قائد"] },
+        { "slug": "career", "name": "المسار المهني والسيرة الذاتية", "nameEn": "Career & CV", "aliases": ["CV", "Resume", "سيرة ذاتية", "السيرة الذاتية", "Interview", "مقابلة عمل"] }
+      ]
+    },
+    {
+      "slug": "health-fitness", "name": "الصحة والتغذية واللياقة", "nameEn": "Health, Nutrition & Fitness",
+      "aliases": ["الطب والصحة", "الصحة", "صحة", "Health", "Wellness"],
+      "children": [
+        { "slug": "nutrition", "name": "التغذية", "nameEn": "Nutrition", "aliases": ["Nutrition", "تغذية", "Diet", "دايت", "رجيم"] },
+        { "slug": "fitness", "name": "اللياقة البدنية", "nameEn": "Fitness", "aliases": ["Fitness", "لياقة", "Gym", "جيم", "Workout", "رياضة"] },
+        { "slug": "medical-sciences", "name": "العلوم الطبية والتمريض", "nameEn": "Medical Sciences & Nursing", "aliases": ["Medicine", "طب", "Nursing", "تمريض", "Medical"] },
+        { "slug": "mental-health", "name": "الصحة النفسية", "nameEn": "Mental Health", "aliases": ["Mental Health", "نفسي", "علم النفس"] }
+      ]
+    },
+    {
+      "slug": "school-education", "name": "التعليم المدرسي", "nameEn": "School Education", "curriculum": true,
+      "aliases": ["School", "مدرسة", "مدرسي", "المنهاج", "منهاج دراسي"],
+      "children": [
+        { "slug": "grade-1", "name": "الصف الأول", "nameEn": "Grade 1", "aliases": [] },
+        { "slug": "grade-2", "name": "الصف الثاني", "nameEn": "Grade 2", "aliases": [] },
+        { "slug": "grade-3", "name": "الصف الثالث", "nameEn": "Grade 3", "aliases": [] },
+        { "slug": "grade-4", "name": "الصف الرابع", "nameEn": "Grade 4", "aliases": [] },
+        { "slug": "grade-5", "name": "الصف الخامس", "nameEn": "Grade 5", "aliases": [] },
+        { "slug": "grade-6", "name": "الصف السادس", "nameEn": "Grade 6", "aliases": [] },
+        { "slug": "grade-7", "name": "الصف السابع", "nameEn": "Grade 7", "aliases": [] },
+        { "slug": "grade-8", "name": "الصف الثامن", "nameEn": "Grade 8", "aliases": [] },
+        { "slug": "grade-9", "name": "الصف التاسع", "nameEn": "Grade 9", "aliases": ["التاسع"] },
+        { "slug": "grade-10", "name": "الصف العاشر", "nameEn": "Grade 10", "aliases": [] },
+        { "slug": "grade-11", "name": "الحادي عشر", "nameEn": "Grade 11", "aliases": ["الصف الحادي عشر"] },
+        { "slug": "bac-scientific", "name": "البكالوريا - علمي", "nameEn": "Baccalaureate - Scientific", "aliases": ["بكالوريا علمي"] },
+        { "slug": "bac-literary", "name": "البكالوريا - أدبي", "nameEn": "Baccalaureate - Literary", "aliases": ["بكالوريا أدبي"] },
+        { "slug": "bac-commercial", "name": "البكالوريا - تجاري", "nameEn": "Baccalaureate - Commercial", "aliases": ["بكالوريا تجاري"] },
+        { "slug": "bac-industrial", "name": "البكالوريا - صناعي", "nameEn": "Baccalaureate - Industrial", "aliases": ["بكالوريا صناعي"] },
+        { "slug": "bac-home-economics", "name": "البكالوريا - نسوي", "nameEn": "Baccalaureate - Home Economics", "aliases": ["بكالوريا نسوي"] },
+        { "slug": "bac-agricultural", "name": "البكالوريا - زراعي", "nameEn": "Baccalaureate - Agricultural", "aliases": ["بكالوريا زراعي"] },
+        { "slug": "bac-informatics", "name": "البكالوريا - معلوماتية", "nameEn": "Baccalaureate - Informatics", "aliases": ["بكالوريا معلوماتية"] },
+        { "slug": "religious-education", "name": "التعليم الشرعي", "nameEn": "Religious Education", "aliases": [] }
+      ]
+    },
+    {
+      "slug": "university-education", "name": "التعليم الجامعي", "nameEn": "University Education",
+      "aliases": ["University", "جامعة", "جامعي", "College", "مواد جامعية"],
+      "children": [
+        { "slug": "uni-engineering", "name": "مواد الكليات الهندسية", "nameEn": "Engineering Faculties", "aliases": [] },
+        { "slug": "uni-medical", "name": "مواد الكليات الطبية", "nameEn": "Medical Faculties", "aliases": ["صيدلة", "طب أسنان"] },
+        { "slug": "uni-economics", "name": "مواد الاقتصاد وإدارة الأعمال", "nameEn": "Economics & Business Faculties", "aliases": ["اقتصاد", "Economics"] },
+        { "slug": "uni-informatics", "name": "مواد المعلوماتية والحاسوب", "nameEn": "Informatics & Computer Science", "aliases": ["Computer Science", "معلوماتية", "هندسة معلوماتية"] },
+        { "slug": "uni-humanities", "name": "مواد الحقوق والآداب", "nameEn": "Law & Humanities", "aliases": ["حقوق", "Law", "آداب"] }
+      ]
+    },
+    {
+      "slug": "science-math", "name": "العلوم والرياضيات", "nameEn": "Science & Mathematics",
+      "aliases": ["العلوم", "علوم", "Science", "Sciences"],
+      "children": [
+        { "slug": "mathematics", "name": "الرياضيات", "nameEn": "Mathematics", "aliases": ["Math", "Maths", "Mathematics", "رياضيات"] },
+        { "slug": "physics", "name": "الفيزياء", "nameEn": "Physics", "aliases": ["Physics", "فيزياء"] },
+        { "slug": "chemistry", "name": "الكيمياء", "nameEn": "Chemistry", "aliases": ["Chemistry", "كيمياء"] },
+        { "slug": "biology", "name": "علم الأحياء", "nameEn": "Biology", "aliases": ["Biology", "أحياء", "الأحياء"] }
+      ]
+    },
+    {
+      "slug": "office-productivity", "name": "المهارات المكتبية والإنتاجية", "nameEn": "Office & Productivity Skills",
+      "aliases": ["Office", "Microsoft Office", "مايكروسوفت أوفيس", "أوفيس", "مكتبية", "Productivity", "إنتاجية"],
+      "children": [
+        { "slug": "excel", "name": "مايكروسوفت إكسل", "nameEn": "Microsoft Excel", "aliases": ["Excel", "إكسل", "اكسيل"] },
+        { "slug": "word-powerpoint", "name": "Word وPowerPoint", "nameEn": "Word & PowerPoint", "aliases": ["Word", "PowerPoint", "وورد", "بوربوينت", "باوربوينت"] },
+        { "slug": "icdl", "name": "الرخصة الدولية ICDL", "nameEn": "ICDL", "aliases": ["ICDL", "الرخصة الدولية لقيادة الحاسوب"] },
+        { "slug": "google-workspace", "name": "أدوات Google للعمل", "nameEn": "Google Workspace", "aliases": ["Google Sheets", "Google Docs", "Google Workspace"] }
+      ]
+    }
+  ]
+}

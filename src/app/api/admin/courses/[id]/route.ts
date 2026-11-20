@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireRoleApi } from '@/lib/rbac';
 import { prisma } from '@/lib/db';
+import { assertTypeFitsCategory, TaxonomyError } from '@/lib/course-taxonomy';
+import { invalidateCatalogueSearch } from '@/lib/course-search';
+import { CoursePolicyError, isCourseStatus, parseCoursePrice, publishPrices } from '@/lib/course-review';
 
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -8,25 +11,36 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     if (!authorized) return errorResponse;
 
     const params = await props.params;
-    const { status, title, price, priceSYP, instructorId, type, isFeatured, reason } = await req.json();
-    const before = await prisma.course.findUnique({ where: { id: params.id }, select: { status: true } });
-    if (!before) return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
+    const body = await req.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new CoursePolicyError(400, 'بيانات غير صالحة');
+    const { status, title, instructorId, type, isFeatured, durationHours, reason } = body;
+    if (status !== undefined && !isCourseStatus(status)) throw new CoursePolicyError(400, 'حالة الكورس غير صالحة');
+    const current = await prisma.course.findUnique({ where: { id: params.id }, select: { status: true } });
+    if (!current) return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
+    // Publishing is an approval of the price too: both prices must be stated in this request
+    // (the admin form sends them). An empty or invalid price is never turned into "free".
+    const prices = status === 'PUBLISHED' && current.status !== 'PUBLISHED'
+      ? publishPrices(body)
+      : { price: parseCoursePrice(body.price, 'السعر بالدولار'), priceSYP: parseCoursePrice(body.priceSYP, 'السعر بالليرة السورية') };
+    const hours = Number(durationHours);
+    if (type) await assertTypeFitsCategory(prisma, params.id, type);
 
     if (status !== undefined) {
-      if (!['PENDING', 'PUBLISHED', 'REJECTED'].includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
       const publishing = await requireRoleApi(['ADMIN'], 'COURSE_PUBLISHING');
       if (!publishing.authorized) return publishing.errorResponse;
     }
     const course = await prisma.course.update({
       where: { id: params.id },
-      data: { 
+      data: {
         status,
         ...(title && { title }),
-        ...(price !== undefined && { price: parseFloat(price) || 0 }),
-        ...(priceSYP !== undefined && { priceSYP: parseFloat(priceSYP) || 0 }),
+        ...(prices.price !== undefined && { price: prices.price }),
+        ...(prices.priceSYP !== undefined && { priceSYP: prices.priceSYP }),
         ...(instructorId && { instructorId }),
         ...(type && { type }),
-        ...(isFeatured !== undefined && { isFeatured })
+        ...(isFeatured !== undefined && { isFeatured }),
+        // '' or 0 clears the value; certificates then print no duration.
+        ...(durationHours !== undefined && { durationHours: Number.isFinite(hours) && hours > 0 && hours <= 2000 ? hours : null })
       },
       include: {
         instructor: { select: { id: true, name: true, email: true } },
@@ -34,10 +48,12 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       }
     });
 
-    if (status !== undefined && status !== before.status && status !== 'PENDING') {
+    invalidateCatalogueSearch();
+    const notifyId = course.instructor?.id ?? course.instructorId;
+    if (notifyId && status !== undefined && status !== current.status && status !== 'PENDING') {
       const why = typeof reason === 'string' && reason.trim() ? ` السبب: ${reason.trim().slice(0, 500)}` : '';
       await prisma.notification.create({ data: {
-        userId: course.instructor.id,
+        userId: notifyId,
         title: status === 'PUBLISHED' ? 'تمت الموافقة على نشر كورسك' : 'لم تتم الموافقة على نشر كورسك',
         message: status === 'PUBLISHED' ? `أصبح «${course.title}» متاحاً للطلاب.` : `«${course.title}» غير منشور حالياً.${why}`,
         link: '/instructor/courses',
@@ -45,6 +61,10 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     }
     return NextResponse.json({ message: 'تم تحديث الكورس بنجاح', course }, { status: 200 });
   } catch (error) {
+    if (error instanceof TaxonomyError || error instanceof CoursePolicyError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    if (error instanceof SyntaxError) return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 });
     console.error('Update Admin Course API Error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
   }
@@ -91,6 +111,8 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     await prisma.course.delete({
       where: { id: params.id }
     });
+    // A deleted course must disappear from search and suggestions immediately.
+    invalidateCatalogueSearch();
 
     return NextResponse.json({ message: 'تم حذف الكورس نهائياً' }, { status: 200 });
   } catch (error) {

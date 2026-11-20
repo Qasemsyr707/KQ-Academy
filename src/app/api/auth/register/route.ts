@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { notifySafely } from '@/lib/notifications';
 
 export async function POST(req: Request) {
   try {
@@ -33,6 +34,14 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
       }
+    });
+
+    await notifySafely({
+      userId: user.id,
+      title: 'أهلاً بك في KQ Academy',
+      message: 'تم إنشاء حسابك بنجاح. استكشف الكورسات وابدأ رحلتك التعليمية.',
+      link: '/courses',
+      dedupeKey: 'welcome',
     });
 
     return NextResponse.json({ message: 'تم إنشاء الحساب بنجاح', user: { id: user.id, name: user.name, email: user.email } }, { status: 201 });

@@ -14,7 +14,7 @@ type Props = {
 };
 
 const benefits = [
-  { icon: BookOpen, label: 'المناهج السورية — بكالوريا وتاسع' },
+  { icon: BookOpen, label: 'كورسات منظّمة خطوة بخطوة' },
   { icon: Briefcase, label: 'مهارات مهنية مطلوبة في سوق العمل' },
   { icon: Award, label: 'شهادات قابلة للتحقق' },
 ];

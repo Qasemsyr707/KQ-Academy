@@ -20,6 +20,10 @@ export interface RateRule {
 export const RATE_RULES = {
   search: { name: 'search', burst: 90, perMinute: 180 },
   suggest: { name: 'suggest', burst: 90, perMinute: 240 },
+  // Course forms load the category list once per page view.
+  categories: { name: 'categories', burst: 30, perMinute: 60 },
+  // Each suggestion list shows up to six thumbnails; browsers cache them.
+  thumbnail: { name: 'thumbnail', burst: 120, perMinute: 600 },
   verify: { name: 'verify', burst: 30, perMinute: 40 },
   // Rendering a certificate costs real CPU time (image + PDF).
   certificateDocument: { name: 'certificate-document', burst: 12, perMinute: 20 },

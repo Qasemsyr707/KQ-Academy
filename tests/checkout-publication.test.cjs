@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Node test runner. */
+// Pins the publication rule; the temporary curriculum switch is tested in catalogue-search.test.cjs.
+process.env.KQ_HIDE_CURRICULUM = 'false';
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const { loadTs } = require('./load-ts.cjs');
@@ -14,10 +16,7 @@ test('checkout information cannot reveal an unpublished title or price', async (
       './checkout-context': checkoutContext,
       '@/lib/db': { prisma: {
         course: { findFirst: async query => {
-          assert.equal(query.where.id, 'course');
-          assert.equal(query.where.status, 'PUBLISHED');
-          assert.ok(Array.isArray(query.where.AND));
-          assert.match(JSON.stringify(query.where.AND), /CURRICULUM/);
+          assert.deepEqual(query.where, { id: 'course', status: 'PUBLISHED' });
           return status === query.where.status ? { title: 'PRIVATE_DRAFT', price: 123 } : null;
         } },
         user: { findUnique: async () => { walletReads++; return {}; } },

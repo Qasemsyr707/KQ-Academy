@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secure-super-secret-key-for-video-streaming';
+// The secret is read per request and never has a built-in fallback: a value
+// published in source code would let anyone mint valid-looking tokens.
+const KNOWN_JWT_DEFAULTS = new Set(['secure-super-secret-key-for-video-streaming']);
+
+function streamSecret(): string | null {
+  const secret = process.env.JWT_SECRET?.trim();
+  if (!secret || secret.length < 32 || KNOWN_JWT_DEFAULTS.has(secret)) return null;
+  return secret;
+}
 
 export async function POST(req: Request) {
   try {
+    const JWT_SECRET = streamSecret();
+    if (!JWT_SECRET) {
+      return NextResponse.json({ error: 'الخدمة غير متاحة حالياً' }, { status: 503 });
+    }
     const { lessonId } = await req.json();
 
     if (!lessonId) {

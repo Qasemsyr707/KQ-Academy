@@ -1,29 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser } from '@/lib/request-user';
+import { COMMUNITY_HEADERS, COMMUNITY_RATES, CommunityError, communityFailure, limitCommunity } from '@/lib/community';
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+/**
+ * Like / unlike a post.
+ * KNOWN LIMIT (needs a schema change, see the community audit): likes are a bare
+ * counter with no per-member record, so the server cannot know whether this member
+ * already liked the post. Until a CommunityPostLike table exists, this endpoint at
+ * least requires an active member, rate-limits each account and never goes below 0.
+ */
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { liked } = await req.json(); // boolean indicating if we are liking or unliking
-
+    const user = await requireRequestUser(req);
+    const body = await req.json();
+    if (typeof body?.liked !== 'boolean') throw new CommunityError(400, 'قيمة الإعجاب غير صالحة');
     const { id } = await params;
-    const post = await prisma.communityPost.update({
-      where: { id },
-      data: {
-        upvotes: {
-          increment: liked ? 1 : -1
-        }
-      }
-    });
-
-    return NextResponse.json({ upvotes: post.upvotes });
+    if (!await prisma.communityPost.findUnique({ where: { id }, select: { id: true } })) throw new CommunityError(404, 'المنشور غير موجود');
+    limitCommunity(COMMUNITY_RATES.like, user.id);
+    if (body.liked) {
+      await prisma.communityPost.update({ where: { id }, data: { upvotes: { increment: 1 } } });
+    } else {
+      // Conditional: concurrent unlikes cannot push the counter below zero.
+      await prisma.communityPost.updateMany({ where: { id, upvotes: { gt: 0 } }, data: { upvotes: { decrement: 1 } } });
+    }
+    const post = await prisma.communityPost.findUnique({ where: { id }, select: { upvotes: true } });
+    return NextResponse.json({ upvotes: post?.upvotes ?? 0 }, { headers: COMMUNITY_HEADERS });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update like' }, { status: 500 });
+    return communityFailure(error, 'like');
   }
 }

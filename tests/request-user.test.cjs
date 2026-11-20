@@ -113,7 +113,9 @@ test('missing sessions and invalid credential IDs fail before any database looku
 });
 
 test('malformed, oversized or unsupported Authorization headers cannot fall back to an otherwise valid session', async () => {
-  for (const authorization of ['Basic abc', 'Bearer malformed-token', `Bearer ${'a'.repeat(8192)}`]) {
+  // `Basic` is a reverse proxy's credential, not the application's: it is covered
+  // in proxy-auth-and-secrets.test.cjs and keeps the session (with CSRF checks).
+  for (const authorization of ['Token abc', 'Bearer malformed-token', `Bearer ${'a'.repeat(8192)}`]) {
     const h = harness();
     await rejectsStatus(h, request({ authorization }), 401);
     assert.equal(h.lookups.length, 0);

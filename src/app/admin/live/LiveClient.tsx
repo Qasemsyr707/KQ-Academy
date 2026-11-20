@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Radio, StopCircle, Trash2, Video, Users, CheckCircle, Edit } from 'lucide-react';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
 export default function LiveClient({ initialStreams, initialInstructors }: { initialStreams: any[], initialInstructors: any[] }) {
   const [streams, setStreams] = useState(initialStreams);
@@ -169,7 +170,7 @@ export default function LiveClient({ initialStreams, initialInstructors }: { ini
                   <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>{stream.instructor.email}</div>
                 </td>
                 <td style={{ padding: '1rem', direction: 'ltr', textAlign: 'right' }}>
-                  {new Date(stream.scheduledAt).toLocaleString('ar-SA')}
+                  {formatDateTime(stream.scheduledAt)}
                 </td>
                 <td style={{ padding: '1rem' }}>
                   <span style={{ 

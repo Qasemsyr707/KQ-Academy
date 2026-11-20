@@ -223,11 +223,16 @@ test('non-PDF documents preserve their bytes and MIME; MIME mismatch is rejected
 });
 
 test('existing signed-in image uploader still uses ImgBB and its StoredFile image fallback', async t => {
+  // ImgBB is used only with the deployment's own key (there is no built-in key).
+  const previousKey = process.env.IMGBB_API_KEY;
+  process.env.IMGBB_API_KEY = 'test-only-imgbb-key';
+  t.after(() => { if (previousKey === undefined) delete process.env.IMGBB_API_KEY; else process.env.IMGBB_API_KEY = previousKey; });
   const { upload, requests, writes } = await harness(t, { user: { id: 'student', role: 'STUDENT' } });
   const response = await upload(request(IMAGE, { filename: 'receipt.jpg', type: 'image/jpeg', requestedType: undefined, courseId: undefined }));
   assert.equal(response.status, 201);
   assert.equal((await response.json()).url, 'https://cdn.test/image.jpg');
   assert.equal(requests.length, 1);
+  assert.equal(new URLSearchParams(String(requests[0][1].body)).get('key'), 'test-only-imgbb-key');
   assert.equal(writes.length, 0);
   await t.test('CDN failure retains existing image fallback', async child => {
     const { upload, writes, storage } = await harness(child, { imageStatus: 503, user: { id: 'student', role: 'STUDENT' } });

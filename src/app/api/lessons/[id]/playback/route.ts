@@ -4,6 +4,7 @@ import { getLessonPlayback, LessonPlaybackError, type LessonViewer } from '@/lib
 import { BunnyServerError } from '@/lib/bunny-upload-server';
 import { prisma } from '@/lib/db';
 import jwt from 'jsonwebtoken';
+import { readAuthorization } from '@/lib/request-user';
 
 export const runtime = 'nodejs';
 const headers = { 'Cache-Control': 'private, no-store', 'CDN-Cache-Control': 'no-store', Vary: 'Cookie, Authorization' };
@@ -19,13 +20,13 @@ async function playbackViewer(req: Request): Promise<LessonViewer | null> {
   const session = await getServerSession(authOptions);
   const user = session?.user as Partial<LessonViewer> | undefined;
   if (typeof user?.id === 'string' && user.id) return currentPlaybackViewer(user.id);
-  const authorization = req.headers.get('Authorization');
-  if (!authorization) return null;
+  const authorization = readAuthorization(req.headers);
+  if (authorization.kind === 'none') return null;
   const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret || !authorization.startsWith('Bearer ')) throw new LessonPlaybackError(401, 'يرجى تسجيل الدخول لمشاهدة الدرس');
+  if (!secret || authorization.kind !== 'bearer') throw new LessonPlaybackError(401, 'يرجى تسجيل الدخول لمشاهدة الدرس');
   let payload: string | jwt.JwtPayload;
   try {
-    payload = jwt.verify(authorization.slice(7), secret, { algorithms: ['HS256'] });
+    payload = jwt.verify(authorization.token, secret, { algorithms: ['HS256'] });
   } catch { throw new LessonPlaybackError(401, 'يرجى تسجيل الدخول لمشاهدة الدرس'); }
   if (typeof payload === 'string' || typeof payload.id !== 'string' || !payload.id || payload.id.length > 200) {
     throw new LessonPlaybackError(401, 'يرجى تسجيل الدخول لمشاهدة الدرس');

@@ -6,6 +6,9 @@ import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { safeMediaUrl } from '@/lib/media-url';
 import { mobileCourseSelect } from '@/lib/public-course';
 import { publicCourseWhere } from '@/lib/catalogue-visibility';
+import { resolveCourseTaxonomy } from '@/lib/course-taxonomy';
+import { invalidateCatalogueSearch } from '@/lib/course-search';
+import { CoursePolicyError, newCourseState, parseCoursePrice } from '@/lib/course-review';
 
 const privateHeaders = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 
@@ -31,7 +34,9 @@ export async function POST(req: Request) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return NextResponse.json({ error: 'بيانات الكورس غير صالحة' }, { status: 400, headers: privateHeaders });
     }
-    const { title, category, type, price, image } = body as Record<string, unknown>;
+    // Other body fields (status, instructorId, isFeatured...) are ignored, as before: the status,
+    // owner and prices below come only from the server-side policy (course-review.ts).
+    const { title, category, type, price, priceSYP, image } = body as Record<string, unknown>;
     const amount = price === undefined || price === '' ? 0
       : typeof price === 'number' ? price : typeof price === 'string' && price.trim() ? Number(price) : NaN;
     const thumbnail = image === undefined || image === null || image === '' ? null : safeMediaUrl(image);
@@ -44,23 +49,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'يرجى إدخال عنوان ونوع وسعر وصورة صالحين للكورس' }, { status: 400, headers: privateHeaders });
     }
 
+    // The mobile app sends a category name. It is linked to the taxonomy when it names
+    // exactly one active category; otherwise the text is kept as before (no app break).
+    const courseType = type === 'CURRICULUM' ? 'CURRICULUM' : 'SKILL';
+    const categoryText = typeof category === 'string' && category.trim() ? category.trim() : 'عام';
+    const taxonomy = await resolveCourseTaxonomy(prisma, { category: categoryText }, { courseType, requireCategory: true }).catch(() => null);
+    // Instructor: DRAFT with a proposed price. Staff: published only when both prices are stated.
+    const syp = parseCoursePrice(priceSYP, 'السعر بالليرة السورية');
+    const canPublish = user.role === 'OWNER' || (user.role === 'ADMIN' && await hasPermission(user.id, 'COURSE_PUBLISHING'));
+    const state = newCourseState(user.role, price === undefined || price === '' ? undefined : amount, syp, canPublish);
+
     const course = await prisma.course.create({
       data: {
         title: title.trim(),
         description: '',
         type: type ?? 'SKILL',
-        price: amount,
+        price: state.price,
+        ...(syp !== undefined ? { priceSYP: state.priceSYP } : {}),
+        // Explicit on purpose: the schema default is PUBLISHED (historic).
+        status: state.status,
         // Ownership comes from the current authenticated account, never a body ID.
         instructorId: user.id,
-        category: typeof category === 'string' && category.trim() ? category.trim() : 'عام',
+        category: taxonomy?.category ?? categoryText,
+        ...(taxonomy?.categoryId ? { categoryId: taxonomy.categoryId } : {}),
         thumbnail,
-        status: user.role === 'ADMIN' && !await hasPermission(user.id, 'COURSE_PUBLISHING') ? 'PENDING' : 'PUBLISHED',
       }
     });
 
+    if (course.status === 'PUBLISHED') invalidateCatalogueSearch();
     return NextResponse.json(course, { status: 201, headers: privateHeaders });
   } catch (error) {
-    if (error instanceof RequestUserError) {
+    if (error instanceof RequestUserError || error instanceof CoursePolicyError) {
       return NextResponse.json({ error: error.message }, { status: error.status, headers: privateHeaders });
     }
     if (error instanceof SyntaxError) {

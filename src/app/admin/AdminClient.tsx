@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Tag, CheckCircle, XCircle, Users, BookOpen, CreditCard, Video, Shield, Settings, Activity, Megaphone, Award } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
 export default function AdminClient({ initialPayments, initialCoupons, stats, permissions, isOwner }: { permissions: Permission[], isOwner: boolean, initialPayments: any[], initialCoupons: any[], stats: any }) {
   const [payments, setPayments] = useState(initialPayments);
@@ -149,7 +150,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats, pe
           </div>
           <div>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', marginBottom: '0.2rem' }}>إجمالي الأرباح من الكورسات</p>
-            <h3 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fbbf24' }}>${stats.totalRevenue.toLocaleString()}</h3>
+            <h3 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fbbf24' }}>${formatNumber(stats.totalRevenue)}</h3>
           </div>
         </motion.div>
 
@@ -181,12 +182,12 @@ export default function AdminClient({ initialPayments, initialCoupons, stats, pe
                 <div key={payment.id} style={{ background: 'var(--ink-3)', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{payment.user.name}</span>
-                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>${payment.amount.toLocaleString()}</span>
+                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>${formatNumber(payment.amount)}</span>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginBottom: '1.2rem' }}>
                     الكورس: {payment.course.title} <br/>
                     طريقة الدفع: {payment.paymentMethod} <br/>
-                    تاريخ الطلب: {new Date(payment.createdAt).toLocaleDateString('ar-SA')} - {new Date(payment.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                    تاريخ الطلب: {formatDateTime(payment.createdAt)}
                     {payment.receiptImage && (
                       <div style={{ marginTop: '0.5rem' }}>
                         <button onClick={() => handleViewReceipt(payment.receiptImage)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#3EEDC4', textDecoration: 'none', background: 'rgba(62, 237, 196, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.85rem', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>

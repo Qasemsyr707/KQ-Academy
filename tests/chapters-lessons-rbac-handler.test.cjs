@@ -39,10 +39,12 @@ function loadRoute(rel, overrides = {}) {
     '@/lib/rbac': { requireRoleApi: overrides.requireRoleApi },
     '@/lib/bunny-upload-server': {
       assertBunnyVideoReady: async () => {},
+      assertBunnyVideoUnused: async () => {},
       BunnyServerError: class BunnyServerError extends Error {},
       isBunnyVideoId: () => true,
     },
     '@/lib/owned-document': { assertOwnedDocumentReference: async () => {} },
+    '@/lib/notifications': { notifySafely: async () => {} },
     '@/lib/private-file-storage': { PrivateFileError: class PrivateFileError extends Error {} },
     '@/lib/lesson-video': { normalizeLessonVideoReference: () => null },
   };

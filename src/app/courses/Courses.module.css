@@ -11,8 +11,13 @@
 /* ----- Search header ----- */
 .hero {
   position: relative;
-  overflow: hidden;
+  /* Clip sideways only: the search suggestions must open below the hero. With
+     "overflow: hidden" they were cut off at its bottom edge. */
+  overflow-x: clip;
+  overflow-y: visible;
   isolation: isolate;
+  /* Above the catalogue that follows, below the fixed navbar (--z-nav: 200). */
+  z-index: 3;
   padding: clamp(2.5rem, 6vw, 4.5rem) var(--gutter) clamp(2rem, 4vw, 3rem);
   text-align: center;
   border-bottom: 1px solid var(--line-1);
@@ -57,63 +62,10 @@
   line-height: 1.85;
 }
 
-.search {
-  display: flex;
-  align-items: center;
-  max-width: 700px;
-  margin-inline: auto;
-  padding: 0.4rem 0.4rem 0.4rem 1rem;
-  border-radius: 18px;
-  border: 1px solid var(--line-2);
-  background: var(--ink-3);
-  box-shadow: var(--shadow-md), var(--inner-highlight);
-  transition: border-color var(--dur-2) var(--ease-out), box-shadow var(--dur-3) var(--ease-out);
-}
-
-.search:focus-within {
-  border-color: var(--line-gold-strong);
-  box-shadow: var(--shadow-md), 0 0 0 4px rgba(201, 164, 92, 0.12);
-}
-
-.searchIcon {
-  display: grid;
-  place-items: center;
-  padding-inline: 0.85rem 0.25rem;
-  color: var(--text-3);
-  transition: color var(--dur-2) var(--ease-out);
-}
-
-.search:focus-within .searchIcon {
-  color: var(--gold-300);
-}
-
-.searchInput {
-  flex: 1;
-  min-width: 0;
-  padding: 0.95rem 0.5rem !important;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  font-size: 1.05rem !important;
-}
-
-.clearSearch {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-2);
-  cursor: pointer;
-  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
-}
-
-.clearSearch:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-1);
+.searchSlot {
+  /* The suggestions panel opens over the sections below. */
+  position: relative;
+  z-index: 20;
 }
 
 /* ----- Layout ----- */

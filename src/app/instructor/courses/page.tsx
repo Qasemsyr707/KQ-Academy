@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { requireRolePage } from '@/lib/rbac';
 import Link from 'next/link';
 import { PlusCircle, Edit3, Eye, Video } from 'lucide-react';
+import CourseCover from '@/components/ui/CourseCover';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +55,21 @@ export default async function InstructorCoursesPage() {
             ) : (
               courses.map((course) => (
                 <tr key={course.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '1.5rem 1rem', fontWeight: 'bold' }}>{course.title}{course.status !== 'PUBLISHED' && <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'normal', color: course.status === 'PENDING' ? '#fbbf24' : '#ef4444' }}>{course.status === 'PENDING' ? 'بانتظار موافقة الإدارة' : 'غير منشور بقرار الإدارة'}</span>}</td>
+                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <div style={{ position: 'relative', width: 96, aspectRatio: '16 / 9', borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--ink-2)' }}>
+                        <CourseCover src={course.thumbnail} sizes="96px" iconSize={18} />
+                      </div>
+                      <span style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span>{course.title}</span>
+                        {course.status !== 'PUBLISHED' ? (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.75 }}>
+                            {{ DRAFT: 'مسودة', PENDING: 'قيد مراجعة الإدارة', REJECTED: 'مرفوض — عدّله وأعد تقديمه' }[course.status] ?? course.status}
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                  </td>
                   <td style={{ padding: '1.5rem 1rem', color: 'var(--primary)', fontWeight: 'bold' }}>${course.price.toLocaleString()}</td>
                   <td style={{ padding: '1.5rem 1rem' }}>{course.enrollments.length} طالب</td>
                   <td style={{ padding: '1.5rem 1rem' }}>{course.chapters.length} فصل</td>

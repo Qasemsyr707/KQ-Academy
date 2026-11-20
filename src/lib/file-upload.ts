@@ -50,16 +50,26 @@ async function uploadImage(bytes: Buffer, file: File, localImages: boolean, owne
     await writeFile(path.join(directory, filename), bytes, { flag: 'wx' });
     return { url: `/uploads/${filename}`, filename: file.name };
   }
-  // Preserve the existing image CDN and StoredFile fallback used by image callers.
+  // External image hosting is used only when this deployment has its own ImgBB
+  // key; there is no built-in key. Without one, or when ImgBB fails, the image
+  // stays on the platform (the existing StoredFile fallback) and nothing is sent out.
   const base64Data = bytes.toString('base64');
-  const form = new URLSearchParams({ key: process.env.IMGBB_API_KEY || '1f5ef4eb09ba47797cfb3d6f169c31b2', image: base64Data });
-  if (file.name) form.append('name', file.name.split('.')[0]);
-  const response = await fetch('https://api.imgbb.com/1/upload', {
-    method: 'POST', body: form, headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  });
-  if (response.ok) {
-    const result = await response.json();
-    if (result.success && typeof result.data?.url === 'string') return { url: result.data.url, filename: result.data.title };
+  const imgbbKey = process.env.IMGBB_API_KEY?.trim();
+  if (imgbbKey) {
+    try {
+      const form = new URLSearchParams({ key: imgbbKey, image: base64Data });
+      if (file.name) form.append('name', file.name.split('.')[0]);
+      const response = await fetch('https://api.imgbb.com/1/upload', {
+        method: 'POST', body: form, headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && typeof result.data?.url === 'string') return { url: result.data.url, filename: result.data.title };
+      }
+    } catch (error) {
+      console.error('[upload] ImgBB unavailable, storing the image on the platform', error instanceof Error ? error.message : error);
+    }
   }
   const stored = await prisma.storedFile.create({
     data: { name: file.name || 'file', mimeType: file.type || 'image/jpeg', size: bytes.length, data: base64Data },

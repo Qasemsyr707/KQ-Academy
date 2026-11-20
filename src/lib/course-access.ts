@@ -2,15 +2,16 @@ import { hasPermission } from '@/lib/permission-check';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { readAuthorization, requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { isPubliclyOffered } from '@/lib/catalogue-visibility';
-import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 
 export interface CourseViewer { id: string; role: string }
 interface CourseAccessRecord { id: string; instructorId: string; status: string; type?: string | null; category?: string | null }
 
 /** Session/JWT role claims are not an authorization source. */
 export async function getCourseViewer(req?: Request): Promise<CourseViewer | null> {
-  if (req?.headers.has('authorization')) {
+  // Only an application credential (mobile Bearer) replaces the session cookie.
+  if (req && readAuthorization(req.headers).kind !== 'none') {
     try {
       const user = await requireRequestUser(req);
       return { id: user.id, role: user.role };
@@ -33,7 +34,7 @@ export async function managesCourse(course: Pick<CourseAccessRecord, 'instructor
     || (viewer.role === 'INSTRUCTOR' && course.instructorId === viewer.id));
 }
 
-/** Publication controls discovery; existing enrollment still grants course access. */
+/** Publication and the curriculum switch control discovery; an existing enrollment still grants access. */
 export async function getCourseAccess(course: CourseAccessRecord, viewer?: CourseViewer | null) {
   const isEnrolled = !!viewer && !!await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId: viewer.id, courseId: course.id } },

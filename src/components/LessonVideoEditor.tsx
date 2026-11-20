@@ -31,7 +31,7 @@ export function LessonVideoEditor({ courseId, chapterId, lesson, onClose, onSave
   const [phase, setPhase] = useState<'uploading' | 'saving' | 'linking' | null>(null);
   const saving = useRef(false);
   const operationId = useRef<string | null>(null);
-  const upload = useBunnyUpload({ courseId, purpose: 'lesson' });
+  const upload = useBunnyUpload({ courseId, purpose: 'lesson', target: lesson ? `lesson:${lesson.id}` : undefined });
   const busy = phase !== null;
 
   useEffect(() => {
@@ -180,7 +180,7 @@ export function LessonVideoEditor({ courseId, chapterId, lesson, onClose, onSave
             </fieldset>
           )}
 
-          {replaceVideo && source === 'file' && <BunnyUploadStatus state={upload.state} progress={upload.progress} onPause={upload.pause} busy={busy} />}
+          {replaceVideo && source === 'file' && <BunnyUploadStatus state={upload.state} progress={upload.progress} detail={upload.detail} onPause={upload.pause} onCancel={upload.cancel} busy={busy} />}
           {error && <p role="alert" className={styles.error}>{error}</p>}
           {busy && <p role="status" aria-live="polite" className={styles.hint}>{phase === 'linking' ? 'جاري ربط الفيديو بالدرس...' : phase === 'uploading' ? upload.state === 'Processing' ? 'جاري تجهيز الفيديو للمشاهدة...' : 'جاري رفع الفيديو...' : 'جاري حفظ الدرس...'}</p>}
           <div className={styles.actions}>

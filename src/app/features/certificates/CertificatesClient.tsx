@@ -8,6 +8,8 @@ import Link from 'next/link';
 interface CertProps {
   id: string;
   certificateNumber?: string;
+  /** Unguessable public reference for share/verify links. */
+  reference?: string;
   course: string;
   instructor: string;
   date: string;
@@ -47,7 +49,7 @@ export default function CertificatesClient({ initialCerts }: { initialCerts: Cer
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'شهادة تخرجي من منصة التعليم الإلكتروني السوري',
+          title: 'شهادتي من KQ Academy',
           url: url
         });
       } catch (err) {
@@ -163,10 +165,10 @@ export default function CertificatesClient({ initialCerts }: { initialCerts: Cer
                         <Download size={18} /> تحميل PNG
                       </button>
                     )}
-                    <button onClick={() => handleShare(cert.certificateNumber || cert.id)} style={{ width: '45px', padding: '0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <button onClick={() => handleShare(cert.reference || cert.id)} style={{ width: '45px', padding: '0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                       <Share2 size={18} />
                     </button>
-                    <Link href={`/verify/${cert.certificateNumber || cert.id}`} style={{ width: '45px', padding: '0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+                    <Link href={`/verify/${cert.reference || cert.id}`} style={{ width: '45px', padding: '0', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
                       <ExternalLink size={18} />
                     </Link>
                   </div>

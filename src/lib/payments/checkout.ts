@@ -8,6 +8,8 @@ import { PaymentFactory } from './PaymentFactory';
 import { amountInMinorUnits, CheckoutError, readCheckoutContext, type CheckoutContext } from './checkout-context';
 import { withPaymentTransaction } from './transactions';
 import { checkoutAvailable } from './availability';
+import { adminRecipients, notify } from '@/lib/notifications';
+import { isPubliclyOffered } from '@/lib/catalogue-visibility';
 
 export const PAYMENT_HEADERS = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 const PROVIDERS = ['STRIPE', 'PAYPAL', 'TABBY', 'TAMARA', 'MANUAL'];
@@ -67,7 +69,7 @@ async function startCheckout(req: Request, channel: 'web' | 'mobile') {
   if (switchSetting?.value === 'false') throw new CheckoutError(403, 'طريقة الدفع المختارة غير مفعّلة');
 
   const course = await prisma.course.findUnique({ where: { id: courseId } });
-  if (!course || course.status !== 'PUBLISHED') throw new CheckoutError(404, 'الكورس غير متاح للشراء');
+  if (!course || !isPubliclyOffered(course)) throw new CheckoutError(404, 'الكورس غير متاح للشراء');
   let amount = currency === 'SYP' ? course.priceSYP : course.price;
   let couponId: string | undefined;
   if (body.couponCode !== undefined) {
@@ -93,6 +95,16 @@ async function startCheckout(req: Request, channel: 'web' | 'mobile') {
       id: paymentId, amount, paymentMethod: provider, provider, userId: user.id,
       courseId, couponId, receiptImage, status: 'PENDING', providerResponse: JSON.stringify(context),
     } });
+    if (provider === 'MANUAL') {
+      // Stored with the payment itself: a retried request reuses the same payment id.
+      await notify(tx,
+        { userId: user.id, title: 'استلمنا طلب الدفع', message: `طلبك لكورس «${course.title}» قيد المراجعة. سنُعلمك فور تأكيد الدفع.`,
+          link: '/dashboard', dedupeKey: `payment-pending:${paymentId}` },
+        ...(await adminRecipients(tx)).map(adminId => ({
+          userId: adminId, title: 'دفعة يدوية بانتظار المراجعة', message: `إيصال جديد لكورس «${course.title}» يحتاج إلى مراجعة.`,
+          link: '/admin/payments', dedupeKey: `payment-review:${paymentId}` })),
+      );
+    }
     return { enrolled: false as const, created: true, payment };
   });
   let reservation: Awaited<ReturnType<typeof reserve>>;

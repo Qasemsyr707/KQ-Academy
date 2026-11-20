@@ -3,9 +3,11 @@ import { CheckoutError } from '@/lib/payments/checkout-context';
 import { withPaymentTransaction } from '@/lib/payments/transactions';
 import { paymentBody, paymentId } from '@/lib/payments/wallet-operations';
 import { rewardFirstQuizPass } from '@/lib/reward-events';
+import { syncEnrollmentProgress } from '@/lib/course-progress';
+import { notify } from '@/lib/notifications';
 
 const quizSelect = {
-  id: true, type: true, passingScore: true, totalMarks: true,
+  id: true, title: true, type: true, passingScore: true, totalMarks: true,
   questions: { select: { id: true, correctAnswer: true, points: true, options: true } },
   chapter: { select: { isFree: true, course: { select: { id: true, instructorId: true, status: true, price: true, priceSYP: true } } } },
 } as const satisfies Prisma.QuizSelect;
@@ -58,6 +60,8 @@ export async function submitQuiz(userId: string, quizId: string, input: Record<s
     const result = calculateScore(quiz, input.answers, legacy);
     if (result.passed && !legacy) await rewardFirstQuizPass(tx, userId, quizId);
     const attempt = await tx.quizAttempt.create({ data: { userId, quizId, score: result.score, passed: result.passed, status: 'COMPLETED' } });
+    // A passed quiz is a completed course item: keep the saved percentage current.
+    if (result.passed) await syncEnrollmentProgress(tx, userId, quiz.chapter.course.id);
     return { attempt, total: result.total };
   });
 }
@@ -83,6 +87,10 @@ export async function gradeQuiz(graderId: string, attemptId: string, score: unkn
     if (passed) await rewardFirstQuizPass(tx, attempt.userId, attempt.quizId);
     const changed = await tx.quizAttempt.updateMany({ where: { id: attemptId, status: 'PENDING_GRADING' }, data: { score, passed, status: 'COMPLETED' } });
     if (changed.count !== 1) throw new CheckoutError(409, 'العملية قيد المعالجة');
+    if (passed) await syncEnrollmentProgress(tx, attempt.userId, attempt.quiz.chapter.course.id);
+    await notify(tx, { userId: attempt.userId, title: passed ? 'تم تصحيح اختبارك: ناجح' : 'تم تصحيح اختبارك',
+      message: `حصلت على ${score} من ${attempt.quiz.totalMarks} في اختبار «${attempt.quiz.title}».`,
+      link: `/courses/${attempt.quiz.chapter.course.id}/learn`, dedupeKey: `quiz-graded:${attemptId}` });
     return { passed };
   });
 }

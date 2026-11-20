@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Edit, Trash2, CheckCircle, XCircle, Shield, Users as UsersIcon, Crown, Ban, Video } from 'lucide-react';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
 
 export default function UsersClient({ initialUsers, currentUserRole }: { initialUsers: any[], currentUserRole: string }) {
@@ -195,7 +196,7 @@ export default function UsersClient({ initialUsers, currentUserRole }: { initial
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Ban size={16} /> محظور</div>
                         {user.bannedUntil ? (
                           <div style={{ fontSize: '0.75rem', marginTop: '0.2rem', color: '#fbbf24' }}>
-                            حتى: {new Date(user.bannedUntil).toLocaleDateString('ar-SY')}
+                            حتى: {formatDate(user.bannedUntil)}
                           </div>
                         ) : (
                           <div style={{ fontSize: '0.75rem', marginTop: '0.2rem', color: '#ef4444' }}>دائم</div>
@@ -206,8 +207,8 @@ export default function UsersClient({ initialUsers, currentUserRole }: { initial
                     )}
                   </td>
                   <td style={{ padding: '1rem', fontSize: '0.9rem' }}>
-                    <div><strong>SYP:</strong> {user.walletSYP.toLocaleString()}</div>
-                    <div><strong>USD:</strong> ${user.walletUSD.toLocaleString()}</div>
+                    <div><strong>SYP:</strong> {formatNumber(user.walletSYP)}</div>
+                    <div><strong>USD:</strong> ${formatNumber(user.walletUSD)}</div>
                   </td>
                   <td style={{ padding: '1rem', textAlign: 'center' }}>
                     {canManage ? (

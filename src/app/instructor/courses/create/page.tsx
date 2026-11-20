@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Upload, DollarSign, List, Image as ImageIcon } from 'lucide-react';
+import { BookOpen, DollarSign } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
+import CourseTaxonomyFields, { type TaxonomyValue } from '@/components/course/CourseTaxonomyFields';
+import CoverPicker from '@/components/course/CoverPicker';
 
 export default function CreateCoursePage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceSYP, setPriceSYP] = useState('');
+  const [durationHours, setDurationHours] = useState('');
   const [priceUSD, setPriceUSD] = useState('');
-  const [category, setCategory] = useState('');
-  const [customCategory, setCustomCategory] = useState('');
+  const [taxonomy, setTaxonomy] = useState<TaxonomyValue>({ categoryId: '', tags: [], trainingType: '' });
   const [courseType, setCourseType] = useState('SKILL');
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  // Uploaded 1280x720 cover URL, prepared and previewed by CoverPicker.
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
   
   // Dynamic features state
   const [includes, setIncludes] = useState<string[]>([]);
@@ -36,70 +36,13 @@ export default function CreateCoursePage() {
     setIncludes(includes.filter((_, i) => i !== index));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('حجم الصورة يجب أن يكون أقل من 5 ميغابايت');
-        return;
-      }
-      setThumbnailFile(file);
-      setThumbnailPreview(URL.createObjectURL(file));
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      let uploadedThumbnailUrl = '';
-
-      if (thumbnailFile) {
-        // Compress image using Canvas to reduce upload size.
-        uploadedThumbnailUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(thumbnailFile);
-          reader.onload = (event) => {
-            const img = new window.Image();
-            img.src = event.target?.result as string;
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const MAX_WIDTH = 800;
-              const MAX_HEIGHT = 600;
-              let width = img.width;
-              let height = img.height;
-
-              if (width > height) {
-                if (width > MAX_WIDTH) {
-                  height *= MAX_WIDTH / width;
-                  width = MAX_WIDTH;
-                }
-              } else {
-                if (height > MAX_HEIGHT) {
-                  width *= MAX_HEIGHT / height;
-                  height = MAX_HEIGHT;
-                }
-              }
-
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx?.drawImage(img, 0, 0, width, height);
-              
-              // Compress to JPEG with 70% quality (usually under 150KB)
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-              resolve(dataUrl);
-            };
-            img.onerror = (e) => reject(new Error('فشل قراءة الصورة'));
-          };
-          reader.onerror = error => reject(error);
-        });
-      }
-
-      const finalCategory = category === 'أخرى' ? customCategory : category;
-      if (!finalCategory) {
-        throw new Error('يرجى اختيار التصنيف أو كتابته');
+      if (!taxonomy.categoryId) {
+        throw new Error('يرجى اختيار تصنيف الكورس');
       }
 
       const courseRes = await fetch('/api/courses', {
@@ -111,9 +54,12 @@ export default function CreateCoursePage() {
           type: courseType,
           price: priceUSD,
           priceSYP: priceSYP,
-          category: finalCategory,
-          thumbnail: uploadedThumbnailUrl,
-          includes: includes
+          categoryId: taxonomy.categoryId,
+          tags: taxonomy.tags,
+          trainingType: taxonomy.trainingType || null,
+          thumbnail: thumbnail ?? undefined,
+          includes: includes,
+          durationHours
         })
       });
 
@@ -123,7 +69,7 @@ export default function CreateCoursePage() {
       }
 
       const data = await courseRes.json();
-      alert('تم إنشاء الكورس بنجاح!');
+      alert(data.message || 'تم إنشاء الكورس');
       router.push(`/instructor/courses/${data.course.id}/chapters`);
       
     } catch (error: any) {
@@ -160,122 +106,43 @@ export default function CreateCoursePage() {
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>نوع الكورس</label>
             <div style={{ position: 'relative' }}>
-              <select required value={courseType} onChange={e => { setCourseType(e.target.value); setCategory(''); }} style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', appearance: 'none' }}>
+              <select required value={courseType} onChange={e => { setCourseType(e.target.value); setTaxonomy(current => ({ ...current, categoryId: '' })); }} style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', appearance: 'none' }}>
                 <option value="SKILL">كورس مهاري عام (برمجة، لغات، أعمال...)</option>
                 <option value="CURRICULUM">منهاج دراسي (بكالوريا، تاسع...)</option>
               </select>
             </div>
           </div>
 
+          <div>
+            <label htmlFor="course-duration-hours" style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>مدة الكورس بالساعات (اختياري)</label>
+            <input id="course-duration-hours" type="number" min="0" max="2000" step="0.5" inputMode="decimal" value={durationHours} onChange={e => setDurationHours(e.target.value)} placeholder="تظهر على شهادة الإتمام. اتركها فارغة إن لم تكن محددة" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>السعر بالليرة السورية</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>السعر المقترح بالليرة السورية</label>
               <div style={{ position: 'relative' }}>
                 <DollarSign size={20} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)' }} />
                 <input type="number" min="0" value={priceSYP} onChange={e => setPriceSYP(e.target.value)} placeholder="مثال: 50000" style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
               </div>
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>السعر بالدولار</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>السعر المقترح بالدولار</label>
               <div style={{ position: 'relative' }}>
                 <DollarSign size={20} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)' }} />
                 <input type="number" min="0" value={priceUSD} onChange={e => setPriceUSD(e.target.value)} placeholder="مثال: 50" style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }} />
               </div>
             </div>
+            <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>
+              يُحفظ الكورس كمسودة غير ظاهرة للطلاب. الإدارة تعتمد السعر النهائي عند مراجعة الكورس ونشره.
+            </p>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>التصنيف</label>
-            <div style={{ position: 'relative' }}>
-              <List size={20} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', top: '50%', right: '1rem', transform: 'translateY(-50%)' }} />
-              <select required value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '0.8rem 2.5rem 0.8rem 0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', appearance: 'none' }}>
-                <option value="" disabled>اختر تصنيفاً...</option>
-                {courseType === 'CURRICULUM' ? (
-                  <>
-                    <option value="الصف الأول">الصف الأول</option>
-                    <option value="الصف الثاني">الصف الثاني</option>
-                    <option value="الصف الثالث">الصف الثالث</option>
-                    <option value="الصف الرابع">الصف الرابع</option>
-                    <option value="الصف الخامس">الصف الخامس</option>
-                    <option value="الصف السادس">الصف السادس</option>
-                    <option value="الصف السابع">الصف السابع</option>
-                    <option value="الصف الثامن">الصف الثامن</option>
-                    <option value="الصف التاسع">الصف التاسع</option>
-                    <option value="الصف العاشر">الصف العاشر</option>
-                    <option value="الحادي عشر">الحادي عشر</option>
-                    <option value="البكالوريا - علمي">البكالوريا - علمي</option>
-                    <option value="البكالوريا - أدبي">البكالوريا - أدبي</option>
-                    <option value="البكالوريا - تجاري">البكالوريا - تجاري</option>
-                    <option value="البكالوريا - صناعي">البكالوريا - صناعي</option>
-                    <option value="البكالوريا - نسوي">البكالوريا - نسوي</option>
-                    <option value="البكالوريا - زراعي">البكالوريا - زراعي</option>
-                    <option value="البكالوريا - معلوماتية">البكالوريا - معلوماتية</option>
-                    <option value="التعليم الشرعي">التعليم الشرعي</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="البرمجة">البرمجة</option>
-                    <option value="التصميم">التصميم</option>
-                    <option value="اللغات">اللغات</option>
-                    <option value="العلوم">العلوم</option>
-                    <option value="التسويق">التسويق</option>
-                    <option value="الأعمال">الأعمال</option>
-                    <option value="الطب والصحة">الطب والصحة</option>
-                    <option value="الهندسة">الهندسة</option>
-                    <option value="الفنون والموسيقى">الفنون والموسيقى</option>
-                    <option value="تطوير الذات">تطوير الذات</option>
-                    <option value="أخرى">أخرى (كتابة يدوية)</option>
-                  </>
-                )}
-              </select>
-            </div>
-            {courseType === 'SKILL' && category === 'أخرى' && (
-              <div style={{ marginTop: '0.8rem' }}>
-                <input required type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder="اكتب التصنيف هنا..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(203,161,83,0.5)', color: '#fff' }} />
-              </div>
-            )}
-          </div>
+          <CourseTaxonomyFields value={taxonomy} onChange={setTaxonomy} courseType={courseType} />
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>الصورة المصغرة للكورس</label>
-            <input 
-              type="file" 
-              accept="image/png, image/jpeg, image/gif" 
-              ref={fileInputRef} 
-              onChange={handleImageChange} 
-              style={{ display: 'none' }} 
-            />
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              style={{ 
-                background: 'rgba(0,0,0,0.3)', 
-                border: '2px dashed rgba(255,255,255,0.1)', 
-                borderRadius: '16px', 
-                padding: thumbnailPreview ? '0' : '2rem', 
-                textAlign: 'center', 
-                cursor: 'pointer',
-                overflow: 'hidden',
-                position: 'relative',
-                width: '100%',
-                maxWidth: '300px',
-                aspectRatio: '1 / 1',
-                margin: '0 auto',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center'
-              }}>
-              {thumbnailPreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={thumbnailPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
-              ) : (
-                <>
-                  <ImageIcon size={48} color="var(--primary)" style={{ marginBottom: '1rem' }} />
-                  <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>اضغط هنا لرفع صورة</p>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>PNG, JPG, GIF (Max. 5MB)</p>
-                </>
-              )}
-            </div>
+            <span style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>صورة غلاف الكورس</span>
+            <CoverPicker value={thumbnail} onChange={setThumbnail} disabled={loading} />
           </div>
 
           <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>

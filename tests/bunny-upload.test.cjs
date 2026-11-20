@@ -39,11 +39,12 @@ async function scenario(run, config = {}) {
     createRequest(method, url) {
       const headers = {};
       let abortSend;
+      let wasAborted = false;
       return {
         getMethod: () => method, getURL: () => url,
         setHeader: (name, value) => { headers[name] = value; },
         getHeader: name => headers[name], setProgressHandler() {}, getUnderlyingObject: () => null,
-        abort: async () => { aborted.push({ method, url }); abortSend?.(Error('request aborted')); },
+        abort: async () => { wasAborted = true; aborted.push({ method, url }); abortSend?.(Error('request aborted')); },
         async send(body) {
           const request = { method, url, headers, size: body?.length ?? 0 };
           requests.push(request);
@@ -54,6 +55,8 @@ async function scenario(run, config = {}) {
           await step.inspect?.(request);
           if (step.error) throw step.error;
           if (step.block) return new Promise((resolve, reject) => { abortSend = reject; step.block(); });
+          // Browsers: the response IS the XMLHttpRequest, and abort() resets its status to 0.
+          if (step.xhrLike) return { ...response(step.status, step.headers), getStatus: () => (wasAborted ? 0 : step.status) };
           return response(step.status, step.headers);
         },
       };
@@ -135,7 +138,9 @@ test('successful direct upload uses exact signed headers, 16MiB sequential chunk
       assert.ok(Number(request.headers.AuthorizationExpire) > Math.floor(Date.now() / 1000));
     }
     assert.equal(apiCalls[0].url, '/api/bunny/create-video');
-    assert.deepEqual({ ...apiCalls[0].data, operationId: 'stable-uuid' }, { ...CONTEXT, operationId: 'stable-uuid', title: 'Lesson title' });
+    // The server checks the file's type and size before it creates any Bunny video.
+    assert.deepEqual({ ...apiCalls[0].data, operationId: 'stable-uuid' }, { ...CONTEXT, operationId: 'stable-uuid', title: 'Lesson title',
+      file: { name: 'lecture.mp4', size: CHUNK + 3, type: 'video/mp4' } });
     assert.match(apiCalls[0].data.operationId, /^[a-f0-9-]{36}$/);
     assert.equal(apiCalls[1].url, '/api/bunny/upload-status');
     assert.equal(apiCalls[1].data.operationId, apiCalls[0].data.operationId);
@@ -504,4 +509,64 @@ test('processing polling is bounded; a later resume checks readiness without ret
       { path: 'refresh-upload', body: processing }, { path: 'upload-status', body: ready() },
     ] });
   } finally { globalThis.setTimeout = timeout; }
+});
+
+test('progress reports acknowledged bytes and total for the status line', async () => {
+  const details = [];
+  await scenario(async ({ createController }) => {
+    await createController({ onProgress: (value, detail) => { if (detail) details.push(detail); } }).start();
+    assert.ok(details.length > 0);
+    assert.deepEqual({ sent: details.at(-1).sent, total: details.at(-1).total }, { sent: CHUNK + 3, total: CHUNK + 3 });
+    assert.ok(details.every(d => Number.isFinite(d.bytesPerSecond) && d.bytesPerSecond >= 0));
+  }, { steps: [create(), patch(CHUNK), patch(CHUNK + 3)] });
+});
+
+test('cancel stops locally, forgets the resumable state, never deletes anything; the next upload is a new operation', async () => {
+  let enteredPatch;
+  const waiting = new Promise(resolve => { enteredPatch = resolve; });
+  await scenario(async ({ createController, BunnyUploadPaused, requests, apiCalls, storage, aborted }) => {
+    const controller = createController();
+    const rejected = assert.rejects(controller.start(), error => error instanceof BunnyUploadPaused);
+    await waiting;
+    await controller.cancel();
+    await rejected;
+    assert.ok(aborted.length, 'the running request is aborted locally');
+    assert.equal(storage.size, 0, 'no resumable record is kept');
+    assert.ok(requests.every(r => r.method !== 'DELETE'));
+    assert.ok(apiCalls.every(call => !/delete|cancel/i.test(call.url)));
+    // Uploading the same file again starts a NEW operation (it does not resume the cancelled one).
+    await createController().start();
+    const creates = apiCalls.filter(call => call.url === '/api/bunny/create-video');
+    assert.equal(creates.length, 2);
+    assert.notEqual(creates[0].data.operationId, creates[1].data.operationId);
+  }, { size: 3, steps: [create(), patch(0, { block: enteredPatch }), create('/tusupload/two'), patch(3)],
+    apiSteps: [{ path: 'create-video' }, { path: 'create-video' }, { path: 'upload-status' }] });
+});
+
+test('a TUS endpoint other than Bunny named by the server is refused before any byte is sent', async () => {
+  await scenario(async ({ createController, requests, BunnyUploadError }) => {
+    await assert.rejects(createController().start(), error => error instanceof BunnyUploadError);
+    assert.equal(requests.length, 0);
+  }, { steps: [], apiSteps: [{ path: 'create-video', body: ticket({ tusEndpoint: 'https://evil.test/tusupload' }) }] });
+  // Bunny's own endpoint, named explicitly, works as before.
+  await scenario(async ({ createController, requests }) => {
+    await createController().start();
+    assert.equal(requests[0].url, ENDPOINT);
+  }, { steps: [create(), patch(CHUNK), patch(CHUNK + 3)], apiSteps: [{ path: 'create-video', body: ticket({ tusEndpoint: ENDPOINT }) }, { path: 'upload-status' }] });
+});
+
+test('browser responses lose their status on abort: an expired session (PATCH 404) still restarts once for the same video', async () => {
+  // Regression: the status was read after aborting the request, so in browsers 404 looked like a network error
+  // and the session never recovered (every retry hit the same dead resource).
+  await scenario(async ({ createController, requests, apiCalls }) => {
+    await createController().start();
+    assert.deepEqual(requests.map(r => r.method), ['POST', 'PATCH', 'PATCH', 'POST', 'PATCH', 'PATCH']);
+    assert.equal(requests[4].url, `${ENDPOINT}/two`);
+    assert.equal(apiCalls.filter(call => call.url.endsWith('create-video')).length, 1);
+    assert.equal(apiCalls[1].url, '/api/bunny/refresh-upload');
+  }, { steps: [create(), patch(CHUNK), patch(0, { status: 404, xhrLike: true }), create('/tusupload/two'), patch(CHUNK), patch(CHUNK + 3)] });
+  // A refused signature keeps its status in the error the user sees.
+  await scenario(async ({ createController }) => {
+    await assert.rejects(createController().start(), error => error.status === 401 && error.method === 'PATCH' && /401/.test(error.message));
+  }, { steps: [create(), patch(0, { status: 401, xhrLike: true })] });
 });

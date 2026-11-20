@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: { params: Promise<{ courseId:
       return { title: 'كورس غير موجود | KQ Academy' };
     }
 
-    const title = `${course.title} - أفضل كورس في سوريا والوطن العربي | KQ Academy`;
-    const description = `تعلم ${course.title} مع ${course.instructor.name}. كورس احترافي معتمد في سوريا، الأردن، العراق، والسعودية. احصل على شهادة معتمدة وابدأ رحلتك المهنية الآن.`;
+    const title = `${course.title} | KQ Academy`;
+    const description = `تعلّم ${course.title} مع ${course.instructor.name} على KQ Academy. محتوى عملي منظّم تتابعه في الوقت الذي يناسبك، مع شهادة إتمام قابلة للتحقق.`;
     
     return {
       title,
       description,
-      keywords: [course.title, course.category, 'كورس', 'دورة', 'سوريا', 'الأردن', 'العراق', 'السعودية', 'الخليج', 'تعلم', 'أونلاين', course.instructor.name, 'KQ Academy'],
+      keywords: [course.title, course.category, 'كورس', 'دورة', 'تعلّم', 'أونلاين', course.instructor.name, 'KQ Academy'],
       openGraph: {
         title,
         description,
@@ -109,7 +109,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
       "@context": "https://schema.org",
       "@type": "Course",
       "name": displayCourse.title,
-      "description": displayCourse.description || `أفضل كورس لتعلم ${displayCourse.title} في سوريا والوطن العربي.`,
+      "description": displayCourse.description || `تعلّم ${displayCourse.title} على KQ Academy بخطوات واضحة وفي الوقت الذي يناسبك.`,
       "provider": {
         "@type": "Organization",
         "name": "KQ Academy",

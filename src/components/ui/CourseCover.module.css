@@ -1,0 +1,50 @@
+/* Course cover: fills its parent (the parent sets the 16:9 frame and radius). */
+.frame,
+.placeholder {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.image {
+  object-fit: cover;
+  /* Slightly above centre: faces and titles sit in the upper half more often. */
+  object-position: 50% 40%;
+}
+
+.frame[data-fit='contain'] .image {
+  object-fit: contain;
+  object-position: 50% 50%;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
+}
+
+/* The same picture, blurred and dimmed, fills the frame behind a whole (contained) image. */
+.backdrop {
+  object-fit: cover;
+  transform: scale(1.15);
+  filter: blur(18px) saturate(1.1) brightness(0.55);
+}
+
+/* Branded placeholder: warm charcoal with a soft gold glow. */
+.placeholder {
+  display: grid;
+  place-items: center;
+  color: rgba(218, 187, 126, 0.55);
+  background:
+    radial-gradient(circle at 70% 20%, rgba(201, 164, 92, 0.18), transparent 60%),
+    radial-gradient(circle at 20% 90%, rgba(201, 164, 92, 0.08), transparent 55%),
+    linear-gradient(135deg, #3d3b36, #2b2f36);
+}
+
+:global(.kq-section-light) .placeholder {
+  color: rgba(179, 139, 67, 0.6);
+  background:
+    radial-gradient(circle at 70% 20%, rgba(201, 164, 92, 0.2), transparent 60%),
+    linear-gradient(135deg, #efe8dc, #e8e1d8);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .image {
+    transition: transform 700ms var(--ease-out, ease);
+  }
+}

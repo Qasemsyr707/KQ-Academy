@@ -2,15 +2,18 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import jwt from 'jsonwebtoken';
 import { protectCourseLessonSources } from '@/lib/lesson-links';
+import { certificateUrls, publicReference } from '@/lib/certificate-access';
+import { readAuthorization } from '@/lib/request-user';
 
 export async function GET(req: Request) {
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Mobile-only endpoint: a Bearer token is required.
+    const authorization = readAuthorization(req.headers);
+    if (authorization.kind !== 'bearer') {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authorization.token;
     const secret = process.env.NEXTAUTH_SECRET;
     if (!secret) return NextResponse.json({ error: 'خدمة تسجيل الدخول غير متاحة حالياً' }, { status: 503 });
     
@@ -36,10 +39,15 @@ export async function GET(req: Request) {
       }
     });
 
-    const certificates = await prisma.certificate.findMany({
+    const ownCertificates = await prisma.certificate.findMany({
       where: { userId: decoded.id },
       include: { course: { select: { title: true } } }
     });
+    // The app loads documents without a session, so it gets unguessable links.
+    const certificates = await Promise.all(ownCertificates.map(async certificate => {
+      const urls = certificateUrls(publicReference(certificate));
+      return { ...certificate, pngUrl: urls.png, pdfUrl: urls.pdf, verifyUrl: urls.verify };
+    }));
 
     const protectedEnrollments = enrollments.map(enrollment => ({ ...enrollment, course: protectCourseLessonSources(enrollment.course) }));
     return NextResponse.json({ enrollments: protectedEnrollments, certificates, user: decoded }, { status: 200 });

@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
+import { invalidateCatalogueSearch } from '@/lib/course-search';
+import { CoursePolicyError, isCourseStaff, publishPrices } from '@/lib/course-review';
+
+const HEADERS = { 'Cache-Control': 'private, no-store' };
 
 /**
- * Publish a course. Courses are created published, so for an instructor this only confirms
- * an already published course. A course the administration set to PENDING or REJECTED
- * stays that way until an administrator or the owner publishes it: the instructor must not
- * override a moderation decision from here.
+ * Publish a course: an administration decision (see course-review.ts).
+ * - ADMIN / OWNER only. An instructor sends the course for review instead
+ *   (POST /api/courses/[id]/submit); they cannot publish any course, theirs included.
+ * - The request must state the approved prices: { price, priceSYP } (0 = free, explicitly).
+ *   The instructor's proposed price is never published implicitly.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,39 +19,40 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSE_PUBLISHING');
     if (!authorized) return errorResponse;
 
-    const resolvedParams = await params;
-    const courseId = resolvedParams.id;
+    const courseId = (await params).id;
     const user = session.user as { id?: string; role?: string };
-    const isStaff = ['ADMIN', 'OWNER'].includes(user.role ?? '');
 
-    const course = await prisma.course.findUnique({
-      where: { id: courseId }
-    });
-
+    const course = await prisma.course.findUnique({ where: { id: courseId }, select: { instructorId: true, status: true } });
     if (!course) {
-      return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
+      return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404, headers: HEADERS });
+    }
+    if (!isCourseStaff(user.role)) {
+      const own = course.instructorId === user.id;
+      return NextResponse.json({
+        error: own ? 'النشر من صلاحيات الإدارة. أرسل الكورس للمراجعة ليُنشر بعد الموافقة.' : 'غير مصرح لك بنشر هذا الكورس',
+      }, { status: 403, headers: HEADERS });
+    }
+    if (course.status === 'PUBLISHED') {
+      return NextResponse.json({ success: true, course: { id: courseId, status: 'PUBLISHED' } }, { headers: HEADERS });
     }
 
-    if (course.instructorId !== user.id && !isStaff) {
-      return NextResponse.json({ error: 'غير مصرح لك بنشر هذا الكورس' }, { status: 403 });
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new CoursePolicyError(400, 'حدّد السعر المعتمد قبل النشر');
+    const prices = publishPrices(body as Record<string, unknown>);
+
+    // The status condition makes a concurrent moderation change win over this request.
+    const updated = await prisma.course.updateMany({
+      where: { id: courseId, status: course.status },
+      data: { status: 'PUBLISHED', price: prices.price, priceSYP: prices.priceSYP },
+    });
+    if (updated.count !== 1) {
+      return NextResponse.json({ error: 'تغيّرت حالة الكورس للتو؛ حدّث الصفحة' }, { status: 409, headers: HEADERS });
     }
-
-    if (course.status === 'PUBLISHED') return NextResponse.json({ success: true, course });
-
-    if (!isStaff) {
-      return NextResponse.json({ error: 'حالة هذا الكورس بقرار من الإدارة، ولا يمكن نشره إلا من قبل الإدارة' }, { status: 403 });
-    }
-
-    // The status condition is part of the write, so a concurrent moderation change is not overwritten blindly.
-    const updated = await prisma.course.updateMany({ where: { id: courseId, status: course.status }, data: { status: 'PUBLISHED' } });
-    if (updated.count !== 1) return NextResponse.json({ error: 'تغيّرت حالة الكورس، أعد تحميل الصفحة' }, { status: 409 });
-    console.info('[courses] published by staff', { courseId, by: user.id, from: course.status });
-    const updatedCourse = await prisma.course.findUnique({ where: { id: courseId } });
-
-    return NextResponse.json({ success: true, course: updatedCourse });
-
+    invalidateCatalogueSearch();
+    return NextResponse.json({ success: true, course: { id: courseId, status: 'PUBLISHED', ...prices } }, { headers: HEADERS });
   } catch (error) {
+    if (error instanceof CoursePolicyError) return NextResponse.json({ error: error.message }, { status: error.status, headers: HEADERS });
     console.error('Publish Course Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ أثناء نشر الكورس' }, { status: 500 });
+    return NextResponse.json({ error: 'حدث خطأ أثناء نشر الكورس' }, { status: 500, headers: HEADERS });
   }
 }

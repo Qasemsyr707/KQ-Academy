@@ -31,7 +31,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
         initialTotal={result.total}
         initialHasMore={result.hasMore}
         featuredCourses={featured}
-        categories={result.facets.categories.map(category => category.value)}
+        categories={result.facets.categories}
         instructors={result.facets.instructors}
         showTypeFilter={!curriculumHidden()}
       />

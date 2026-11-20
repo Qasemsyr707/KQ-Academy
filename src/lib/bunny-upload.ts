@@ -1,6 +1,6 @@
 import * as tus from 'tus-js-client';
 
-const TUS_ENDPOINT = 'https://video.bunnycdn.com/tusupload';
+const BUNNY_TUS_ENDPOINT = 'https://video.bunnycdn.com/tusupload';
 const RETRY_DELAYS = [0, 3000, 5000, 10000, 20000, 60000, 60000];
 const EXPIRY_MARGIN_SECONDS = 120;
 const STORAGE_PREFIX = 'kq:bunny-upload:v2:';
@@ -16,12 +16,20 @@ export interface BunnyUploadResult {
   embedUrl: string;
 }
 
+/** Bytes acknowledged by the TUS server, and the recent transfer speed. */
+export interface BunnyUploadProgress {
+  sent: number;
+  total: number;
+  /** Smoothed bytes per second; 0 until enough data was sent to measure. */
+  bytesPerSecond: number;
+}
+
 export interface BunnyUploadOptions {
   purpose: BunnyUploadPurpose;
   userId?: string;
   courseId?: string;
   operationId?: string;
-  onProgress?: (percent: number) => void;
+  onProgress?: (percent: number, detail?: BunnyUploadProgress) => void;
   onStateChange?: (state: BunnyUploadState) => void;
   signal?: AbortSignal;
 }
@@ -32,10 +40,11 @@ interface UploadCredentials {
   signature: string;
   expireTime: number;
   resumeToken: string;
+  /** TUS endpoint named by the server (Bunny; a loopback simulator in local tests). */
+  tusEndpoint: string;
 }
-
 type UploadCapability = Pick<UploadCredentials, 'videoId' | 'libraryId' | 'resumeToken'>
-  & Partial<Pick<UploadCredentials, 'signature' | 'expireTime'>>;
+  & Partial<Pick<UploadCredentials, 'signature' | 'expireTime' | 'tusEndpoint'>>;
 
 interface UploadRecord {
   version: 2;
@@ -116,11 +125,29 @@ function failureDetails(error: UploadFailure): UploadFailure {
   return responseError;
 }
 
-function safeUploadUrl(value: unknown): value is string {
+const isLoopback = (host: string) => ['127.0.0.1', 'localhost', '[::1]'].includes(host);
+
+/**
+ * The TUS endpoint the browser may send video bytes to: Bunny's, or a loopback
+ * simulator only while the application itself runs on loopback (local tests).
+ */
+function trustedEndpoint(value: unknown): string {
+  if (value === undefined || value === BUNNY_TUS_ENDPOINT) return BUNNY_TUS_ENDPOINT;
+  try {
+    const url = new URL(String(value));
+    if (typeof location !== 'undefined' && isLoopback(location.hostname) && isLoopback(url.hostname)
+      && ['http:', 'https:'].includes(url.protocol) && url.pathname === '/tusupload' && !url.search && !url.hash && !url.username && !url.password) {
+      return url.href;
+    }
+  } catch { /* refused below */ }
+  throw new BunnyUploadError('عنوان خدمة رفع الفيديو غير موثوق');
+}
+
+function safeUploadUrl(value: unknown, endpoint: string = BUNNY_TUS_ENDPOINT): value is string {
   if (typeof value !== 'string') return false;
   try {
     const url = new URL(value);
-    return url.origin === 'https://video.bunnycdn.com' && url.pathname.startsWith('/tusupload/')
+    return url.origin === new URL(endpoint).origin && url.pathname.startsWith('/tusupload/')
       && url.pathname.length > '/tusupload/'.length && !url.username && !url.password && !url.hash;
   } catch { return false; }
 }
@@ -140,7 +167,7 @@ function validateCredentials(value: unknown): UploadCredentials {
     throw new BunnyUploadError('بيانات تفويض رفع الفيديو ناقصة أو منتهية الصلاحية');
   }
   return { videoId: data.videoId, libraryId: data.libraryId, signature: data.signature,
-    expireTime: data.expireTime!, resumeToken: data.resumeToken };
+    expireTime: data.expireTime!, resumeToken: data.resumeToken, tusEndpoint: trustedEndpoint(data.tusEndpoint) };
 }
 
 // Read only three small samples, never buffer the complete video in the browser.
@@ -258,7 +285,8 @@ export function createBunnyUpload(file: File, title: string, options: BunnyUploa
     const previous = record.credentials;
     const value = await api(previous ? 'refresh-upload' : 'create-video', previous
       ? { ...context(), videoId: previous.videoId, resumeToken: previous.resumeToken }
-      : { ...context(), title });
+      // The server checks type and size before it creates any Bunny video.
+      : { ...context(), title, file: { name: file.name, size: file.size, type: file.type } });
     const video = validateVideo(value);
     if (video.state === 'uploading') {
       record.credentials = validateCredentials(value);
@@ -275,10 +303,13 @@ export function createBunnyUpload(file: File, title: string, options: BunnyUploa
   async function transfer() {
     checkPaused();
     const credentials = record.credentials!;
+    const endpoint = trustedEndpoint(credentials.tusEndpoint);
+    let sample: { at: number; sent: number } | undefined;
+    let bytesPerSecond = 0;
     await new Promise<void>((resolve, reject) => {
       rejectTransfer = reject;
       const upload = new tus.Upload(file, {
-        endpoint: TUS_ENDPOINT,
+        endpoint,
         uploadUrl: record.uploadUrl,
         retryDelays: [...RETRY_DELAYS],
         chunkSize: 16 * 1024 * 1024,
@@ -292,8 +323,8 @@ export function createBunnyUpload(file: File, title: string, options: BunnyUploa
         metadata: { filetype: file.type || 'application/octet-stream', title },
         async onBeforeRequest(request) {
           checkPaused();
-          if (request.getMethod() === 'POST' ? request.getURL() !== TUS_ENDPOINT
-            : !safeUploadUrl(request.getURL()) || request.getURL() !== record.uploadUrl
+          if (request.getMethod() === 'POST' ? request.getURL() !== endpoint
+            : !safeUploadUrl(request.getURL(), endpoint) || request.getURL() !== record.uploadUrl
               || record.uploadFingerprint !== `${record.fileFingerprint}:${record.credentials!.libraryId}:${record.credentials!.videoId}`) {
             throw new BunnyUploadError('عنوان جلسة الرفع غير صالح');
           }
@@ -323,7 +354,7 @@ export function createBunnyUpload(file: File, title: string, options: BunnyUploa
             let uploadUrl: string;
             try { uploadUrl = new URL(location ?? '', request.getURL()).toString(); }
             catch { throw new BunnyUploadError('عنوان جلسة الرفع غير صالح'); }
-            if (!safeUploadUrl(uploadUrl)) throw new BunnyUploadError('عنوان جلسة الرفع غير صالح');
+            if (!safeUploadUrl(uploadUrl, endpoint)) throw new BunnyUploadError('عنوان جلسة الرفع غير صالح');
             record.uploadUrl = uploadUrl;
             record.uploadFingerprint = `${record.fileFingerprint}:${record.credentials!.libraryId}:${record.credentials!.videoId}`;
             record.sessionExpireTime = record.credentials!.expireTime!;
@@ -341,7 +372,15 @@ export function createBunnyUpload(file: File, title: string, options: BunnyUploa
         onProgress(sent, total) {
           if (!paused) {
             state('Uploading');
-            options.onProgress?.(total > 0 ? Number(((sent / total) * 100).toFixed(2)) : 0);
+            // Speed from samples at least 0.5 s apart, smoothed so the estimate does not jump per chunk.
+            const now = Date.now();
+            if (!sample || sent < sample.sent) sample = { at: now, sent };
+            else if (now - sample.at >= 500) {
+              const instant = ((sent - sample.sent) * 1000) / (now - sample.at);
+              bytesPerSecond = bytesPerSecond ? bytesPerSecond * 0.7 + instant * 0.3 : instant;
+              sample = { at: now, sent };
+            }
+            options.onProgress?.(total > 0 ? Number(((sent / total) * 100).toFixed(2)) : 0, { sent, total, bytesPerSecond: Math.round(bytesPerSecond) });
           }
         },
         onSuccess() {
@@ -426,7 +465,7 @@ export function createBunnyUpload(file: File, title: string, options: BunnyUploa
           || previous.courseId !== options.courseId || previous.title !== title || !UUID.test(previous.operationId)
           || !Number.isInteger(previous.restarts) || previous.restarts < 0 || previous.restarts > 1
           || (options.operationId && options.operationId !== previous.operationId)
-          || (previous.uploadUrl && (!previous.credentials || !safeUploadUrl(previous.uploadUrl) || !Number.isSafeInteger(previous.sessionExpireTime)
+          || (previous.uploadUrl && (!previous.credentials || !safeUploadUrl(previous.uploadUrl, trustedEndpoint(previous.credentials.tusEndpoint)) || !Number.isSafeInteger(previous.sessionExpireTime)
             || previous.uploadFingerprint !== `${fileFingerprint}:${previous.credentials.libraryId}:${previous.credentials.videoId}`))
           || (previous.credentials && !hasIdentity(previous.credentials))) {
           throw new BunnyUploadError('محاولة الاستكمال القديمة لا تطابق الملف أو الفيديو الحالي');
@@ -459,13 +498,17 @@ export function createBunnyUpload(file: File, title: string, options: BunnyUploa
             await transfer();
             return waitForReady();
           } catch (error) {
-            await active?.abort(); // Local abort only: never DELETE the video/resource.
-            active = undefined;
+            // Read the failed response BEFORE aborting: in browsers the response is the
+            // XMLHttpRequest itself, and abort() resets its status to 0. Reading it after
+            // the abort turned a PATCH/HEAD 404 (expired session) or 401 into a generic
+            // network error, so the bounded restart for the same video never ran.
             const failure = failureDetails(error as UploadFailure);
-            if (failure instanceof VideoAlreadyReceived) return waitForReady(failure.video);
-            if (paused || failure instanceof BunnyUploadPaused) throw new BunnyUploadPaused();
             const status = failure.originalResponse?.getStatus();
             const method = failure.originalRequest?.getMethod();
+            await active?.abort(); // Local abort only: never DELETE the video/resource.
+            active = undefined;
+            if (failure instanceof VideoAlreadyReceived) return waitForReady(failure.video);
+            if (paused || failure instanceof BunnyUploadPaused) throw new BunnyUploadPaused();
             const missingResource = failure instanceof ExpiredResource || (method === 'PATCH' || method === 'HEAD') && (status === 404 || status === 410);
             if (missingResource) {
               // A server-deleted resource has no resumable bytes. Forget the URL
@@ -542,10 +585,22 @@ export function createBunnyUpload(file: File, title: string, options: BunnyUploa
     reject?.(new BunnyUploadPaused());
   }
 
+  /**
+   * Stop and forget this upload in the browser: the next upload of the same file
+   * starts a new operation. Nothing is deleted at Bunny: a video that completed or
+   * is linked to a lesson is never touched, and an unfinished one simply stays unused.
+   */
+  async function cancel(): Promise<void> {
+    await pause();
+    if (key) removeRecord(key);
+    readyResult = undefined;
+  }
+
   return {
     start,
     resume: start,
     pause,
+    cancel,
     complete() { if (key) removeRecord(key); },
   };
 }
