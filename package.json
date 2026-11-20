@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "node scripts/verify-runtime.cjs && prisma generate && next build --webpack",
     "db:push": "prisma db push",
-    "start": "next start",
+    "start": "node scripts/release-migrate.cjs && next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --incremental false",
     "test": "node --test",
