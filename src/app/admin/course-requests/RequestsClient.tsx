@@ -25,6 +25,9 @@ export default function RequestsClient({ viewerId, requests, pendingCourses }: {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  // Publishing approves the price too: prefilled with the instructor's proposal, editable by the reviewer.
+  const [prices, setPrices] = useState<Record<string, { price: string; priceSYP: string }>>(
+    Object.fromEntries(pendingCourses.map(c => [c.id, { price: String(c.price), priceSYP: String(c.priceSYP) }])));
 
   async function send(key: string, url: string, method: string, body: object) {
     setBusy(key); setMessage('');
@@ -53,9 +56,13 @@ export default function RequestsClient({ viewerId, requests, pendingCourses }: {
         <p>المدرب: {course.instructor.name} • التصنيف: {course.category} • ${course.price} / {course.priceSYP.toLocaleString('ar-SY')} ل.س • {course._count.chapters} فصل</p>
         <p><a href={`/courses/${course.id}`} target="_blank" rel="noreferrer">معاينة صفحة الكورس</a></p>
         {own && <p>هذا كورسك، ولا يمكنك اعتماده.</p>}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <label>السعر المعتمد بالدولار <input type="number" min={0} step="0.01" dir="ltr" value={prices[course.id]?.price ?? ''} onChange={e => setPrices({ ...prices, [course.id]: { ...prices[course.id], price: e.target.value } })} /></label>
+          <label>السعر المعتمد بالليرة <input type="number" min={0} step="1" dir="ltr" value={prices[course.id]?.priceSYP ?? ''} onChange={e => setPrices({ ...prices, [course.id]: { ...prices[course.id], priceSYP: e.target.value } })} /></label>
+        </div>
         {reasonBox(course.id, 'سبب الرفض (يظهر للمدرب)')}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-          <button disabled={busy !== null || own} onClick={() => send(course.id, `/api/admin/courses/${course.id}`, 'PUT', { status: 'PUBLISHED' })}>موافقة ونشر</button>
+          <button disabled={busy !== null || own} onClick={() => send(course.id, `/api/admin/courses/${course.id}`, 'PUT', { status: 'PUBLISHED', price: prices[course.id]?.price, priceSYP: prices[course.id]?.priceSYP })}>موافقة ونشر</button>
           <button disabled={busy !== null || own || !reasons[course.id]?.trim()} onClick={() => send(course.id, `/api/admin/courses/${course.id}`, 'PUT', { status: 'REJECTED', reason: reasons[course.id] })}>رفض</button>
         </div>
       </article>;

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { requireRolePage } from '@/lib/rbac';
 import EditCourseClient from './EditCourseClient';
+import { activeCategories } from '@/lib/course-taxonomy';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,11 @@ export default async function EditCoursePage({ params }: { params: Promise<{ cou
   const { courseId } = await params;
   const course = await prisma.course.findUnique({
     where: { id: courseId },
-    select: { id: true, instructorId: true, status: true, title: true, description: true, thumbnail: true, previewVideoUrl: true, includes: true, category: true, price: true, priceSYP: true },
+    select: { id: true, instructorId: true, status: true, title: true, description: true, thumbnail: true, previewVideoUrl: true, includes: true, durationHours: true, category: true, price: true, priceSYP: true },
   });
   // Only the course's own instructor proposes edits; staff edit from the admin pages.
   if (!course || course.instructorId !== session.user.id) return notFound();
+  const categories = (await activeCategories(prisma)).map(c => c.name);
   const requests = await prisma.courseChangeRequest.findMany({
     where: { courseId }, orderBy: { createdAt: 'desc' }, take: 10,
     select: { id: true, status: true, changes: true, reason: true, createdAt: true, reviewedAt: true },
@@ -25,6 +27,7 @@ export default async function EditCoursePage({ params }: { params: Promise<{ cou
     <h1 style={{ margin: '1rem 0 0.5rem' }}>تعديل الكورس</h1>
     <p style={{ opacity: 0.8 }}>تُرسل التعديلات إلى الإدارة للمراجعة. يبقى الكورس الحالي متاحاً للطلاب بقيمه الحالية حتى الموافقة.</p>
     <EditCourseClient
+      categories={categories}
       course={{ ...live, includes: Array.isArray(includes) ? includes.filter((i): i is string => typeof i === 'string') : [] }}
       requests={requests.map(r => ({ ...r, changes: r.changes as Record<string, unknown>, createdAt: r.createdAt.toISOString(), reviewedAt: r.reviewedAt?.toISOString() ?? null }))}
     />

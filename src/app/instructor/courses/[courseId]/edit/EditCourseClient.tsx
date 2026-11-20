@@ -5,11 +5,10 @@ import { BunnyUploadStatus } from '@/components/BunnyUploadStatus';
 import { useBunnyUpload } from '@/hooks/use-bunny-upload';
 import { FIELD_LABELS, type ChangeField } from '@/lib/course-change-request-labels';
 
-type Course = { id: string; status: string; title: string; description: string | null; thumbnail: string | null; previewVideoUrl: string | null; includes: string[]; category: string; price: number; priceSYP: number };
+type Course = { id: string; status: string; title: string; description: string | null; thumbnail: string | null; previewVideoUrl: string | null; includes: string[]; durationHours: number | null; category: string; price: number; priceSYP: number };
 type ChangeRequest = { id: string; status: string; changes: Record<string, unknown>; reason: string | null; createdAt: string; reviewedAt: string | null };
 
 const STATUS: Record<string, string> = { PENDING: 'قيد المراجعة', APPROVED: 'تمت الموافقة', REJECTED: 'مرفوض', CANCELLED: 'مسحوب' };
-const CATEGORIES = ['البرمجة', 'التصميم', 'اللغات', 'العلوم', 'التسويق', 'الأعمال', 'الطب والصحة', 'الهندسة', 'الفنون والموسيقى', 'تطوير الذات', 'التعليم الشرعي'];
 
 /** Resize an image to a JPEG data URL, the same way course creation stores covers. */
 function compressImage(file: File): Promise<string> {
@@ -33,7 +32,7 @@ function compressImage(file: File): Promise<string> {
   });
 }
 
-export default function EditCourseClient({ course, requests }: { course: Course; requests: ChangeRequest[] }) {
+export default function EditCourseClient({ course, requests, categories }: { course: Course; requests: ChangeRequest[]; categories: string[] }) {
   const router = useRouter();
   const pending = requests.find(r => r.status === 'PENDING');
   const proposed = (pending?.changes ?? {}) as Partial<Record<ChangeField, unknown>>;
@@ -42,6 +41,7 @@ export default function EditCourseClient({ course, requests }: { course: Course;
   const [title, setTitle] = useState(initial('title', course.title));
   const [description, setDescription] = useState(initial('description', course.description) ?? '');
   const [category, setCategory] = useState(initial('category', course.category));
+  const [durationHours, setDurationHours] = useState(String(initial('durationHours', course.durationHours) ?? ''));
   const [price, setPrice] = useState(String(initial('price', course.price)));
   const [priceSYP, setPriceSYP] = useState(String(initial('priceSYP', course.priceSYP)));
   const [thumbnail, setThumbnail] = useState(initial('thumbnail', course.thumbnail));
@@ -65,7 +65,7 @@ export default function EditCourseClient({ course, requests }: { course: Course;
       }
       const response = await fetch(`/api/courses/${course.id}/change-requests`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description, category, price, priceSYP, thumbnail, previewVideoUrl: video, includes }),
+        body: JSON.stringify({ title, description, category, price, priceSYP, durationHours: durationHours.trim() ? durationHours : null, thumbnail, previewVideoUrl: video, includes }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'تعذّر إرسال الطلب');
@@ -102,11 +102,14 @@ export default function EditCourseClient({ course, requests }: { course: Course;
       <label style={field}>{FIELD_LABELS.title}<input style={input} required maxLength={200} value={title} onChange={e => setTitle(e.target.value)} /></label>
       <label style={field}>{FIELD_LABELS.description}<textarea style={{ ...input, minHeight: 160 }} maxLength={20000} value={description} onChange={e => setDescription(e.target.value)} /></label>
       <label style={field}>{FIELD_LABELS.category}
-        <input style={input} required maxLength={100} list="kq-categories" value={category} onChange={e => setCategory(e.target.value)} />
-        <datalist id="kq-categories">{CATEGORIES.map(c => <option key={c} value={c} />)}</datalist>
+        <select style={input} required value={category} onChange={e => setCategory(e.target.value)}>
+          {!categories.includes(category) && <option value={category}>{category}</option>}
+          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
       </label>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
         <label style={field}>{FIELD_LABELS.price}<input style={input} type="number" min={0} step="0.01" required value={price} onChange={e => setPrice(e.target.value)} dir="ltr" /></label>
+        <label style={field}>{FIELD_LABELS.durationHours}<input style={input} type="number" min={0.5} max={2000} step="0.5" value={durationHours} onChange={e => setDurationHours(e.target.value)} dir="ltr" /></label>
         <label style={field}>{FIELD_LABELS.priceSYP}<input style={input} type="number" min={0} step="1" required value={priceSYP} onChange={e => setPriceSYP(e.target.value)} dir="ltr" /></label>
       </div>
       <div style={field}>{FIELD_LABELS.thumbnail}
