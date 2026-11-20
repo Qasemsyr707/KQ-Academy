@@ -7,7 +7,7 @@ import { sendPromotionalEmail } from '@/lib/email';
 export async function POST(req: Request) {
   try {
     // Role from the database (not the session token), so a removed admin loses access at once.
-    const staff = await requireRoleApi(['ADMIN'], 'SETTINGS');
+    const staff = await requireRoleApi(['ADMIN'], 'NOTIFICATIONS');
     if (staff.errorResponse) return staff.errorResponse;
 
     const { subject, body, targetAudience } = await req.json();

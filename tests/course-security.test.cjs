@@ -323,7 +323,7 @@ test('instructor live page uses public profile fields, fresh authorization and a
       'next-auth': { getServerSession: async () => ({ user: TEACHER }) },
       '@/lib/auth': { authOptions: {} },
       '@/lib/db': { prisma: {
-        user: { findUnique: async () => ({ adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'], ...options.user }) },
+        user: { findUnique: async () => ({ email: 'u@example.invalid', adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'], ...options.user }) },
         course: { findUnique: async query => project(COURSE, query) },
         lesson: { findUnique: async query => {
           assert.deepEqual(query.where, { id: 'live-lesson', chapter: { courseId: COURSE.id } });

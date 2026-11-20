@@ -105,10 +105,11 @@ export default function AdminClient({ initialPayments, initialCoupons, stats, pe
         {[
           { permission: 'USERS' as Permission, href: '/admin/users', icon: Users, color: '#3b82f6', title: 'إدارة المستخدمين', subtitle: `${stats.totalUsers} مستخدم` },
           { permission: 'COURSES' as Permission, href: '/admin/courses', icon: BookOpen, color: '#8b5cf6', title: 'إدارة الكورسات', subtitle: `${stats.totalCourses} كورس` },
+          { permission: 'COURSE_PUBLISHING' as Permission, href: '/admin/course-requests', icon: BookOpen, color: '#0ea5e9', title: 'مراجعة الكورسات', subtitle: 'كورسات جديدة وطلبات تعديل' },
           { permission: 'CERTIFICATES' as Permission, href: '/admin/certificates', icon: Award, color: '#f59e0b', title: 'إدارة الشهادات', subtitle: 'سجل الشهادات المصدرة' },
           { permission: 'LIVE_CLASSES' as Permission, href: '/admin/live', icon: Video, color: '#ef4444', title: 'البث المباشر', subtitle: `${stats.liveStreams} بث حالي` },
           { permission: 'WALLETS' as Permission, href: '/admin/wallet', icon: CreditCard, color: '#22c55e', title: 'إدارة المحافظ', subtitle: `${stats.pendingWallets} طلب معلق` },
-          { permission: 'SETTINGS' as Permission, href: '/admin/marketing', icon: Megaphone, color: '#CBA153', title: 'التسويق والنمو', subtitle: 'حزم • اشتراكات • إيميل' }
+          { permission: 'MARKETING' as Permission, href: '/admin/marketing', icon: Megaphone, color: '#CBA153', title: 'التسويق والنمو', subtitle: 'حزم • اشتراكات • إيميل' }
         ].filter(item => permissions.includes(item.permission)).map((item, idx) => (
           <motion.div key={idx} variants={cardVariants}>
             <Link 
@@ -210,7 +211,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats, pe
         </div>}
 
         {/* Coupons Section */}
-        {permissions.includes('SETTINGS') && <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        {permissions.includes('MARKETING') && <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Tag color="var(--primary)" /> كوبونات الخصم والتسويق
           </h2>

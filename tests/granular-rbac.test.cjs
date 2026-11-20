@@ -43,8 +43,8 @@ function harness(role = 'ADMIN', permissions = [], options = {}) {
   };
 }
 
-test('all twelve permissions are independent, refreshed, deny by default, and OWNER retains access', async () => {
-  assert.equal(PERMISSION_KEYS.length, 12);
+test('all fifteen permissions are independent, refreshed, deny by default, and OWNER retains access', async () => {
+  assert.equal(PERMISSION_KEYS.length, 15);
   for (const permission of PERMISSION_KEYS) {
     const h = harness();
     assert.equal(await h.permissions.hasPermission('actor', permission), false);

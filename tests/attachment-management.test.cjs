@@ -10,7 +10,7 @@ const LESSON = 'c' + 'a'.repeat(24);
 const CHAPTER = 'c' + 'b'.repeat(24);
 const COURSE = 'c' + 'c'.repeat(24);
 const KEY = '11111111-2222-4333-8444-555555555555';
-const USER = { id: 'teacher-1', role: 'INSTRUCTOR' };
+const USER = { id: 'teacher-1', role: 'INSTRUCTOR', email: 'teacher-1@example.invalid' };
 
 function harness({ user = USER, owner = USER.id, fileOwner = USER.id, present = true } = {}) {
   const writes = [];
@@ -20,7 +20,7 @@ function harness({ user = USER, owner = USER.id, fileOwner = USER.id, present = 
   const mocks = {
     'next-auth': { getServerSession: async () => user ? { user } : null },
     '@/lib/auth': { authOptions: {} },
-    '@/lib/db': { prisma: { user: { findUnique: async ({ where }) => where.id === 'admin' ? { id: 'admin', role: 'ADMIN', adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'] } : user },
+    '@/lib/db': { prisma: { user: { findUnique: async ({ where }) => where.id === 'admin' ? { id: 'admin', role: 'ADMIN', email: 'admin@example.invalid', adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'] } : user },
       lesson: { findUnique: async () => ({ chapter }) }, chapter: { findUnique: async () => chapter },
       course: { findUnique: async () => course },
       attachment: {
@@ -65,7 +65,7 @@ test('external JPG, data URL, traversal and unowned legacy file cannot be newly 
 
 test('student, foreign instructor, missing original, foreign upload, and multiple targets never write', async () => {
   for (const [config, extra, expected] of [
-    [{ user: null }, {}, 403], [{ user: { id: 'student', role: 'STUDENT' } }, {}, 403],
+    [{ user: null }, {}, 403], [{ user: { id: 'student', role: 'STUDENT', email: 's@example.invalid' } }, {}, 403],
     [{ owner: 'other-teacher' }, {}, 403], [{ fileOwner: 'other-teacher' }, {}, 403],
     [{ present: false }, {}, 410], [{}, { lessonId: LESSON }, 400],
   ]) {

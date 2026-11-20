@@ -8,7 +8,9 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     if (!authorized) return errorResponse;
 
     const params = await props.params;
-    const { status, title, price, priceSYP, instructorId, type, isFeatured } = await req.json();
+    const { status, title, price, priceSYP, instructorId, type, isFeatured, reason } = await req.json();
+    const before = await prisma.course.findUnique({ where: { id: params.id }, select: { status: true } });
+    if (!before) return NextResponse.json({ error: 'الكورس غير موجود' }, { status: 404 });
 
     if (status !== undefined) {
       if (!['PENDING', 'PUBLISHED', 'REJECTED'].includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
@@ -32,6 +34,15 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       }
     });
 
+    if (status !== undefined && status !== before.status && status !== 'PENDING') {
+      const why = typeof reason === 'string' && reason.trim() ? ` السبب: ${reason.trim().slice(0, 500)}` : '';
+      await prisma.notification.create({ data: {
+        userId: course.instructor.id,
+        title: status === 'PUBLISHED' ? 'تمت الموافقة على نشر كورسك' : 'لم تتم الموافقة على نشر كورسك',
+        message: status === 'PUBLISHED' ? `أصبح «${course.title}» متاحاً للطلاب.` : `«${course.title}» غير منشور حالياً.${why}`,
+        link: '/instructor/courses',
+      } }).catch(error => console.error('[admin-courses] notify instructor', error));
+    }
     return NextResponse.json({ message: 'تم تحديث الكورس بنجاح', course }, { status: 200 });
   } catch (error) {
     console.error('Update Admin Course API Error:', error);

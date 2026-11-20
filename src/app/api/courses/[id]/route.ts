@@ -24,7 +24,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     // Verify ownership
     const course = await prisma.course.findUnique({
       where: { id: id },
-      select: { instructorId: true }
+      select: { instructorId: true, status: true }
     });
 
     if (!course) {
@@ -35,6 +35,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const user = session.user as { id?: string; role?: string };
     if (course.instructorId !== user.id && !['ADMIN', 'OWNER'].includes(user.role ?? '')) {
       return NextResponse.json({ error: 'غير مصرح لك بتعديل هذا الكورس' }, { status: 403 });
+    }
+
+    // A published course keeps its approved values: the instructor proposes changes for review instead.
+    if (!['ADMIN', 'OWNER'].includes(user.role ?? '') && course.status === 'PUBLISHED') {
+      return NextResponse.json({ error: 'الكورس منشور. أرسل التعديلات كطلب مراجعة من صفحة «تعديل الكورس»', changeRequestUrl: `/api/courses/${id}/change-requests` }, { status: 409 });
     }
 
     // Content fields only, validated; price, status, type, featuring and ownership

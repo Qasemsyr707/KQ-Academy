@@ -2,6 +2,7 @@ import { hasPermission } from '@/lib/permission-check';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
+import { notifyCourseReviewers } from '@/lib/course-change-request';
 
 export async function POST(req: Request) {
   try {
@@ -25,13 +26,18 @@ export async function POST(req: Request) {
         priceSYP: Number(priceSYP) || 0,
         category,
         instructorId: userId,
-        status: session.user.role === 'ADMIN' && !await hasPermission(session.user.id, 'COURSE_PUBLISHING') ? 'PENDING' : 'PUBLISHED',
+        // Instructor courses, and those of administrators without the review permission, wait for approval.
+        status: session.user.role === 'OWNER' || (session.user.role === 'ADMIN' && await hasPermission(session.user.id, 'COURSE_PUBLISHING')) ? 'PUBLISHED' : 'PENDING',
         thumbnail: thumbnail || `linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #0f172a 100%)`,
         includes: includes || null
       }
     });
 
-    return NextResponse.json({ course, message: 'تم إنشاء الكورس بنجاح' }, { status: 201 });
+    if (course.status === 'PENDING') {
+      await notifyCourseReviewers('كورس جديد بانتظار المراجعة', `«${course.title}» بانتظار الموافقة قبل نشره`, '/admin/course-requests')
+        .catch(error => console.error('[courses] notify reviewers', error));
+    }
+    return NextResponse.json({ course, message: course.status === 'PENDING' ? 'تم إنشاء الكورس، وسيظهر للطلاب بعد موافقة الإدارة' : 'تم إنشاء الكورس بنجاح' }, { status: 201 });
 
   } catch (error) {
     console.error('Create Course API Error:', error);

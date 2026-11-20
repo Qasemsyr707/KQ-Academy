@@ -73,6 +73,25 @@ model PermissionAuditLog {
   @@index([createdAt])
 }
 
+// An instructor's proposed edit to a live course. Nothing changes on the course until a reviewer approves it.
+model CourseChangeRequest {
+  id           String    @id @default(cuid())
+  courseId     String
+  course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructorId String
+  changes      Json
+  previous     Json
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
+  reason       String?
+  reviewerId   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([courseId, createdAt])
+}
+
 model Course {
   id          String   @id @default(cuid())
   title       String
@@ -104,6 +123,7 @@ model Course {
   bundles      BundleCourse[]
   attachments  Attachment[]
   liveClasses  LiveClass[]
+  changeRequests CourseChangeRequest[]
 }
 
 model Chapter {

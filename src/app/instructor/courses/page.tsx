@@ -54,7 +54,7 @@ export default async function InstructorCoursesPage() {
             ) : (
               courses.map((course) => (
                 <tr key={course.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '1.5rem 1rem', fontWeight: 'bold' }}>{course.title}</td>
+                  <td style={{ padding: '1.5rem 1rem', fontWeight: 'bold' }}>{course.title}{course.status !== 'PUBLISHED' && <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'normal', color: course.status === 'PENDING' ? '#fbbf24' : '#ef4444' }}>{course.status === 'PENDING' ? 'بانتظار موافقة الإدارة' : 'غير منشور بقرار الإدارة'}</span>}</td>
                   <td style={{ padding: '1.5rem 1rem', color: 'var(--primary)', fontWeight: 'bold' }}>${course.price.toLocaleString()}</td>
                   <td style={{ padding: '1.5rem 1rem' }}>{course.enrollments.length} طالب</td>
                   <td style={{ padding: '1.5rem 1rem' }}>{course.chapters.length} فصل</td>
@@ -62,6 +62,9 @@ export default async function InstructorCoursesPage() {
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <Link href={`/instructor/courses/${course.id}/chapters`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem' }}>
                         <Video size={16} /> إدارة المحتوى
+                      </Link>
+                      <Link href={`/instructor/courses/${course.id}/edit`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem' }}>
+                        تعديل الكورس
                       </Link>
                       <Link href={`/courses/${course.id}`} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.05)', color: '#fff', padding: '0.5rem 1rem', borderRadius: '8px', textDecoration: 'none', fontSize: '0.9rem' }}>
                         <Eye size={16} /> معاينة

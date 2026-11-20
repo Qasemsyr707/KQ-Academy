@@ -116,7 +116,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       const data = changes(input, target);
       authorize(actor, target, data);
       const required: Permission[] = [];
-      if ('role' in data) required.push('ADMINISTRATORS');
+      if ('role' in data) required.push(data.role === 'ADMIN' || target.role === 'ADMIN' ? 'ADMINISTRATORS' : 'INSTRUCTORS');
       if ('walletUSD' in data || 'walletSYP' in data) required.push('WALLETS');
       if ('isBanned' in data || 'banReason' in data || 'bannedUntil' in data) required.push('USER_BANNING');
       if ('maxLiveStreams' in data) required.push('LIVE_CLASSES');
