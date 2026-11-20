@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { isPrivateFileId, PrivateFileError, readPrivateFileMetadata } from '@/lib/private-file-storage';
 
 /** An instructor cannot grant a new course access to someone else's upload by
@@ -14,7 +15,7 @@ export async function assertOwnedDocumentReference(user: { id: string; role?: st
   }
   const metadata = await readPrivateFileMetadata(match[1]);
   if (!metadata) throw new PrivateFileError(410, 'الملف الأصلي غير موجود؛ يرجى إعادة رفعه');
-  if (metadata.ownerId !== user.id && !['ADMIN', 'OWNER'].includes(user.role || '')) {
+  if (metadata.ownerId !== user.id && !(['ADMIN', 'OWNER'].includes(user.role ?? '') && await hasPermission(user.id, 'COURSES'))) {
     throw new PrivateFileError(403, 'غير مصرح بربط مستند يخص مستخدماً آخر');
   }
 }

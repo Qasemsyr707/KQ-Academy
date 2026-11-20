@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
-    const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+    const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'LIVE_CLASSES');
     if (!authorized) return errorResponse;
 
     const params = await props.params;
@@ -25,7 +25,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
-    const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+    const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'LIVE_CLASSES');
     if (!authorized) return errorResponse;
 
     const params = await props.params;

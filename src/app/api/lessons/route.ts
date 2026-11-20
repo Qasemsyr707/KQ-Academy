@@ -10,7 +10,7 @@ import { normalizeLessonVideoReference } from '@/lib/lesson-video';
 export async function POST(req: Request) {
   try {
     // A session role can be stale after a ban or downgrade; use the current DB role.
-    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
     if (!authorized) return errorResponse;
     const user = session.user as { id: string; role: string };
 

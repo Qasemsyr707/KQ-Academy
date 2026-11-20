@@ -6,7 +6,7 @@ import { paymentBody, paymentId, walletError, WALLET_HEADERS } from '@/lib/payme
 
 export async function POST(req: Request) {
   try {
-    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER']);
+    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER'], 'COURSES');
     const { title, chapterId } = paymentBody(await req.json());
     if (typeof title !== 'string' || !title.trim() || !paymentId(chapterId)) throw new CheckoutError(400, 'بيانات ناقصة');
     const chapter = await prisma.chapter.findUnique({

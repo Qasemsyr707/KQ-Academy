@@ -42,7 +42,7 @@ function harness({ payment = makePayment(), role = 'ADMIN', banned = false, sess
     'next-auth': { getServerSession: async () => session ? { user: { id: 'reviewer', role: 'ADMIN' } } : null },
     '@/lib/db': { prisma: { user: { findUnique: async ({ where }) => {
       assert.equal(where.id, 'reviewer');
-      return { id: 'reviewer', role, email: 'reviewer@example.test', name: 'Reviewer', phone: null, isBanned: banned };
+      return { id: 'reviewer', role, adminPermissions: ['PAYMENTS'], email: 'reviewer@example.test', name: 'Reviewer', phone: null, isBanned: banned };
     } } } },
     // Functional transaction mock: stage writes, serialize callbacks, publish only
     // on success. Actual PostgreSQL isolation is verified separately in staging.

@@ -9,7 +9,7 @@ import { requireRequestUser, RequestUserError } from '@/lib/request-user';
  */
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
-    const actor = await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    const actor = await requireRequestUser(req, ['ADMIN', 'OWNER'], 'LIVE_CLASSES');
     const { id } = await props.params;
     let body: unknown;
     try { body = await req.json(); } catch { body = null; }

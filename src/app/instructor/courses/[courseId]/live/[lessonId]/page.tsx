@@ -1,6 +1,7 @@
+import { requireRolePage } from '@/lib/rbac';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { getCourseViewer, managesCourse } from '@/lib/course-access';
+import { getCourseViewer } from '@/lib/course-access';
 import { publicInstructorSelect } from '@/lib/public-course';
 import LiveInstructorClient from './LiveInstructorClient';
 
@@ -8,6 +9,7 @@ export default async function InstructorLiveLessonPage({ params }: { params: Pro
   const resolvedParams = await params;
   const { courseId, lessonId } = resolvedParams;
 
+  await requireRolePage(['ADMIN', 'INSTRUCTOR'], '/dashboard', 'LIVE_CLASSES');
   const user = await getCourseViewer();
   if (!user || !['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role)) {
     redirect('/login');
@@ -20,7 +22,7 @@ export default async function InstructorLiveLessonPage({ params }: { params: Pro
     }
   });
 
-  if (!course || !managesCourse(course, user)) {
+  if (!course || (user.role === 'INSTRUCTOR' && course.instructorId !== user.id)) {
     redirect('/instructor/courses');
   }
 

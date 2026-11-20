@@ -7,7 +7,7 @@ import ChaptersClient from './ChaptersClient';
 export const dynamic = 'force-dynamic';
 
 export default async function ChaptersManagementPage({ params }: { params: Promise<{ courseId: string }> }) {
-  const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR']);
+  const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR'], '/dashboard', 'COURSES');
   const resolvedParams = await params;
 
   const course = await prisma.course.findUnique({
@@ -31,7 +31,7 @@ export default async function ChaptersManagementPage({ params }: { params: Promi
   }
 
   // Ensure this instructor owns the course
-  if (course.instructorId !== (session.user as any).id && (session.user as any).role !== 'ADMIN') {
+  if (course.instructorId !== (session.user as any).id && (session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'OWNER') {
     return notFound();
   }
 

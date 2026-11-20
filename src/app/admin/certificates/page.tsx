@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminCertificatesPage() {
   // Role from the database (not the session token); the owner is allowed too.
-  await requireRolePage(['ADMIN'], '/login');
+  await requireRolePage(['ADMIN'], '/login', 'CERTIFICATES');
 
   const certificates = await prisma.certificate.findMany({
     include: {

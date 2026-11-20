@@ -7,7 +7,7 @@ import { ArrowRight } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminUsersPage() {
-  const { role } = await requireRolePage(['ADMIN']);
+  const { role } = await requireRolePage(['ADMIN'], '/dashboard', 'USERS');
 
   const users = await prisma.user.findMany({
     select: {

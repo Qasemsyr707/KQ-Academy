@@ -5,7 +5,7 @@ import { reviewManualPayment } from '@/lib/payments/admin-review';
 
 export async function POST(req: Request) {
   try {
-    await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    await requireRequestUser(req, ['ADMIN', 'OWNER'], 'PAYMENTS');
     const body: unknown = await req.json();
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return NextResponse.json({ error: 'بيانات الدفع غير صالحة' }, { status: 400 });

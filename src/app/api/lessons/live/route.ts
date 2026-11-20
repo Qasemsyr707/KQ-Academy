@@ -1,3 +1,4 @@
+import { requireRoleApi } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -5,7 +6,9 @@ import { prisma } from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const gate = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'LIVE_CLASSES');
+    if (!gate.authorized) return gate.errorResponse;
+    const session = gate.session;
     const user = session?.user as any;
     
     if (!session || !user || (user.role !== 'INSTRUCTOR' && user.role !== 'ADMIN' && user.role !== 'OWNER')) {

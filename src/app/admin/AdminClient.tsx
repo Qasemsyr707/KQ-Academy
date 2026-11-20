@@ -1,11 +1,12 @@
 'use client';
 
+import type { Permission } from '@/lib/permissions';
 import { useState } from 'react';
 import { Tag, CheckCircle, XCircle, Users, BookOpen, CreditCard, Video, Shield, Settings, Activity, Megaphone, Award } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-export default function AdminClient({ initialPayments, initialCoupons, stats }: { initialPayments: any[], initialCoupons: any[], stats: any }) {
+export default function AdminClient({ initialPayments, initialCoupons, stats, permissions, isOwner }: { permissions: Permission[], isOwner: boolean, initialPayments: any[], initialCoupons: any[], stats: any }) {
   const [payments, setPayments] = useState(initialPayments);
   const [coupons, setCoupons] = useState(initialCoupons);
 
@@ -93,6 +94,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
         </div>
       )}
       
+      {isOwner && <Link href="/admin/permissions">إدارة صلاحيات المدراء وسجل التغييرات</Link>}
       {/* Quick Links Bento Grid */}
       <motion.div 
         initial="hidden"
@@ -101,13 +103,13 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}
       >
         {[
-          { href: '/admin/users', icon: Users, color: '#3b82f6', title: 'إدارة المستخدمين', subtitle: `${stats.totalUsers} مستخدم` },
-          { href: '/admin/courses', icon: BookOpen, color: '#8b5cf6', title: 'إدارة الكورسات', subtitle: `${stats.totalCourses} كورس` },
-          { href: '/admin/certificates', icon: Award, color: '#f59e0b', title: 'إدارة الشهادات', subtitle: 'سجل الشهادات المصدرة' },
-          { href: '/admin/live', icon: Video, color: '#ef4444', title: 'البث المباشر', subtitle: `${stats.liveStreams} بث حالي` },
-          { href: '/admin/wallet', icon: CreditCard, color: '#22c55e', title: 'إدارة المحافظ', subtitle: `${stats.pendingWallets} طلب معلق` },
-          { href: '/admin/marketing', icon: Megaphone, color: '#CBA153', title: 'التسويق والنمو', subtitle: 'حزم • اشتراكات • إيميل' }
-        ].map((item, idx) => (
+          { permission: 'USERS' as Permission, href: '/admin/users', icon: Users, color: '#3b82f6', title: 'إدارة المستخدمين', subtitle: `${stats.totalUsers} مستخدم` },
+          { permission: 'COURSES' as Permission, href: '/admin/courses', icon: BookOpen, color: '#8b5cf6', title: 'إدارة الكورسات', subtitle: `${stats.totalCourses} كورس` },
+          { permission: 'CERTIFICATES' as Permission, href: '/admin/certificates', icon: Award, color: '#f59e0b', title: 'إدارة الشهادات', subtitle: 'سجل الشهادات المصدرة' },
+          { permission: 'LIVE_CLASSES' as Permission, href: '/admin/live', icon: Video, color: '#ef4444', title: 'البث المباشر', subtitle: `${stats.liveStreams} بث حالي` },
+          { permission: 'WALLETS' as Permission, href: '/admin/wallet', icon: CreditCard, color: '#22c55e', title: 'إدارة المحافظ', subtitle: `${stats.pendingWallets} طلب معلق` },
+          { permission: 'SETTINGS' as Permission, href: '/admin/marketing', icon: Megaphone, color: '#CBA153', title: 'التسويق والنمو', subtitle: 'حزم • اشتراكات • إيميل' }
+        ].filter(item => permissions.includes(item.permission)).map((item, idx) => (
           <motion.div key={idx} variants={cardVariants}>
             <Link 
               href={item.href} 
@@ -166,7 +168,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
         
         {/* Pending Payments Section */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        {permissions.includes('PAYMENTS') && <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <CheckCircle color="var(--warning)" /> طلبات شراء الكورسات ({payments.length})
           </h2>
@@ -205,10 +207,10 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
               ))}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Coupons Section */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        {permissions.includes('SETTINGS') && <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Tag color="var(--primary)" /> كوبونات الخصم والتسويق
           </h2>
@@ -252,14 +254,14 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
               ))
             )}
           </div>
-        </div>
+        </div>}
 
       </div>
 
-      {/* Payment Settings Section (Owner Only) */}
-      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginTop: '1rem' }}>
+      {/* Payment Settings */}
+      {permissions.includes('SETTINGS') && <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginTop: '1rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Settings color="var(--primary)" /> إعدادات بوابات الدفع (خاص بالمالك)
+          <Settings color="var(--primary)" /> إعدادات بوابات الدفع
         </h2>
         <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '2rem' }}>يمكنك هنا تفعيل أو تعطيل أي وسيلة دفع في المنصة. الوسائل المعطلة لن تظهر للطلاب في صفحة الدفع.</p>
         
@@ -310,7 +312,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats }: 
             </div>
           ))}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

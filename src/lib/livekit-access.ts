@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { AccessToken, TrackSource, type VideoGrant } from 'livekit-server-sdk';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
@@ -18,8 +19,8 @@ function validRoomReference(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{1,200}$/.test(value);
 }
 
-function canHost(user: RequestUser, course: Course, instructorId = course.instructorId) {
-  return ['ADMIN', 'OWNER'].includes(user.role)
+async function canHost(user: RequestUser, course: Course, instructorId = course.instructorId) {
+  return (['ADMIN', 'OWNER'].includes(user.role ?? '') && await hasPermission(user.id, 'LIVE_CLASSES'))
     || (user.role === 'INSTRUCTOR' && (course.instructorId === user.id || instructorId === user.id));
 }
 
@@ -38,7 +39,7 @@ async function liveClassAccess(user: RequestUser, id: string): Promise<RoomAcces
   });
   if (!liveClass) throw new LiveKitAccessError(404, 'الجلسة غير موجودة');
   if (!['upcoming', 'live'].includes(liveClass.status)) throw new LiveKitAccessError(409, 'هذه الجلسة غير متاحة حالياً');
-  const host = canHost(user, liveClass.course, liveClass.instructorId);
+  const host = await canHost(user, liveClass.course, liveClass.instructorId);
   if (!host) await requireCourseViewer(user, liveClass.course);
   return { room: `live_${liveClass.id}`, canPublish: host };
 }
@@ -61,7 +62,7 @@ async function resolveRoomAccess(user: RequestUser, reference: RoomReference): P
   if (lesson) {
     if (!lesson.isLive || !lesson.liveRoomName) throw new LiveKitAccessError(404, 'الجلسة غير موجودة');
     const course = lesson.chapter.course;
-    const host = canHost(user, course);
+    const host = await canHost(user, course);
     if (!host) await requireCourseViewer(user, course, isPublicLesson(course, lesson.chapter.isFree));
     return { room: lesson.liveRoomName, canPublish: host };
   }

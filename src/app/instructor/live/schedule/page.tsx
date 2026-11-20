@@ -1,3 +1,4 @@
+import { requireRolePage } from '@/lib/rbac';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -5,7 +6,7 @@ import { redirect } from 'next/navigation';
 import LiveScheduleClient from './LiveScheduleClient';
 
 export default async function ScheduleLivePage() {
-  const session = await getServerSession(authOptions);
+  const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR'], '/dashboard', 'LIVE_CLASSES');
 
   if (!session) {
     redirect('/login');

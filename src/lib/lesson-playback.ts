@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { prisma } from '@/lib/db';
 import { getBunnyPlaybackUrl } from '@/lib/bunny-playback';
 import { assertBunnyVideoReady } from '@/lib/bunny-upload-server';
@@ -20,9 +21,9 @@ export function isPublicLesson(course: Pick<LessonCourse, 'status' | 'price' | '
   return course.status === 'PUBLISHED' && (isFree || (course.price === 0 && course.priceSYP === 0));
 }
 
-export function managesLessonCourse(course: Pick<LessonCourse, 'instructorId'>, viewer?: LessonViewer | null): boolean {
+export async function managesLessonCourse(course: Pick<LessonCourse, 'instructorId'>, viewer?: LessonViewer | null): Promise<boolean> {
   return !!viewer && ((viewer.role === 'INSTRUCTOR' && course.instructorId === viewer.id)
-    || ['ADMIN', 'OWNER'].includes(viewer.role ?? ''));
+    || (['ADMIN', 'OWNER'].includes(viewer.role ?? '') && await hasPermission(viewer.id, 'COURSES')));
 }
 
 /** Every playback request checks the real lesson relation before exposing a URL
@@ -41,7 +42,7 @@ export async function getLessonPlayback(lessonId: string, viewer?: LessonViewer 
   });
   if (!lesson) throw new LessonPlaybackError(404, 'الدرس غير موجود');
   const { course, isFree } = lesson.chapter;
-  let allowed = managesLessonCourse(course, viewer) || isPublicLesson(course, isFree);
+  let allowed = await managesLessonCourse(course, viewer) || isPublicLesson(course, isFree);
   if (!allowed && viewer) {
     allowed = !!await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId: viewer.id, courseId: course.id } },

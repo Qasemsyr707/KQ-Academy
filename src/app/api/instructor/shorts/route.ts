@@ -1,3 +1,4 @@
+import { requireRoleApi } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
@@ -6,8 +7,10 @@ import { assertBunnyVideoReady, authorizeCourseUpload, BunnyServerError } from '
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user || ((session.user as any).role !== 'INSTRUCTOR' && (session.user as any).role !== 'ADMIN')) {
+    const gate = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'MODERATION');
+    if (!gate.authorized) return gate.errorResponse;
+    const session = gate.session;
+    if (!session || !session.user || ((session.user as any).role !== 'INSTRUCTOR' && (session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'OWNER')) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 

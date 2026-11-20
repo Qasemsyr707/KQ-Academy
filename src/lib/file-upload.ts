@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -70,7 +71,9 @@ async function uploadImage(bytes: Buffer, file: File, localImages: boolean, owne
 export async function handleFileUpload(request: Request, localImages = false) {
   try {
     const session = await getServerSession(authOptions);
-    const user = session?.user as { id?: string; role?: string } | undefined;
+    const identity = session?.user;
+    const user = identity?.id ? await prisma.user.findUnique({ where: { id: identity.id }, select: { id: true, role: true, isBanned: true } }) : null;
+    if (user?.isBanned) throw new UploadError(401, 'Unauthorized');
     if (typeof user?.id !== 'string' || !user.id) throw new UploadError(401, 'غير مصرح');
     const form = await readMultipart(request);
     const file = form.get('file');
@@ -85,11 +88,12 @@ export async function handleFileUpload(request: Request, localImages = false) {
     const courseId = form.get('courseId');
     if (courseId !== null && typeof courseId !== 'string') throw new UploadError(400, 'معرّف الكورس غير صالح');
     if (courseId) {
+      if (user.role === 'ADMIN' && !await hasPermission(user.id, 'COURSES')) throw new UploadError(403, 'Permission denied');
       if (!['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role || '')) throw new UploadError(403, 'رفع مستندات الكورس متاح للمدرّب المخوّل فقط');
       if (courseId.length > 200) throw new UploadError(400, 'معرّف الكورس غير صالح');
       const course = await prisma.course.findUnique({ where: { id: courseId }, select: { instructorId: true } });
       if (!course) throw new UploadError(404, 'الكورس غير موجود');
-      if (course.instructorId !== user.id && !['ADMIN', 'OWNER'].includes(user.role || '')) throw new UploadError(403, 'هذا الكورس لا يخص المدرّب');
+      if (course.instructorId !== user.id && !await hasPermission(user.id!, 'COURSES')) throw new UploadError(403, 'هذا الكورس لا يخص المدرّب');
     }
     const mimeType = await validateDocumentBytes(bytes, name, file.type);
     // Unbound student submissions stay private to their uploader. Assigning an

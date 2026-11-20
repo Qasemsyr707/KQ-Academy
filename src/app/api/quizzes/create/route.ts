@@ -7,7 +7,7 @@ import { PrivateFileError } from '@/lib/private-file-storage';
 
 export async function POST(request: Request) {
   try {
-    const user = await requireRequestUser(request, ['INSTRUCTOR', 'ADMIN', 'OWNER']);
+    const user = await requireRequestUser(request, ['INSTRUCTOR', 'ADMIN', 'OWNER'], 'COURSES');
 
     const { title, chapterId, type, passingScore, totalMarks, fileUrl, questions } = await request.json();
 

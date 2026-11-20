@@ -36,7 +36,7 @@ async function harness(t, { user = USER, owner = USER.id, imageStatus = 200 } = 
   const mocks = {
     'next-auth': { getServerSession: async () => user ? { user } : null },
     '@/lib/auth': { authOptions: {} },
-    '@/lib/db': { prisma: {
+    '@/lib/db': { prisma: { user: { findUnique: async ({ where }) => where.id === 'admin' ? { id: 'admin', role: 'ADMIN', adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'] } : user },
       course: { findUnique: async () => owner === null ? null : { instructorId: owner } },
       storedFile: { create: async args => { writes.push(args); return { id: LEGACY_IMAGE }; } },
     } },

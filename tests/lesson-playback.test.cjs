@@ -15,7 +15,7 @@ function harness({ user = STUDENT, enrolled = false, free = false, price = 100, 
   }
   const mocks = {
     '@/lib/db': { prisma: {
-      user: { findUnique: async () => bearerUser },
+      user: { findUnique: async () => bearerUser && ({ adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'], ...bearerUser }) },
       lesson: { findUnique: async () => { events.push('lesson'); return missing ? null : {
         videoUrl, isLive: false,
         chapter: { isFree: free, course: { id: 'course', instructorId: 'teacher', status, price, priceSYP: price } },

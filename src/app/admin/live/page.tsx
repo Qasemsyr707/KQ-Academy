@@ -7,7 +7,7 @@ import LiveClient from './LiveClient';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLivePage() {
-  await requireRolePage(['ADMIN']);
+  await requireRolePage(['ADMIN'], '/dashboard', 'LIVE_CLASSES');
 
   const streams = await prisma.liveClass.findMany({
     include: {

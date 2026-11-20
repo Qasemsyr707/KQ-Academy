@@ -17,7 +17,7 @@ function settingError(error: unknown) {
 // GET all settings
 export async function GET(req: Request) {
   try {
-    await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    await requireRequestUser(req, ['ADMIN', 'OWNER'], 'SETTINGS');
     const settings = await prisma.setting.findMany();
     const settingsMap: Record<string, string> = Object.fromEntries(settings.map(setting => [setting.key, setting.value]));
     // Preserve the display default without writing to the database on GET.
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 // UPDATE a setting
 export async function POST(req: Request) {
   try {
-    await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    await requireRequestUser(req, ['ADMIN', 'OWNER'], 'SETTINGS');
     const body: unknown = await req.json();
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return NextResponse.json({ error: 'بيانات الإعداد غير صالحة' }, { status: 400, headers: privateHeaders });

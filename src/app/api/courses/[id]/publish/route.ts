@@ -11,7 +11,7 @@ import { requireRoleApi } from '@/lib/rbac';
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Role from the database (checkRole), not the session token.
-    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSE_PUBLISHING');
     if (!authorized) return errorResponse;
 
     const resolvedParams = await params;

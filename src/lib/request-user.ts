@@ -2,6 +2,8 @@ import { getServerSession } from 'next-auth';
 import jwt from 'jsonwebtoken';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { hasPermission } from '@/lib/permission-check';
+import type { Permission } from '@/lib/permissions';
 
 export class RequestUserError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
@@ -16,7 +18,7 @@ export interface RequestUser {
 }
 
 /** Resolve identity from a verified credential, then refresh privileges from DB. */
-export async function requireRequestUser(req: Request, roles?: readonly string[]): Promise<RequestUser> {
+export async function requireRequestUser(req: Request, roles?: readonly string[], permission?: Permission): Promise<RequestUser> {
   const secret = process.env.NEXTAUTH_SECRET;
   if (!secret) throw new RequestUserError(503, 'خدمة تسجيل الدخول غير متاحة حالياً');
   let id: unknown;
@@ -49,5 +51,6 @@ export async function requireRequestUser(req: Request, roles?: readonly string[]
   });
   if (!user || user.isBanned) throw new RequestUserError(401, 'يرجى تسجيل الدخول');
   if (roles && !roles.includes(user.role)) throw new RequestUserError(403, 'غير مصرح لك بإجراء هذه العملية');
+  if (user.role === 'ADMIN' && permission && !await hasPermission(user.id, permission)) throw new RequestUserError(403, 'ليس لديك الإذن المطلوب');
   return { id: user.id, role: user.role, email: user.email, name: user.name, phone: user.phone };
 }

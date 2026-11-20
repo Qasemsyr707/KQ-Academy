@@ -6,7 +6,7 @@ import { paymentBody, paymentId, walletError, WALLET_HEADERS } from '@/lib/payme
 
 export async function POST(req: Request) {
   try {
-    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER']);
+    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER'], 'COURSES');
     const { text, options, correctAnswer, quizId } = paymentBody(await req.json());
     if (typeof text !== 'string' || !text.trim() || !paymentId(quizId)
       || !Array.isArray(options) || options.length < 2 || !options.every(option => typeof option === 'string')

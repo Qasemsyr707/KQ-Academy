@@ -6,7 +6,7 @@ import { PlusCircle, Edit3, Eye, Video } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 export default async function InstructorCoursesPage() {
-  const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR']);
+  const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR'], '/dashboard', 'COURSES');
 
   const courses = await prisma.course.findMany({
     where: {

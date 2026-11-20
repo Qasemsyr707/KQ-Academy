@@ -24,7 +24,7 @@ function harness(config = {}) {
     } },
     '@/lib/db': { prisma: {
       course: { create: record('course.create', ({ data }) => ({ id: 'new-course', ...data })) },
-      user: { findFirst: async () => { throw new Error('never choose an arbitrary instructor'); } },
+      user: { findUnique: async () => ({ adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'], ...user }), findFirst: async () => { throw new Error('never choose an arbitrary instructor'); } },
       setting: {
         findMany: record('setting.findMany', config.settings ?? [{ key: 'ENABLE_STRIPE', value: 'true' }]),
         create: async () => { throw new Error('GET must never create a default setting'); },
@@ -70,7 +70,7 @@ test('authorized mobile course creation uses current ownership and preserves mob
     assert.equal(response.status, 201);
     assertPrivate(response);
     const expected = { title: 'Physics', description: '', category: 'Science', type: 'CURRICULUM', price: 12.5,
-      instructorId: USER.id, thumbnail: 'https://images.academy.test/course.jpg' };
+      instructorId: USER.id, thumbnail: 'https://images.academy.test/course.jpg', status: 'PUBLISHED' };
     assert.deepEqual(h.calls.slice(1), [{ name: 'course.create', args: { data: expected } }]);
     assert.deepEqual(await response.json(), { id: 'new-course', ...expected });
   }
@@ -81,7 +81,7 @@ test('mobile course defaults remain free skill courses owned by the current inst
   const response = await h.course.POST(request('/api/mobile/courses', { title: 'Free course' }));
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { id: 'new-course', title: 'Free course', description: '', type: 'SKILL',
-    price: 0, instructorId: USER.id, category: 'عام', thumbnail: null });
+    price: 0, instructorId: USER.id, category: 'عام', thumbnail: null, status: 'PUBLISHED' });
 });
 
 test('invalid mobile course payloads cannot cause database writes or accidental free-price coercion', async () => {

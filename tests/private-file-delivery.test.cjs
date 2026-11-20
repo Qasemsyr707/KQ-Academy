@@ -52,7 +52,7 @@ function harness(config = {}) {
     quizAttempt: { findMany: async () => config.submissionRefs ?? [] },
     payment: { findMany: async () => config.receiptRefs ?? [] },
     walletTransaction: { findMany: async () => config.walletRefs ?? [] },
-    user: { findFirst: async () => config.publicAvatar ? { id: 'avatar-user' } : null },
+    user: { findUnique: async () => user && ({ adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'], ...user }), findFirst: async () => config.publicAvatar ? { id: 'avatar-user' } : null },
     storedFile: { findUnique: async ({ select }) => {
       if (select.data) { reads.bytes++; return config.missingBytes ? null : { data: bytes.toString('base64') }; }
       reads.metadata++;

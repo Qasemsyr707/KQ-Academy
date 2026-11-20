@@ -1,3 +1,4 @@
+import { requireRoleApi } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
@@ -7,7 +8,9 @@ import { isPrivateFileId, readPrivateFileMetadata, PrivateFileError } from '@/li
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const gate = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
+    if (!gate.authorized) return gate.errorResponse;
+    const session = gate.session;
     if (!session || !session.user) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }

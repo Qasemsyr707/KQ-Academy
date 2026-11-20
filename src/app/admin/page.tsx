@@ -3,11 +3,15 @@ import { prisma } from '@/lib/db';
 import { CreditCard, Users, BookOpen, Tag, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import AdminClient from './AdminClient';
+import { hasPermission } from '@/lib/permission-check';
+import { PERMISSION_KEYS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const { session } = await requireRolePage(['ADMIN']);
+  const { session } = await requireRolePage(['ADMIN'], '/dashboard', 'DASHBOARD');
+  const permissions = (await Promise.all(PERMISSION_KEYS.map(async key =>
+    await hasPermission(session.user.id, key) ? key : null))).filter(key => key !== null);
 
   // Fetch stats
   const totalUsers = await prisma.user.count();
@@ -24,7 +28,7 @@ export default async function AdminDashboard() {
   const pendingWallets = await prisma.walletTransaction.count({ where: { status: 'PENDING', type: 'DEPOSIT' } });
 
   // Fetch Pending Payments
-  const pendingPayments = await prisma.payment.findMany({
+  const pendingPayments = permissions.includes('PAYMENTS') ? await prisma.payment.findMany({
     where: { status: 'PENDING' },
     include: {
       user: { select: { name: true, email: true } },
@@ -32,18 +36,20 @@ export default async function AdminDashboard() {
     },
     orderBy: { createdAt: 'desc' },
     take: 10
-  });
+  }) : [];
 
   // Fetch Coupons
-  const coupons = await prisma.coupon.findMany({
+  const coupons = permissions.includes('SETTINGS') ? await prisma.coupon.findMany({
     include: {
       course: { select: { title: true } }
     },
     orderBy: { createdAt: 'desc' }
-  });
+  }) : [];
 
   // Fetch Settings
-  const allSettings = await prisma.setting.findMany();
+  const allSettings = permissions.includes('SETTINGS') ? await prisma.setting.findMany({
+    where: { key: { startsWith: 'ENABLE_' } },
+  }) : [];
   const paymentSettings: Record<string, string> = {};
   allSettings.forEach(s => {
     paymentSettings[s.key] = s.value;
@@ -64,6 +70,8 @@ export default async function AdminDashboard() {
       </div>
 
       <AdminClient 
+        permissions={permissions}
+        isOwner={session.user.role === 'OWNER'}
         initialPayments={pendingPayments} 
         initialCoupons={coupons} 
         stats={{

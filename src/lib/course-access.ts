@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -27,8 +28,8 @@ export async function getCourseViewer(req?: Request): Promise<CourseViewer | nul
   return user && !user.isBanned ? { id: user.id, role: user.role } : null;
 }
 
-export function managesCourse(course: Pick<CourseAccessRecord, 'instructorId'>, viewer?: CourseViewer | null): boolean {
-  return !!viewer && (['ADMIN', 'OWNER'].includes(viewer.role)
+export async function managesCourse(course: Pick<CourseAccessRecord, 'instructorId'>, viewer?: CourseViewer | null): Promise<boolean> {
+  return !!viewer && ((['ADMIN', 'OWNER'].includes(viewer.role ?? '') && await hasPermission(viewer.id, 'COURSES'))
     || (viewer.role === 'INSTRUCTOR' && course.instructorId === viewer.id));
 }
 
@@ -38,5 +39,5 @@ export async function getCourseAccess(course: CourseAccessRecord, viewer?: Cours
     where: { userId_courseId: { userId: viewer.id, courseId: course.id } },
     select: { id: true },
   });
-  return { isEnrolled, canView: isPubliclyOffered(course) || managesCourse(course, viewer) || isEnrolled };
+  return { isEnrolled, canView: isPubliclyOffered(course) || await managesCourse(course, viewer) || isEnrolled };
 }

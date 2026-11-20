@@ -1,16 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { prisma } from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'INSTRUCTOR') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const instructorId = (session.user as any).id;
+    const actor = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER'], 'LIVE_CLASSES');
+    const instructorId = actor.id;
     const body = await req.json();
     const { title, description, courseId, scheduledAt, isImmediate, thumbnail } = body;
 
@@ -19,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     const course = await prisma.course.findUnique({ where: { id: courseId } });
-    if (!course || course.instructorId !== instructorId) {
+    if (!course || (actor.role === 'INSTRUCTOR' && course.instructorId !== instructorId)) {
       return NextResponse.json({ error: 'Invalid course' }, { status: 403 });
     }
 
@@ -38,19 +33,17 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, liveClass });
   } catch (error) {
+    if (error instanceof RequestUserError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error('Create Live Error:', error);
     return NextResponse.json({ error: 'Failed to create live class' }, { status: 500 });
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const userId = (session.user as any).id;
-    const role = (session.user as any).role;
+    const user = await requireRequestUser(req);
+    const userId = user.id;
+    const role = user.role;
 
     let liveClasses;
     if (role === 'INSTRUCTOR') {
@@ -72,6 +65,7 @@ export async function GET() {
 
     return NextResponse.json({ liveClasses });
   } catch (error) {
+    if (error instanceof RequestUserError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error('Get Live Error:', error);
     return NextResponse.json({ error: 'Failed to fetch live classes' }, { status: 500 });
   }

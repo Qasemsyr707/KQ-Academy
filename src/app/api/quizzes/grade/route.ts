@@ -6,7 +6,7 @@ import { gradeQuiz } from '@/lib/quiz-submission';
 
 export async function POST(req: Request) {
   try {
-    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER']);
+    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER'], 'COURSES');
     const { attemptId, score } = paymentBody(await req.json());
     if (!paymentId(attemptId)) throw new CheckoutError(400, 'البيانات غير مكتملة');
     const result = await gradeQuiz(user.id, attemptId, score);

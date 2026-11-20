@@ -4,12 +4,17 @@ import { prisma } from '@/lib/db';
 
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
-    const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+    const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'COURSES');
     if (!authorized) return errorResponse;
 
     const params = await props.params;
     const { status, title, price, priceSYP, instructorId, type, isFeatured } = await req.json();
 
+    if (status !== undefined) {
+      if (!['PENDING', 'PUBLISHED', 'REJECTED'].includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+      const publishing = await requireRoleApi(['ADMIN'], 'COURSE_PUBLISHING');
+      if (!publishing.authorized) return publishing.errorResponse;
+    }
     const course = await prisma.course.update({
       where: { id: params.id },
       data: { 
@@ -36,7 +41,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
-    const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+    const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'COURSES');
     if (!authorized) return errorResponse;
 
     const params = await props.params;

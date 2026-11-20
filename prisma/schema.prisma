@@ -25,6 +25,7 @@ model User {
   banReason String?
   bannedUntil DateTime?
   maxLiveStreams Int @default(5)
+  adminPermissions String[] @default([])
 
   // Affiliate
   affiliateCode  String?  @unique @default(cuid())
@@ -57,6 +58,19 @@ model User {
   matchmakingRequests   MatchmakingRequest[] @relation("UserMatchmaking")
   matchedWithRequests   MatchmakingRequest[] @relation("UserMatchedWith")
   notifications         Notification[]
+}
+
+// Snapshot IDs deliberately have no FK: deleting an account must not erase audit history.
+model PermissionAuditLog {
+  id         String @id @default(cuid())
+  actorId    String
+  targetId   String
+  action     String
+  permission String
+  createdAt  DateTime @default(now())
+
+  @@index([targetId, createdAt])
+  @@index([createdAt])
 }
 
 model Course {

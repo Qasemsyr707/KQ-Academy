@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 
 export async function GET() {
   try {
-    const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+    const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'LIVE_CLASSES');
     if (!authorized) return errorResponse;
 
     const streams = await prisma.liveClass.findMany({

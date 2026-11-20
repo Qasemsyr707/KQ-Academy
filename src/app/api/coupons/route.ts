@@ -30,7 +30,7 @@ function couponInput(body: unknown) {
 export async function POST(req: Request) {
   try {
     // Role is read from the database on every request; a session that lost its role gets 403.
-    const user = await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    const user = await requireRequestUser(req, ['ADMIN', 'OWNER'], 'SETTINGS');
     let body: unknown;
     try { body = await req.json(); } catch { throw new CouponInputError('بيانات الكوبون غير صالحة'); }
     const data = couponInput(body);

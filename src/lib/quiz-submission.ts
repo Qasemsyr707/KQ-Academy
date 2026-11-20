@@ -12,10 +12,10 @@ const quizSelect = {
 type Quiz = Prisma.QuizGetPayload<{ select: typeof quizSelect }>;
 
 async function requireQuizAccess(tx: Prisma.TransactionClient, userId: string, quiz: Quiz) {
-  const user = await tx.user.findUnique({ where: { id: userId }, select: { role: true, isBanned: true } });
+  const user = await tx.user.findUnique({ where: { id: userId }, select: { role: true, isBanned: true, adminPermissions: true } });
   if (!user || user.isBanned) throw new CheckoutError(401, 'يرجى تسجيل الدخول');
   const course = quiz.chapter.course;
-  const manager = ['ADMIN', 'OWNER'].includes(user.role) || (user.role === 'INSTRUCTOR' && userId === course.instructorId);
+  const manager = (user.role === 'OWNER' || (user.role === 'ADMIN' && user.adminPermissions.includes('COURSES'))) || (user.role === 'INSTRUCTOR' && userId === course.instructorId);
   const preview = course.status === 'PUBLISHED' && (quiz.chapter.isFree || (course.price === 0 && course.priceSYP === 0));
   if (manager || preview) return;
   const enrolled = await tx.enrollment.findUnique({ where: { userId_courseId: { userId, courseId: course.id } }, select: { id: true } });
@@ -65,8 +65,9 @@ export async function submitQuiz(userId: string, quizId: string, input: Record<s
 export async function gradeQuiz(graderId: string, attemptId: string, score: unknown) {
   if (!paymentId(attemptId) || typeof score !== 'number' || !Number.isFinite(score) || score < 0) throw new CheckoutError(400, 'البيانات غير مكتملة');
   return withPaymentTransaction(async tx => {
-    const grader = await tx.user.findUnique({ where: { id: graderId }, select: { role: true, isBanned: true } });
+    const grader = await tx.user.findUnique({ where: { id: graderId }, select: { role: true, isBanned: true, adminPermissions: true } });
     if (!grader || grader.isBanned || !['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(grader.role)) throw new CheckoutError(403, 'غير مصرح لك بإجراء هذه العملية');
+    if (grader.role === 'ADMIN' && !grader.adminPermissions.includes('COURSES')) throw new CheckoutError(403, 'Permission denied');
     const attempt = await tx.quizAttempt.findUnique({ where: { id: attemptId }, include: { quiz: { select: quizSelect } } });
     if (!attempt) throw new CheckoutError(404, 'محاولة الاختبار غير موجودة');
     if (grader.role === 'INSTRUCTOR' && attempt.quiz.chapter.course.instructorId !== graderId) throw new CheckoutError(403, 'لا تملك صلاحية تصحيح هذا الاختبار');

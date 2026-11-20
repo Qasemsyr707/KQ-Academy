@@ -5,7 +5,7 @@ import { reviewManualPayment } from '@/lib/payments/admin-review';
 
 export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
-    await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    await requireRequestUser(req, ['ADMIN', 'OWNER'], 'PAYMENTS');
     const { id } = await props.params;
     if (typeof id !== 'string' || !id || id.length > 200) {
       return NextResponse.json({ error: 'معرّف الدفع غير صالح' }, { status: 400 });

@@ -6,7 +6,7 @@ import { paymentBody, paymentId, positiveAmount, walletError, WALLET_HEADERS } f
 
 export async function POST(req: Request) {
   try {
-    await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    await requireRequestUser(req, ['ADMIN', 'OWNER'], 'WALLETS');
     const { transactionId, action } = paymentBody(await req.json());
     if (!paymentId(transactionId) || (action !== 'APPROVE' && action !== 'REJECT')) throw new CheckoutError(400, 'بيانات العملية غير صالحة');
     await withPaymentTransaction(async tx => {

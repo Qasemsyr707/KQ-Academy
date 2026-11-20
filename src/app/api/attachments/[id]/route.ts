@@ -1,3 +1,4 @@
+import { requireRoleApi } from '@/lib/rbac';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
@@ -6,8 +7,10 @@ import { assertAttachmentTarget, AttachmentAccessError } from '@/lib/attachment-
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || (session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'INSTRUCTOR') {
+    const gate = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
+    if (!gate.authorized) return gate.errorResponse;
+    const session = gate.session;
+    if (!session || (session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'OWNER' && (session.user as any).role !== 'INSTRUCTOR') {
       return NextResponse.json({ error: 'غير مصرح لك' }, { status: 401 });
     }
 

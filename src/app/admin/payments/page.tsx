@@ -7,7 +7,7 @@ import { CheckCircle, Clock, XCircle } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPaymentsPage() {
-  await requireRolePage(['ADMIN']);
+  await requireRolePage(['ADMIN'], '/dashboard', 'PAYMENTS');
 
   const payments = await prisma.payment.findMany({
     include: {

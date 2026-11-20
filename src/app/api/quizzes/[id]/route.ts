@@ -23,7 +23,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
     const enrolled = viewer && await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId: viewer.id, courseId: course.id } }, select: { id: true },
     });
-    if (!publicPreview && !managesCourse(course, viewer) && !enrolled) {
+    if (!publicPreview && !await managesCourse(course, viewer) && !enrolled) {
       return NextResponse.json({ error: 'الاختبار غير موجود' }, { status: 404, headers });
     }
     const publicQuiz = {

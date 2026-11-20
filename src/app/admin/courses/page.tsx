@@ -7,7 +7,7 @@ import CoursesClient from './CoursesClient';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminCoursesPage() {
-  await requireRolePage(['ADMIN']);
+  await requireRolePage(['ADMIN'], '/dashboard', 'COURSES');
 
   const courses = await prisma.course.findMany({
     include: {

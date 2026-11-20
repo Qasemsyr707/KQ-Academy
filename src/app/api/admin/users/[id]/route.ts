@@ -1,3 +1,5 @@
+import { hasPermission } from '@/lib/permission-check';
+import type { Permission } from '@/lib/permissions';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRequestUser, RequestUserError } from '@/lib/request-user';
@@ -95,7 +97,7 @@ const SELECT = { id: true, name: true, email: true, phone: true, role: true, wal
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
     // Identity and role come from the database on every request, never from the session token.
-    const actor = await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    const actor = await requireRequestUser(req, ['ADMIN', 'OWNER'], 'USERS');
     const { id } = await props.params;
     let body: unknown;
     try { body = await req.json(); } catch { throw new UserUpdateError(400, 'بيانات غير صالحة'); }
@@ -113,6 +115,20 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       } });
       const data = changes(input, target);
       authorize(actor, target, data);
+      const required: Permission[] = [];
+      if ('role' in data) required.push('ADMINISTRATORS');
+      if ('walletUSD' in data || 'walletSYP' in data) required.push('WALLETS');
+      if ('isBanned' in data || 'banReason' in data || 'bannedUntil' in data) required.push('USER_BANNING');
+      if ('maxLiveStreams' in data) required.push('LIVE_CLASSES');
+      for (const permission of required) {
+        if (!await hasPermission(actor.id, permission)) throw new UserUpdateError(403, 'Permission denied');
+      }
+      // A later promotion must never resurrect previous grants.
+      if ('role' in data) {
+        const previous = await tx.user.findUniqueOrThrow({ where: { id }, select: { adminPermissions: true } });
+        if (previous.adminPermissions.length) await tx.permissionAuditLog.createMany({ data: previous.adminPermissions.map(permission => ({ actorId: actor.id, targetId: id, permission, action: 'REVOKE' })) });
+        await tx.user.update({ where: { id }, data: { adminPermissions: [] } });
+      }
       const user = Object.keys(data).length
         ? await tx.user.update({ where: { id }, data, select: SELECT })
         : await tx.user.findUniqueOrThrow({ where: { id }, select: SELECT });
@@ -127,7 +143,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
-    const actor = await requireRequestUser(req, ['ADMIN', 'OWNER']);
+    const actor = await requireRequestUser(req, ['ADMIN', 'OWNER'], 'USERS');
     const params = await props.params;
 
     if (actor.id === params.id) {

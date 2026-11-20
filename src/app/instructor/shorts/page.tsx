@@ -1,3 +1,4 @@
+import { requireRolePage } from '@/lib/rbac';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -7,9 +8,9 @@ import UploadShortClient from './UploadShortClient';
 export const dynamic = 'force-dynamic';
 
 export default async function InstructorShortsPage() {
-  const session = await getServerSession(authOptions);
+  const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR'], '/dashboard', 'MODERATION');
   
-  if (!session || !session.user || ((session.user as any).role !== 'INSTRUCTOR' && (session.user as any).role !== 'ADMIN')) {
+  if (!session || !session.user || ((session.user as any).role !== 'INSTRUCTOR' && (session.user as any).role !== 'ADMIN' && (session.user as any).role !== 'OWNER')) {
     redirect('/login');
   }
 

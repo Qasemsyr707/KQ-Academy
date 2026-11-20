@@ -48,7 +48,7 @@ function harness(config = {}) {
     },
     '@/lib/auth': { authOptions: {} },
     'next-auth': { getServerSession: async () => { throw new Error('route must use current request-user authorization'); } },
-    '@/lib/db': { prisma: {
+    '@/lib/db': { prisma: { user: { findUnique: async () => ({ adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'], ...user }) },
       liveClass: { findUnique: record('liveClass', ({ where }) => where.id === CLASS.id
         ? (config.liveClass === undefined ? CLASS : config.liveClass) : null) },
       lesson: { findMany: record('lesson', ({ where, take }) => {

@@ -1,10 +1,11 @@
+import { hasPermission } from '@/lib/permission-check';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRoleApi } from '@/lib/rbac';
 
 export async function POST(req: Request) {
   try {
-    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
     if (!authorized) return errorResponse;
 
     const { title, description, type, price, priceSYP, category, thumbnail, includes } = await req.json();
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
         priceSYP: Number(priceSYP) || 0,
         category,
         instructorId: userId,
-        status: 'PUBLISHED', // Default to published so it shows up immediately
+        status: session.user.role === 'ADMIN' && !await hasPermission(session.user.id, 'COURSE_PUBLISHING') ? 'PENDING' : 'PUBLISHED',
         thumbnail: thumbnail || `linear-gradient(135deg, #${Math.floor(Math.random()*16777215).toString(16)} 0%, #0f172a 100%)`,
         includes: includes || null
       }

@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
@@ -55,13 +56,16 @@ export function signBunnyUpload(libraryId: string, apiKey: string, videoId: stri
 }
 
 export async function authorizeCourseUpload(user: UploadUser, scope: UploadScope) {
+  const permission = scope.purpose === 'short' ? 'MODERATION' : 'COURSES';
+  const staff = ['ADMIN', 'OWNER'].includes(user.role ?? '') && await hasPermission(user.id, permission);
+  if (user.role === 'ADMIN' && !staff) throw new BunnyServerError(403, 'ليس لديك الإذن المطلوب');
   if (!scope.courseId) {
     if (scope.purpose !== 'short') throw new BunnyServerError(400, 'الكورس مطلوب لرفع الدرس أو المقدمة');
     return;
   }
   const course = await prisma.course.findUnique({ where: { id: scope.courseId }, select: { instructorId: true } });
   if (!course) throw new BunnyServerError(404, 'الكورس غير موجود');
-  if (course.instructorId !== user.id && !['ADMIN', 'OWNER'].includes(user.role)) throw new BunnyServerError(403, 'هذا الكورس لا يخص المدرّب');
+  if (course.instructorId !== user.id && !staff) throw new BunnyServerError(403, 'هذا الكورس لا يخص المدرّب');
 }
 
 export async function getBunnyVideo(videoId: string): Promise<{ videoId: string; libraryId: string; state: BunnyVideoState; embedUrl?: string }> {
@@ -112,7 +116,9 @@ function parseScope(body: Record<string, unknown>): UploadScope {
 export async function handleBunnyUploadRequest(action: 'create' | 'refresh' | 'status', req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const user = session?.user as Partial<UploadUser> | undefined;
+    const identity = session?.user;
+    const user = identity?.id ? await prisma.user.findUnique({ where: { id: identity.id }, select: { id: true, role: true, isBanned: true } }) : null;
+    if (user?.isBanned) throw new BunnyServerError(401, 'Unauthorized');
     if (typeof user?.id !== 'string' || !user.id || !user.role || !['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role)) throw new BunnyServerError(401, 'غير مصرح لك برفع الفيديو');
     let body: Record<string, unknown>;
     try {
@@ -120,6 +126,7 @@ export async function handleBunnyUploadRequest(action: 'create' | 'refresh' | 's
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
     } catch { throw new BunnyServerError(400, 'طلب غير صالح'); }
     const scope = parseScope(body);
+    if (user.role === 'ADMIN' && !await hasPermission(user.id, scope.purpose === 'short' ? 'MODERATION' : 'COURSES')) throw new BunnyServerError(403, 'Permission denied');
     await authorizeCourseUpload(user as UploadUser, scope);
     const { libraryId, apiKey } = configuration();
     if (action === 'create') {

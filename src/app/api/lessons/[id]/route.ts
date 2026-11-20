@@ -11,7 +11,7 @@ const headers = { 'Cache-Control': 'private, no-store' };
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // A session role can be stale after a ban or downgrade; use the current DB role.
-    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
     if (!authorized) return errorResponse;
     const user = session.user;
     const { id } = await params;

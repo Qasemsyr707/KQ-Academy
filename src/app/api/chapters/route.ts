@@ -5,7 +5,7 @@ import { requireRoleApi } from '@/lib/rbac';
 export async function POST(req: Request) {
   try {
     // Re-check the user's role and ban status against the database for every write.
-    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
     if (!authorized) return errorResponse;
 
     const { title, courseId, isFree = false } = await req.json();

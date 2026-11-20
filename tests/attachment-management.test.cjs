@@ -1,5 +1,8 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const previousSecret = process.env.NEXTAUTH_SECRET;
+test.beforeEach(() => { process.env.NEXTAUTH_SECRET = 'attachment-test-only'; });
+test.afterEach(() => { if (previousSecret === undefined) delete process.env.NEXTAUTH_SECRET; else process.env.NEXTAUTH_SECRET = previousSecret; });
 const { loadTs } = require('./load-ts.cjs');
 const { classifyAttachment, auditAttachments } = require('../scripts/audit-attachments.cjs');
 
@@ -17,7 +20,7 @@ function harness({ user = USER, owner = USER.id, fileOwner = USER.id, present = 
   const mocks = {
     'next-auth': { getServerSession: async () => user ? { user } : null },
     '@/lib/auth': { authOptions: {} },
-    '@/lib/db': { prisma: {
+    '@/lib/db': { prisma: { user: { findUnique: async ({ where }) => where.id === 'admin' ? { id: 'admin', role: 'ADMIN', adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'] } : user },
       lesson: { findUnique: async () => ({ chapter }) }, chapter: { findUnique: async () => chapter },
       course: { findUnique: async () => course },
       attachment: {
@@ -62,7 +65,7 @@ test('external JPG, data URL, traversal and unowned legacy file cannot be newly 
 
 test('student, foreign instructor, missing original, foreign upload, and multiple targets never write', async () => {
   for (const [config, extra, expected] of [
-    [{ user: null }, {}, 401], [{ user: { id: 'student', role: 'STUDENT' } }, {}, 403],
+    [{ user: null }, {}, 403], [{ user: { id: 'student', role: 'STUDENT' } }, {}, 403],
     [{ owner: 'other-teacher' }, {}, 403], [{ fileOwner: 'other-teacher' }, {}, 403],
     [{ present: false }, {}, 410], [{}, { lessonId: LESSON }, 400],
   ]) {

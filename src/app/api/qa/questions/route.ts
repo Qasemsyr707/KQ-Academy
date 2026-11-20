@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     // Role from the database (not the session token), so a removed admin loses access at once.
-    const staff = await requireRoleApi(['ADMIN']);
+    const staff = await requireRoleApi(['ADMIN'], 'MODERATION');
     if (staff.errorResponse) return staff.errorResponse;
 
     const { searchParams } = new URL(req.url);

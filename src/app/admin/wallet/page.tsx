@@ -6,7 +6,7 @@ import AdminWalletClient from './AdminWalletClient';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminWalletPage() {
-  await requireRolePage(['ADMIN']);
+  await requireRolePage(['ADMIN'], '/dashboard', 'WALLETS');
 
   const pendingTransactions = await prisma.walletTransaction.findMany({
     where: { 

@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -20,7 +21,9 @@ export async function attachmentSessionUser(): Promise<AttachmentUser> {
   const session = await getServerSession(authOptions);
   const user = session?.user as Partial<AttachmentUser> | undefined;
   if (typeof user?.id !== 'string' || !user.id) throw new AttachmentAccessError(401, 'سجّل الدخول لفتح هذا المرفق');
-  return { id: user.id, role: typeof user.role === 'string' ? user.role : undefined };
+  const current = await prisma.user.findUnique({ where: { id: user.id }, select: { id: true, role: true, isBanned: true } });
+  if (!current || current.isBanned) throw new AttachmentAccessError(401, 'Unauthorized');
+  return { id: current.id, role: current.role };
 }
 
 export function isAttachmentId(value: unknown): value is string {
@@ -61,7 +64,7 @@ export async function resolveAttachmentTarget(target: AttachmentTarget): Promise
 }
 
 export async function assertAttachmentReadAccess(user: AttachmentUser, target: AttachmentCourseAccess): Promise<void> {
-  if (target.instructorId === user.id || ['ADMIN', 'OWNER'].includes(user.role ?? '')) return;
+  if (target.instructorId === user.id || (['ADMIN', 'OWNER'].includes(user.role ?? '') && await hasPermission(user.id, 'COURSES'))) return;
   const enrollment = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId: user.id, courseId: target.courseId } }, select: { id: true },
   });
@@ -82,7 +85,7 @@ export async function assertAttachmentTarget(user: AttachmentUser, target: Attac
   }
   if (!['INSTRUCTOR', 'ADMIN', 'OWNER'].includes(user.role ?? '')) throw new AttachmentAccessError(403, 'إضافة المرفقات متاحة للمدرّب المخوّل فقط');
   const resolved = await resolveAttachmentTarget(target);
-  if (resolved.instructorId !== user.id && !['ADMIN', 'OWNER'].includes(user.role ?? '')) {
+  if (resolved.instructorId !== user.id && !(['ADMIN', 'OWNER'].includes(user.role ?? '') && await hasPermission(user.id, 'COURSES'))) {
     throw new AttachmentAccessError(403, 'لا تملك صلاحية تعديل هذا الكورس');
   }
   return resolved;

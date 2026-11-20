@@ -1,3 +1,4 @@
+import { requireRolePage } from '@/lib/rbac';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -7,13 +8,13 @@ import InstructorDashboardClient from './InstructorDashboardClient';
 export const dynamic = 'force-dynamic';
 
 export default async function InstructorDashboardPage() {
-  const session = await getServerSession(authOptions);
+  const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR'], '/dashboard', 'COURSES');
   
   if (!session || !session.user) {
     redirect('/login');
   }
   
-  if (session.user.role !== 'INSTRUCTOR' && session.user.role !== 'ADMIN') {
+  if (session.user.role !== 'INSTRUCTOR' && session.user.role !== 'ADMIN' && session.user.role !== 'OWNER') {
     redirect('/');
   }
 

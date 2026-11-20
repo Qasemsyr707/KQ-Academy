@@ -7,7 +7,7 @@ import { courseContentUpdate, CourseUpdateError } from '@/lib/course-update';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
     if (!authorized) return errorResponse;
 
     const body = await req.json().catch(() => null);

@@ -36,7 +36,7 @@ export default async function CourseLearnPage(props: { params: Promise<{ courseI
   if (!course) notFound();
   const access = await getCourseAccess(course, viewer);
   if (!access.canView) notFound();
-  const hasAccess = access.isEnrolled || managesCourse(course, viewer) || isPublicLesson(course, false);
+  const hasAccess = access.isEnrolled || await managesCourse(course, viewer) || isPublicLesson(course, false);
   if (!hasAccess && !course.chapters.some(chapter => isPublicLesson(course, chapter.isFree))) redirect(`/courses/${courseId}`);
 
   // Sources stay on the server; the playback endpoint rechecks every request.

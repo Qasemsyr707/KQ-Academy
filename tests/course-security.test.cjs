@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Node's CommonJS test runner. */
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const previousSecret = process.env.NEXTAUTH_SECRET;
+test.beforeEach(() => { process.env.NEXTAUTH_SECRET = 'course-test-only'; });
+test.afterEach(() => { if (previousSecret === undefined) delete process.env.NEXTAUTH_SECRET; else process.env.NEXTAUTH_SECRET = previousSecret; });
 const React = require('react');
 const jwt = require('jsonwebtoken');
 const { loadTs } = require('./load-ts.cjs');
@@ -62,7 +65,7 @@ function harness({ status = 'PUBLISHED', sessionUser = null, currentUser = sessi
             .map(course => project(course, query));
         },
       },
-      user: { findUnique: async query => { userQueries.push(query); return currentUser; } },
+      user: { findUnique: async query => { userQueries.push(query); return currentUser && { adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'], ...currentUser }; } },
       enrollment: { findUnique: async query => { enrollmentQueries.push(query); return enrolled ? { id: 'enrollment' } : null; } },
     } },
     'next-auth': { getServerSession: async () => sessionUser ? { user: sessionUser } : null },
@@ -320,7 +323,7 @@ test('instructor live page uses public profile fields, fresh authorization and a
       'next-auth': { getServerSession: async () => ({ user: TEACHER }) },
       '@/lib/auth': { authOptions: {} },
       '@/lib/db': { prisma: {
-        user: { findUnique: async () => options.user },
+        user: { findUnique: async () => ({ adminPermissions: ['DASHBOARD','USERS','USER_BANNING','COURSES','COURSE_PUBLISHING','PAYMENTS','WALLETS','CERTIFICATES','LIVE_CLASSES','MODERATION','SETTINGS','ADMINISTRATORS'], ...options.user }) },
         course: { findUnique: async query => project(COURSE, query) },
         lesson: { findUnique: async query => {
           assert.deepEqual(query.where, { id: 'live-lesson', chapter: { courseId: COURSE.id } });

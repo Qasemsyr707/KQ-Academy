@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { lstat, open, realpath } from 'node:fs/promises';
@@ -100,7 +101,9 @@ async function authorizeFileReferences(user: AttachmentUser, metadata: FileMetad
   ]);
   const linked = attachments.length + lessons.length + quizzes.length + submissions.length + receipts.length + walletReceipts.length > 0;
   if (!linked && metadata.ownerId === user.id) return 'document';
-  if (linked && ['ADMIN', 'OWNER'].includes(user.role ?? '')) return 'document';
+  if (linked && ((receipts.length > 0 && (['ADMIN', 'OWNER'].includes(user.role ?? '') && await hasPermission(user.id, 'PAYMENTS')))
+    || (walletReceipts.length > 0 && (['ADMIN', 'OWNER'].includes(user.role ?? '') && await hasPermission(user.id, 'WALLETS')))
+    || (attachments.length + lessons.length + quizzes.length + submissions.length > 0 && (['ADMIN', 'OWNER'].includes(user.role ?? '') && await hasPermission(user.id, 'COURSES'))))) return 'document';
   if ([...receipts, ...walletReceipts].some(receipt => receipt.userId === user.id)) {
     // A receipt row accepts a URL; its owner must not gain access by pasting
     // another uploader's UUID. Older ownerless image receipts remain readable,

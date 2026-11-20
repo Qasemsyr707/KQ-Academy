@@ -4,9 +4,11 @@ const Module = require('node:module');
 const ts = require('typescript');
 
 // Run the installed TypeScript source in Node without adding a test dependency.
-exports.loadTs = function loadTs(relativePath, mockImports = {}) {
+exports.loadTs = function loadTs(relativePath, mockImports = {}, cache = new Map()) {
   const filename = path.resolve(__dirname, relativePath);
+  if (cache.has(filename)) return cache.get(filename).exports;
   const instance = new Module(filename, module);
+  cache.set(filename, instance);
   instance.filename = filename;
   instance.paths = Module._nodeModulePaths(path.dirname(filename));
   const realRequire = instance.require.bind(instance);
@@ -16,8 +18,12 @@ exports.loadTs = function loadTs(relativePath, mockImports = {}) {
       const target = specifier.startsWith('@/')
         ? path.resolve(__dirname, '../src', specifier.slice(2))
         : path.resolve(path.dirname(filename), specifier);
+      // A relative import and the @/ alias must resolve to the same mocked module.
+      for (const [key, value] of Object.entries(mockImports)) {
+        if (key.startsWith('@/') && path.resolve(__dirname, '../src', key.slice(2)) === target) return value;
+      }
       if (fs.existsSync(`${target}.ts`)) {
-        return loadTs(path.relative(__dirname, `${target}.ts`), mockImports);
+        return loadTs(path.relative(__dirname, `${target}.ts`), mockImports, cache);
       }
     }
     return realRequire(specifier);

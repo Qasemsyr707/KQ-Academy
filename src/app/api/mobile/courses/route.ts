@@ -1,3 +1,4 @@
+import { hasPermission } from '@/lib/permission-check';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { protectCoursePlaybackLinks } from '@/lib/course-playback-links';
@@ -25,7 +26,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER']);
+    const user = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER'], 'COURSES');
     const body: unknown = await req.json();
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return NextResponse.json({ error: 'بيانات الكورس غير صالحة' }, { status: 400, headers: privateHeaders });
@@ -53,6 +54,7 @@ export async function POST(req: Request) {
         instructorId: user.id,
         category: typeof category === 'string' && category.trim() ? category.trim() : 'عام',
         thumbnail,
+        status: user.role === 'ADMIN' && !await hasPermission(user.id, 'COURSE_PUBLISHING') ? 'PENDING' : 'PUBLISHED',
       }
     });
 

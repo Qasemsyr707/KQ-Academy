@@ -3,6 +3,8 @@ import { authOptions } from './auth';
 import { NextResponse } from 'next/server';
 import { redirect } from 'next/navigation';
 import { prisma } from './db';
+import { hasPermission } from './permission-check';
+import type { Permission } from './permissions';
 
 export type Role = 'OWNER' | 'ADMIN' | 'INSTRUCTOR' | 'STUDENT';
 
@@ -10,7 +12,7 @@ type RoleResult =
   | { authorized: true; role: Role; email: string; isOwner: boolean; session: Session }
   | { authorized: false; role?: Role; email?: string; isOwner: boolean; session?: Session };
 
-export async function checkRole(allowedRoles: Role[]): Promise<RoleResult> {
+export async function checkRole(allowedRoles: Role[], permission?: Permission): Promise<RoleResult> {
   if (!process.env.NEXTAUTH_SECRET) return { authorized: false, isOwner: false };
   const session = await getServerSession(authOptions);
   
@@ -35,7 +37,7 @@ export async function checkRole(allowedRoles: Role[]): Promise<RoleResult> {
   }
 
   // Check if user's role is in the allowed list
-  if (allowedRoles.includes(userRole)) {
+  if (allowedRoles.includes(userRole) && (userRole !== 'ADMIN' || !permission || await hasPermission(user.id, permission))) {
     return { authorized: true, role: userRole, email: userEmail, isOwner: false, session: currentSession };
   }
 
@@ -43,8 +45,8 @@ export async function checkRole(allowedRoles: Role[]): Promise<RoleResult> {
 }
 
 // For Server Components (Pages)
-export async function requireRolePage(allowedRoles: Role[], redirectTo = '/dashboard') {
-  const result = await checkRole(allowedRoles);
+export async function requireRolePage(allowedRoles: Role[], redirectTo = '/dashboard', permission?: Permission) {
+  const result = await checkRole(allowedRoles, permission);
   if (!result.authorized) {
     redirect(redirectTo);
   }
@@ -52,8 +54,8 @@ export async function requireRolePage(allowedRoles: Role[], redirectTo = '/dashb
 }
 
 // For API Routes
-export async function requireRoleApi(allowedRoles: Role[]) {
-  const result = await checkRole(allowedRoles);
+export async function requireRoleApi(allowedRoles: Role[], permission?: Permission) {
+  const result = await checkRole(allowedRoles, permission);
   if (!result.authorized) {
     return { 
       errorResponse: NextResponse.json({ error: 'غير مصرح لك بالوصول إلى هذه الواجهة' }, { status: 403 }),

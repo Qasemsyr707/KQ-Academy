@@ -6,7 +6,7 @@ import { requireRoleApi } from '@/lib/rbac';
 export async function GET() {
   try {
     // Role from the database (not the session token), so a removed admin loses access at once.
-    const staff = await requireRoleApi(['ADMIN']);
+    const staff = await requireRoleApi(['ADMIN'], 'SETTINGS');
     if (staff.errorResponse) return staff.errorResponse;
     const plans = await prisma.subscriptionPlan.findMany({
       include: { subscriptions: { where: { status: 'ACTIVE' }, select: { id: true } } },
@@ -22,7 +22,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     // Role from the database (not the session token), so a removed admin loses access at once.
-    const staff = await requireRoleApi(['ADMIN']);
+    const staff = await requireRoleApi(['ADMIN'], 'SETTINGS');
     if (staff.errorResponse) return staff.errorResponse;
     const { name, description, priceMonthly, priceYearly, features } = await req.json();
     if (!name || !priceMonthly || !priceYearly) {

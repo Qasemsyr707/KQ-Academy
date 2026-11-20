@@ -1,3 +1,4 @@
+import { requireRolePage } from '@/lib/rbac';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
@@ -7,7 +8,7 @@ import QuizzesListClient from './QuizzesListClient';
 const prisma = new PrismaClient();
 
 export default async function QuizzesPage() {
-  const session = await getServerSession(authOptions);
+  const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR'], '/dashboard', 'COURSES');
   const user = session?.user as any;
   if (!session || !user || (user.role !== 'INSTRUCTOR' && user.role !== 'ADMIN' && user.role !== 'OWNER')) {
     redirect('/login');

@@ -4,7 +4,7 @@ import { requireRoleApi } from '@/lib/rbac';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ chapterId: string }> }) {
   try {
-    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
     if (!authorized) return errorResponse;
 
     const body = await req.json();
@@ -37,7 +37,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ chapterI
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ chapterId: string }> }) {
   try {
-    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR']);
+    const { authorized, errorResponse, session } = await requireRoleApi(['ADMIN', 'INSTRUCTOR'], 'COURSES');
     if (!authorized) return errorResponse;
 
     const resolvedParams = await params;
