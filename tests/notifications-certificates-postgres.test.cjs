@@ -41,7 +41,9 @@ async function fixture(prisma, { quizzes = 1, price = 10 } = {}) {
     ...ids.lessons.map((id, order) => ({ id, title: `Lesson ${order}`, order, chapterId: ids.chapter })),
     { id: ids.foreignLesson, title: 'Foreign', order: 0, chapterId: ids.otherChapter },
   ] });
-  if (quizzes) await prisma.quiz.create({ data: { id: ids.quiz, title: 'Quiz', chapterId: ids.chapter, passingScore: 1, totalMarks: 2 } });
+  // A takeable quiz (one question): an empty quiz is never a certificate requirement (course-exams.ts).
+  if (quizzes) await prisma.quiz.create({ data: { id: ids.quiz, title: 'Quiz', chapterId: ids.chapter, passingScore: 1, totalMarks: 2,
+    questions: { create: [{ text: 'Q', options: '["a","b"]', correctAnswer: 1, points: 2 }] } } });
   const cleanup = async () => {
     const users = [ids.teacher, ids.student, ids.other];
     const courses = [ids.course, ids.otherCourse];
@@ -50,6 +52,7 @@ async function fixture(prisma, { quizzes = 1, price = 10 } = {}) {
     await prisma.lessonProgress.deleteMany({ where: { userId: { in: users } } });
     await prisma.quizAttempt.deleteMany({ where: { userId: { in: users } } });
     await prisma.enrollment.deleteMany({ where: { userId: { in: users } } });
+    await prisma.question.deleteMany({ where: { quiz: { chapterId: { in: [ids.chapter, ids.otherChapter] } } } });
     await prisma.quiz.deleteMany({ where: { chapterId: { in: [ids.chapter, ids.otherChapter] } } });
     await prisma.lesson.deleteMany({ where: { chapterId: { in: [ids.chapter, ids.otherChapter] } } });
     await prisma.chapter.deleteMany({ where: { courseId: { in: courses } } });
