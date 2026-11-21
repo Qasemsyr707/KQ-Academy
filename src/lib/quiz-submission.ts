@@ -5,26 +5,39 @@ import { paymentBody, paymentId } from '@/lib/payments/wallet-operations';
 import { rewardFirstQuizPass } from '@/lib/reward-events';
 import { syncEnrollmentProgress } from '@/lib/course-progress';
 import { notify } from '@/lib/notifications';
+import { QUIZ_CONTEXT_SELECT, quizCourse, quizPublicPreview } from '@/lib/course-exams';
 
 const quizSelect = {
-  id: true, title: true, type: true, passingScore: true, totalMarks: true,
+  ...QUIZ_CONTEXT_SELECT,
   questions: { select: { id: true, correctAnswer: true, points: true, options: true } },
-  chapter: { select: { isFree: true, course: { select: { id: true, instructorId: true, status: true, price: true, priceSYP: true } } } },
 } as const satisfies Prisma.QuizSelect;
 type Quiz = Prisma.QuizGetPayload<{ select: typeof quizSelect }>;
 
-async function requireQuizAccess(tx: Prisma.TransactionClient, userId: string, quiz: Quiz) {
+/** Returns true for the course's managers (they may try unpublished quizzes, without attempt limits). */
+async function requireQuizAccess(tx: Prisma.TransactionClient, userId: string, quiz: Quiz): Promise<boolean> {
   const user = await tx.user.findUnique({ where: { id: userId }, select: { role: true, isBanned: true, adminPermissions: true } });
   if (!user || user.isBanned) throw new CheckoutError(401, 'يرجى تسجيل الدخول');
-  const course = quiz.chapter.course;
+  const course = quizCourse(quiz);
   const manager = (user.role === 'OWNER' || (user.role === 'ADMIN' && user.adminPermissions.includes('COURSES'))) || (user.role === 'INSTRUCTOR' && userId === course.instructorId);
-  const preview = course.status === 'PUBLISHED' && (quiz.chapter.isFree || (course.price === 0 && course.priceSYP === 0));
-  if (manager || preview) return;
+  if (manager) return true;
+  if (!quiz.isPublished) throw new CheckoutError(404, 'الاختبار غير متاح حالياً');
+  if (quizPublicPreview(quiz)) return false;
   const enrolled = await tx.enrollment.findUnique({ where: { userId_courseId: { userId, courseId: course.id } }, select: { id: true } });
   if (!enrolled) throw new CheckoutError(403, 'هذا الاختبار متاح للمشتركين في الكورس فقط');
+  return false;
 }
 
-function calculateScore(quiz: Quiz, input: unknown, legacy: boolean) {
+/** Attempts used and left; the quiz row lock serialises a student's concurrent submissions. */
+async function attemptBudget(tx: Prisma.TransactionClient, userId: string, quiz: Quiz, manager: boolean) {
+  await tx.$queryRaw`SELECT id FROM "Quiz" WHERE id = ${quiz.id} FOR UPDATE`;
+  const used = await tx.quizAttempt.count({ where: { userId, quizId: quiz.id } });
+  if (!manager && quiz.maxAttempts !== null && used >= quiz.maxAttempts) {
+    throw new CheckoutError(409, `استنفدت عدد المحاولات المسموح (${quiz.maxAttempts})`);
+  }
+  return { used: used + 1, remaining: manager || quiz.maxAttempts === null ? null : quiz.maxAttempts - used - 1 };
+}
+
+function calculateScore(quiz: Quiz, input: unknown) {
   const answers = paymentBody(input);
   if (!quiz.questions.length || Object.keys(answers).some(id => !quiz.questions.some(q => q.id === id))) throw new CheckoutError(400, 'بيانات الإجابة غير صالحة');
   let score = 0;
@@ -40,9 +53,14 @@ function calculateScore(quiz: Quiz, input: unknown, legacy: boolean) {
     total += points;
     if (answer === question.correctAnswer) { score += points; correct++; }
   }
-  if (legacy) return { score: correct / quiz.questions.length * 100, passed: correct / quiz.questions.length >= 0.5, total: 100 };
-  if (!Number.isFinite(total) || !Number.isFinite(quiz.passingScore) || quiz.passingScore <= 0 || quiz.passingScore > total) throw new CheckoutError(409, 'إعدادات الاختبار غير صالحة');
-  return { score, passed: score >= quiz.passingScore, total: quiz.totalMarks || total };
+  // Quizzes from before the exam settings (scoringVersion 1) keep the rule the course player always applied
+  // (50% of the questions answered correctly), so no student's result changes for an old quiz.
+  // New quizzes use the instructor's pass mark, stored in points (see course-exams.ts parseSettings).
+  const legacyRule = quiz.scoringVersion < 2 || !Number.isFinite(quiz.passingScore) || quiz.passingScore <= 0 || quiz.passingScore > total;
+  if (legacyRule) {
+    return { score: Math.round(correct / quiz.questions.length * 10000) / 100, passed: correct / quiz.questions.length >= 0.5, total: 100 };
+  }
+  return { score, passed: score >= quiz.passingScore, total };
 }
 
 export async function submitQuiz(userId: string, quizId: string, input: Record<string, unknown>, legacy = false) {
@@ -50,19 +68,23 @@ export async function submitQuiz(userId: string, quizId: string, input: Record<s
   return withPaymentTransaction(async tx => {
     const quiz = await tx.quiz.findUnique({ where: { id: quizId }, select: quizSelect });
     if (!quiz) throw new CheckoutError(404, 'الاختبار غير موجود');
-    await requireQuizAccess(tx, userId, quiz);
+    const manager = await requireQuizAccess(tx, userId, quiz);
     if (quiz.type === 'MANUAL_FILE') {
       if (typeof input.answerFileUrl !== 'string' || !input.answerFileUrl) throw new CheckoutError(400, 'يجب إرفاق ملف الإجابة');
+      await attemptBudget(tx, userId, quiz, manager);
       await tx.quizAttempt.create({ data: { userId, quizId, score: null, passed: false, status: 'PENDING_GRADING', answerFileUrl: input.answerFileUrl } });
       return { status: 'PENDING_GRADING' as const, message: 'تم استلام الإجابة بنجاح وهي قيد المراجعة' };
     }
     if (quiz.type !== 'AUTOMATIC') throw new CheckoutError(400, 'نوع الاختبار غير صالح');
-    const result = calculateScore(quiz, input.answers, legacy);
+    const result = calculateScore(quiz, input.answers);
+    const budget = await attemptBudget(tx, userId, quiz, manager);
     if (result.passed && !legacy) await rewardFirstQuizPass(tx, userId, quizId);
-    const attempt = await tx.quizAttempt.create({ data: { userId, quizId, score: result.score, passed: result.passed, status: 'COMPLETED' } });
-    // A passed quiz is a completed course item: keep the saved percentage current.
-    if (result.passed) await syncEnrollmentProgress(tx, userId, quiz.chapter.course.id);
-    return { attempt, total: result.total };
+    // Only the validated option indexes are stored, never a client-sent score.
+    const answers = Object.fromEntries(Object.entries(paymentBody(input.answers)).filter(([, v]) => typeof v === 'number')) as Prisma.InputJsonObject;
+    const attempt = await tx.quizAttempt.create({ data: { userId, quizId, score: result.score, passed: result.passed, status: 'COMPLETED', answers, totalPoints: result.total } });
+    // A passed quiz may complete the course: keep the saved percentage current.
+    if (result.passed) await syncEnrollmentProgress(tx, userId, quizCourse(quiz).id);
+    return { attempt, total: result.total, remainingAttempts: budget.remaining, passingScore: quiz.passingScore };
   });
 }
 
@@ -74,7 +96,7 @@ export async function gradeQuiz(graderId: string, attemptId: string, score: unkn
     if (grader.role === 'ADMIN' && !grader.adminPermissions.includes('COURSES')) throw new CheckoutError(403, 'Permission denied');
     const attempt = await tx.quizAttempt.findUnique({ where: { id: attemptId }, include: { quiz: { select: quizSelect } } });
     if (!attempt) throw new CheckoutError(404, 'محاولة الاختبار غير موجودة');
-    if (grader.role === 'INSTRUCTOR' && attempt.quiz.chapter.course.instructorId !== graderId) throw new CheckoutError(403, 'لا تملك صلاحية تصحيح هذا الاختبار');
+    if (grader.role === 'INSTRUCTOR' && quizCourse(attempt.quiz).instructorId !== graderId) throw new CheckoutError(403, 'لا تملك صلاحية تصحيح هذا الاختبار');
     if (attempt.quiz.type !== 'MANUAL_FILE' || !Number.isFinite(attempt.quiz.totalMarks) || !attempt.quiz.totalMarks
       || score > attempt.quiz.totalMarks || !Number.isFinite(attempt.quiz.passingScore) || attempt.quiz.passingScore <= 0
       || attempt.quiz.passingScore > attempt.quiz.totalMarks) throw new CheckoutError(400, 'العلامة غير صالحة');
@@ -87,10 +109,10 @@ export async function gradeQuiz(graderId: string, attemptId: string, score: unkn
     if (passed) await rewardFirstQuizPass(tx, attempt.userId, attempt.quizId);
     const changed = await tx.quizAttempt.updateMany({ where: { id: attemptId, status: 'PENDING_GRADING' }, data: { score, passed, status: 'COMPLETED' } });
     if (changed.count !== 1) throw new CheckoutError(409, 'العملية قيد المعالجة');
-    if (passed) await syncEnrollmentProgress(tx, attempt.userId, attempt.quiz.chapter.course.id);
+    if (passed) await syncEnrollmentProgress(tx, attempt.userId, quizCourse(attempt.quiz).id);
     await notify(tx, { userId: attempt.userId, title: passed ? 'تم تصحيح اختبارك: ناجح' : 'تم تصحيح اختبارك',
       message: `حصلت على ${score} من ${attempt.quiz.totalMarks} في اختبار «${attempt.quiz.title}».`,
-      link: `/courses/${attempt.quiz.chapter.course.id}/learn`, dedupeKey: `quiz-graded:${attemptId}` });
+      link: `/courses/${quizCourse(attempt.quiz).id}/learn`, dedupeKey: `quiz-graded:${attemptId}` });
     return { passed };
   });
 }

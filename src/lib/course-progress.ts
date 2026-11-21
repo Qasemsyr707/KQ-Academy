@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { notifyEnrollment } from '@/lib/notifications';
 import { isPubliclyOffered } from '@/lib/catalogue-visibility';
+import { buildChecklist, courseQuizzes, enrollmentDate, isCertificateRequirement, type CertificateChecklist } from '@/lib/course-exams';
 
 type Db = Prisma.TransactionClient | PrismaClient;
 
@@ -10,31 +11,39 @@ export class ProgressError extends Error {
 }
 
 export interface CourseCompletion {
-  /** Lessons the student completed, plus quizzes they passed. */
+  /** Lessons the student completed, plus required quizzes they passed. */
   completedItemIds: string[];
   totalItems: number;
-  /** 0–100, the same "lessons + quizzes" rule the course player always showed. */
+  /** 0–100 over lessons and the quizzes required for this student's certificate. */
   progress: number;
-  /** Every lesson completed and every quiz passed (and the course is not empty). */
+  /** Every lesson completed and every required quiz passed (and the course is not empty). */
   complete: boolean;
   /** When the last requirement was met (null until the course is complete). */
   completedAt: Date | null;
+  /** The certificate checklist shown to the student (same facts as `complete`). */
+  checklist: CertificateChecklist;
 }
 
 /**
- * The single server-side definition of course completion. It keeps the rule
- * the platform already used in the player and the certificate check: every
- * lesson is completed and every quiz has a passed attempt.
+ * The single server-side definition of course completion and certificate eligibility:
+ * every lesson completed, plus every quiz that is a certificate requirement for this
+ * student (see course-exams.ts: required, published, takeable, and not newer than the
+ * student's enrollment). Optional quizzes are practice and never block a certificate.
+ * Quizzes from before the exam settings existed stay required, as they always were.
  */
 export async function getCourseCompletion(db: Db, userId: string, courseId: string): Promise<CourseCompletion> {
-  const chapters = await db.chapter.findMany({
-    where: { courseId },
-    select: { lessons: { select: { id: true } }, quizzes: { select: { id: true } } },
-  });
+  const [chapters, quizzes, enrolledAt] = await Promise.all([
+    db.chapter.findMany({ where: { courseId }, select: { lessons: { select: { id: true } } } }),
+    courseQuizzes(db, courseId),
+    enrollmentDate(db, userId, courseId),
+  ]);
   const lessonIds = chapters.flatMap(chapter => chapter.lessons.map(lesson => lesson.id));
-  const quizIds = chapters.flatMap(chapter => chapter.quizzes.map(quiz => quiz.id));
+  const requirements = quizzes.filter(quiz => isCertificateRequirement(quiz, enrolledAt));
+  const quizIds = requirements.map(quiz => quiz.id);
   const totalItems = lessonIds.length + quizIds.length;
-  if (totalItems === 0) return { completedItemIds: [], totalItems: 0, progress: 0, complete: false, completedAt: null };
+  if (totalItems === 0) {
+    return { completedItemIds: [], totalItems: 0, progress: 0, complete: false, completedAt: null, checklist: buildChecklist({ completed: 0, total: 0 }, [], new Set()) };
+  }
 
   const [doneLessons, passedQuizzes] = await Promise.all([
     lessonIds.length ? db.lessonProgress.findMany({
@@ -47,12 +56,13 @@ export async function getCourseCompletion(db: Db, userId: string, courseId: stri
     }) : [],
   ]);
   const completedItemIds = [...doneLessons.map(row => row.lessonId), ...passedQuizzes.map(row => row.quizId)];
-  const complete = completedItemIds.length === totalItems;
+  const checklist = buildChecklist({ completed: doneLessons.length, total: lessonIds.length }, requirements, new Set(passedQuizzes.map(row => row.quizId)));
+  const complete = checklist.eligible && completedItemIds.length === totalItems;
   // Never show 100% unless every item is really done.
   const progress = complete ? 100 : Math.min(99, Math.round((completedItemIds.length / totalItems) * 100));
   const moments = [...doneLessons.map(row => row.completedAt.getTime()), ...passedQuizzes.map(row => row.createdAt.getTime())];
   const completedAt = complete ? new Date(Math.max(...moments)) : null;
-  return { completedItemIds, totalItems, progress, complete, completedAt };
+  return { completedItemIds, totalItems, progress, complete, completedAt, checklist };
 }
 
 /** Store the recalculated percentage on the enrollment (dashboard, reminders). */

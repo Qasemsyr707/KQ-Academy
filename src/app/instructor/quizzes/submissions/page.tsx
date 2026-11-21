@@ -18,20 +18,15 @@ export default async function SubmissionsPage() {
   const pendingAttempts = await prisma.quizAttempt.findMany({
     where: {
       status: 'PENDING_GRADING',
-      quiz: {
-        chapter: {
-          course: {
-            instructorId: user.id
-          }
-        }
-      }
+      // Chapter quizzes and final exams of this instructor's courses.
+      quiz: { OR: [{ chapter: { course: { instructorId: user.id } } }, { course: { instructorId: user.id } }] }
     },
     include: {
       user: {
-        select: { id: true, name: true, email: true, image: true }
+        select: { id: true, name: true, image: true }
       },
       quiz: {
-        select: { id: true, title: true, type: true, totalMarks: true, passingScore: true, fileUrl: true, chapter: { select: { title: true, course: { select: { title: true } } } } }
+        select: { id: true, title: true, type: true, totalMarks: true, passingScore: true, fileUrl: true, chapter: { select: { title: true, course: { select: { title: true } } } }, course: { select: { title: true } } }
       }
     },
     orderBy: {

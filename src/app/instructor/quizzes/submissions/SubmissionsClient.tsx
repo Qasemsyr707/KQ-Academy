@@ -82,13 +82,12 @@ export default function SubmissionsClient({ pendingAttempts }: { pendingAttempts
                   )}
                   <div>
                     <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{attempt.user.name}</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>{attempt.user.email}</p>
                   </div>
                 </div>
                 <div style={{ textAlign: 'left' }}>
                   <p style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)' }}>{attempt.quiz.title}</p>
                   <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
-                    الكورس: {attempt.quiz.chapter.course.title} <br/> الفصل: {attempt.quiz.chapter.title}
+                    الكورس: {attempt.quiz.chapter?.course.title ?? attempt.quiz.course?.title} <br/> {attempt.quiz.chapter ? <>الفصل: {attempt.quiz.chapter.title}</> : 'الاختبار النهائي'}
                   </p>
                 </div>
               </div>

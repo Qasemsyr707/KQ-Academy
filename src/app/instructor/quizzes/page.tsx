@@ -1,42 +1,39 @@
+import { prisma } from '@/lib/db';
 import { requireRolePage } from '@/lib/rbac';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-import { redirect } from 'next/navigation';
-import QuizzesListClient from './QuizzesListClient';
+import { passingPercent } from '@/lib/course-exams';
+import QuizzesListClient, { type CourseExams, type QuizSummary } from './QuizzesListClient';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
+
+const QUIZ_SUMMARY = {
+  id: true, title: true, kind: true, type: true, isPublished: true, requiredForCertificate: true, maxAttempts: true,
+  passingScore: true, totalMarks: true, _count: { select: { questions: true, attempts: true } },
+} as const;
+
+type Row = {
+  id: string; title: string; type: string; isPublished: boolean; requiredForCertificate: boolean; maxAttempts: number | null;
+  passingScore: number; totalMarks: number | null; _count: { questions: number; attempts: number };
+};
+const summary = (q: Row): QuizSummary => ({
+  id: q.id, title: q.title, type: q.type, isPublished: q.isPublished, requiredForCertificate: q.requiredForCertificate,
+  maxAttempts: q.maxAttempts, passingPercent: passingPercent(q), questions: q._count.questions, attempts: q._count.attempts,
+});
 
 export default async function QuizzesPage() {
   const { session } = await requireRolePage(['ADMIN', 'INSTRUCTOR'], '/dashboard', 'COURSES');
-  const user = session?.user as any;
-  if (!session || !user || (user.role !== 'INSTRUCTOR' && user.role !== 'ADMIN' && user.role !== 'OWNER')) {
-    redirect('/login');
-  }
-
-  // Fetch quizzes for courses taught by this instructor
-  const quizzes = await prisma.quiz.findMany({
-    where: {
-      chapter: {
-        course: {
-          instructorId: user.id
-        }
-      }
+  const courses = await prisma.course.findMany({
+    where: { instructorId: session.user.id },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true, title: true, status: true,
+      chapters: { orderBy: { order: 'asc' }, select: { id: true, title: true, quizzes: { orderBy: { createdAt: 'asc' }, select: QUIZ_SUMMARY } } },
+      finalExams: { where: { kind: 'FINAL' }, select: QUIZ_SUMMARY },
     },
-    include: {
-      chapter: {
-        include: {
-          course: true
-        }
-      },
-      _count: {
-        select: { questions: true, attempts: true }
-      }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
   });
-
-  return <QuizzesListClient quizzes={quizzes} />;
+  const data: CourseExams[] = courses.map(course => ({
+    id: course.id, title: course.title, status: course.status,
+    chapters: course.chapters.map(chapter => ({ id: chapter.id, title: chapter.title, quizzes: chapter.quizzes.map(summary) })),
+    finalExam: course.finalExams[0] ? summary(course.finalExams[0]) : null,
+  }));
+  return <QuizzesListClient courses={data} />;
 }

@@ -11,6 +11,33 @@ import { useEffect } from 'react';
 import '@livekit/components-styles';
 import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/components-react';
 
+type CertificateChecklistView = {
+  lessons: { completed: number; total: number; done: boolean };
+  chapterQuizzes: { id: string; title: string; passed: boolean }[];
+  finalExam: { status: 'PASSED' | 'PENDING' | 'NOT_REQUIRED'; title?: string };
+  eligible: boolean;
+};
+
+function CertificateChecklistPanel({ checklist }: { checklist: CertificateChecklistView }) {
+  const row = (label: string, value: string, ok: boolean) => (
+    <li style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '0.55rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <span>{label}</span><strong style={{ color: ok ? '#22c55e' : 'var(--warning)' }}>{value}</strong>
+    </li>
+  );
+  const quizzesPassed = checklist.chapterQuizzes.filter(q => q.passed).length;
+  return (
+    <section aria-label="متطلبات الشهادة" style={{ background: 'var(--ink-3)', borderRadius: 18, padding: '1.25rem', marginTop: '1.5rem', border: '1px solid rgba(203,161,83,0.25)' }}>
+      <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>متطلبات الشهادة</h3>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {row('الدروس المكتملة', `${checklist.lessons.completed} / ${checklist.lessons.total}`, checklist.lessons.done)}
+        {row('اختبارات الفصول الإلزامية', checklist.chapterQuizzes.length ? `${quizzesPassed} / ${checklist.chapterQuizzes.length} ناجح` : 'لا يوجد', quizzesPassed === checklist.chapterQuizzes.length)}
+        {row('الاختبار النهائي', checklist.finalExam.status === 'NOT_REQUIRED' ? 'غير مطلوب' : checklist.finalExam.status === 'PASSED' ? 'ناجح' : 'لم يُجتز بعد', checklist.finalExam.status !== 'PENDING')}
+        {row('أهلية الشهادة', checklist.eligible ? 'مؤهل' : 'غير مؤهل بعد', checklist.eligible)}
+      </ul>
+    </section>
+  );
+}
+
 export default function CoursePlayerClient({ course, chapters, hasAccess = false, initialLessonId, currentUserRole }: { course: any, chapters: any[], hasAccess?: boolean, initialLessonId?: string, currentUserRole?: string }) {
   // Find first accessible item
   const firstAccessibleChapter = chapters.find(c => hasAccess || c.isFree);
@@ -52,7 +79,10 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
 
   // Quiz State
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
-  const [quizResult, setQuizResult] = useState<{ score?: number, passed?: boolean, status?: string } | null>(null);
+  const [quizResult, setQuizResult] = useState<{ score?: number, passed?: boolean, status?: string, total?: number, remaining?: number | null } | null>(null);
+  // Certificate requirements, computed by the server (lessons, required quizzes, final exam).
+  const [checklist, setChecklist] = useState<CertificateChecklistView | null>(null);
+  const [attemptsUsed, setAttemptsUsed] = useState<Record<string, number>>({});
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
 
   // Q&A State
@@ -124,6 +154,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
         }
         if (cancelled) return;
         setCompletedItems(data.completedItemIds || []);
+        if (data.checklist) setChecklist(data.checklist);
         if (data.certificateId) setCertId(data.certificateId);
       } catch { /* Offline: keep showing this device's saved progress. */ }
     })();
@@ -188,15 +219,25 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
     }).catch(() => { /* Saved on this device; uploaded on the next visit. */ });
   };
 
+  const refreshChecklist = () => {
+    if (!hasAccess || !course.id) return;
+    fetch(`/api/courses/${course.id}/progress`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
+      if (data?.checklist) setChecklist(data.checklist);
+      if (data?.certificateId) setCertId(data.certificateId);
+    }).catch(() => {});
+  };
+
   const calculateProgress = () => {
     let totalItems = 0;
+    // Same rule as the server: lessons plus the quizzes required for this student's certificate.
+    const required = (c: any) => (c.quizzes || []).filter((q: any) => q.isRequirement);
     chapters.forEach(c => {
       totalItems += (c.lessons?.length || 0);
-      totalItems += (c.quizzes?.length || 0);
+      totalItems += required(c).length;
     });
     if (totalItems === 0) return 0;
     // Count only items that still exist in the course, each once.
-    const existing = new Set<string>(chapters.flatMap(c => [...(c.lessons || []), ...(c.quizzes || [])].map((i: { id: string }) => i.id)));
+    const existing = new Set<string>(chapters.flatMap(c => [...(c.lessons || []), ...required(c)].map((i: { id: string }) => i.id)));
     const done = new Set(completedItems.filter(id => existing.has(id))).size;
     return done >= totalItems ? 100 : Math.min(99, Math.round((done / totalItems) * 100));
   };
@@ -245,22 +286,25 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
     if (!activeItem || !activeItem.questions) return;
     setIsSubmittingQuiz(true);
     try {
-      const res = await fetch('/api/quizzes/submit', {
+      // Graded on the server; only the chosen option of each question is sent.
+      const res = await fetch(`/api/quizzes/${activeItem.id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quizId: activeItem.id, answers: quizAnswers })
+        body: JSON.stringify({ answers: quizAnswers })
       });
       const data = await res.json();
       if (res.ok) {
-        setQuizResult({ score: data.attempt.score, passed: data.attempt.passed });
+        setQuizResult({ score: data.attempt.score, passed: data.attempt.passed, total: data.total, remaining: data.remainingAttempts });
+        setAttemptsUsed(prev => ({ ...prev, [activeItem.id]: (prev[activeItem.id] ?? activeItem.attemptsUsed ?? 0) + 1 }));
         if (data.attempt.passed) {
           markCompleted(activeItem.id);
         }
+        refreshChecklist();
       } else {
         alert(data.error);
       }
     } catch (err) {
-      alert('Error submitting quiz');
+      alert('تعذّر إرسال الإجابات، تحقق من الاتصال وحاول مجدداً');
     }
     setIsSubmittingQuiz(false);
   };
@@ -626,9 +670,18 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                   </div>
                   <div>
                     <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 2rem)', fontWeight: 'bold' }}>{activeItem.title}</h2>
-                    <p style={{ color: 'rgba(255,255,255,0.5)' }}>اختبر معلوماتك لفتح الفصول القادمة واستخراج الشهادة.</p>
+                    <p style={{ color: 'rgba(255,255,255,0.65)' }}>
+                      {activeItem.kind === 'FINAL' ? 'الاختبار النهائي للكورس' : 'اختبار نهاية الفصل'} • {activeItem.isRequirement ? 'النجاح فيه شرط للشهادة' : 'اختياري للتدريب ولا يؤثر على الشهادة'}
+                    </p>
                   </div>
                 </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                  <span style={{ padding: '0.35rem 0.8rem', borderRadius: 999, background: 'rgba(255,255,255,0.06)' }}>نسبة النجاح: {activeItem.passingPercent ?? 50}%</span>
+                  <span style={{ padding: '0.35rem 0.8rem', borderRadius: 999, background: 'rgba(255,255,255,0.06)' }}>
+                    {activeItem.maxAttempts ? `المحاولات المتبقية: ${Math.max(0, activeItem.maxAttempts - (attemptsUsed[activeItem.id] ?? activeItem.attemptsUsed ?? 0))} من ${activeItem.maxAttempts}` : 'محاولات غير محدودة'}
+                  </span>
+                </div>
+                {activeItem.instructions && <p style={{ whiteSpace: 'pre-wrap', background: 'rgba(203,161,83,0.08)', border: '1px solid rgba(203,161,83,0.25)', padding: '1rem', borderRadius: 12, marginBottom: '1.5rem', lineHeight: 1.8 }}>{activeItem.instructions}</p>}
 
                 {quizResult ? (
                   <div style={{ textAlign: 'center', padding: '2rem', background: quizResult.status === 'PENDING_GRADING' ? 'rgba(203, 161, 83, 0.1)' : (quizResult.passed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'), borderRadius: '16px' }}>
@@ -636,12 +689,14 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                       {quizResult.status === 'PENDING_GRADING' ? 'بانتظار التصحيح ⏳' : (quizResult.passed ? 'نجاح! 🎉' : 'لم تجتز الاختبار 😔')}
                     </h3>
                     {quizResult.status !== 'PENDING_GRADING' && (
-                      <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>النتيجة: {quizResult.score} / {activeItem.totalMarks || 100}</p>
+                      <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>النتيجة: {quizResult.score} / {quizResult.total ?? activeItem.totalMarks ?? 100}{quizResult.remaining !== undefined && quizResult.remaining !== null ? ` • المحاولات المتبقية: ${quizResult.remaining}` : ''}</p>
                     )}
                     {quizResult.status === 'PENDING_GRADING' ? (
                       <p style={{ color: 'rgba(255,255,255,0.7)' }}>تم استلام ملف إجابتك وهو قيد المراجعة والتصحيح من قبل المدرب.</p>
                     ) : quizResult.passed ? (
                       <p style={{ color: 'rgba(255,255,255,0.7)' }}>تم تسجيل الاختبار كمكتمل، يمكنك متابعة الدروس.</p>
+                    ) : quizResult.remaining === 0 ? (
+                      <p style={{ color: 'rgba(255,255,255,0.7)' }}>انتهت المحاولات المتاحة لهذا الاختبار.</p>
                     ) : (
                       <button onClick={() => { setQuizResult(null); setQuizAnswers({}); }} style={{ background: 'var(--primary)', color: '#000', padding: '0.8rem 2rem', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
                         إعادة المحاولة
@@ -753,6 +808,8 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                 )}
               </div>
             )}
+
+            {hasAccess && checklist && <CertificateChecklistPanel checklist={checklist} />}
 
             {/* Achievement Section (Visible only when progress == 100%) */}
             {progress === 100 && (

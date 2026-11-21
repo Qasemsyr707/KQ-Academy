@@ -138,6 +138,7 @@ model Course {
   attachments    Attachment[]
   liveClasses    LiveClass[]
   changeRequests CourseChangeRequest[]
+  finalExams     Quiz[]                @relation("CourseFinalExam")
 
   @@index([categoryId])
 }
@@ -217,19 +218,38 @@ model Attachment {
 }
 
 model Quiz {
-  id           String   @id @default(cuid())
-  title        String
-  chapterId    String
-  type         String   @default("AUTOMATIC") // AUTOMATIC or MANUAL_FILE
-  fileUrl      String? // For MANUAL_FILE type
-  passingScore Float    @default(50)
-  totalMarks   Float? // Set manually for file-based, calculated automatically for automatic
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                     String    @id @default(cuid())
+  title                  String
+  // CHAPTER quizzes belong to a chapter; the FINAL exam belongs to the course (chapterId null).
+  chapterId              String?
+  courseId               String?
+  kind                   String    @default("CHAPTER") // CHAPTER | FINAL
+  type                   String    @default("AUTOMATIC") // AUTOMATIC or MANUAL_FILE
+  fileUrl                String? // For MANUAL_FILE type
+  passingScore           Float     @default(50)
+  totalMarks             Float? // Set manually for file-based, calculated automatically for automatic
+  instructions           String?
+  // Visible to students. Unpublished quizzes never block a certificate.
+  isPublished            Boolean   @default(true)
+  // Certificate requirement. Quizzes created before 2026-11-22 keep the original rule (required);
+  // new quizzes start optional. requiredSince: the requirement applies only to students enrolled
+  // from that moment (null = legacy, always applied).
+  requiredForCertificate Boolean   @default(true)
+  requiredSince          DateTime?
+  // null = unlimited attempts
+  maxAttempts            Int?
+  // 1 = original pass rule (50% of the questions), kept for quizzes created before exam settings;
+  // 2 = the instructor's pass mark in points. Saving the new settings form sets 2.
+  scoringVersion         Int       @default(1)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
-  chapter   Chapter       @relation(fields: [chapterId], references: [id])
+  chapter   Chapter?      @relation(fields: [chapterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  course    Course?       @relation("CourseFinalExam", fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   questions Question[]
   attempts  QuizAttempt[]
+
+  @@index([courseId])
 }
 
 model Question {
@@ -253,6 +273,8 @@ model QuizAttempt {
   passed        Boolean  @default(false)
   status        String   @default("COMPLETED") // COMPLETED or PENDING_GRADING
   answerFileUrl String? // For MANUAL_FILE student submissions
+  answers       Json? // { questionId: optionIndex } as submitted; graded on the server
+  totalPoints   Float?
   createdAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])

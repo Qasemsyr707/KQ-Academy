@@ -14,6 +14,9 @@ function harness(options = {}) {
   };
   const quiz = {
     id: 'quiz', type: options.manual ? 'MANUAL_FILE' : 'AUTOMATIC', passingScore: 1, totalMarks: 2,
+    // Exam settings: scoringVersion 2 uses the pass mark in points; 1 is the original 50%-of-questions rule.
+    kind: 'CHAPTER', isPublished: options.published ?? true, maxAttempts: options.maxAttempts ?? null,
+    requiredForCertificate: true, requiredSince: null, scoringVersion: options.scoringVersion ?? 2, course: null,
     questions: [{ id: 'q1', correctAnswer: 1, points: 2, options: '["wrong","correct"]' }],
     chapter: { isFree: options.free ?? false, course: { id: 'course', instructorId: 'teacher', status: options.status ?? 'PUBLISHED', price: 20, priceSYP: 200 } },
   };
@@ -51,6 +54,7 @@ function harness(options = {}) {
         },
       },
       quiz: { findUnique: async ({ where }) => where.id === quiz.id ? quiz : null },
+      $queryRaw: async () => [{ id: quiz.id }],
       enrollment: { findUnique: async () => options.enrolled === false ? null : { id: 'enrolled' } },
       walletTransaction: {
         createMany: async ({ data, skipDuplicates }) => {
@@ -61,6 +65,7 @@ function harness(options = {}) {
         create: async ({ data }) => { working.ledger.push(data); return data; },
       },
       quizAttempt: {
+        count: async ({ where }) => working.attempts.filter(a => a.userId === where.userId && a.quizId === where.quizId).length,
         findFirst: async ({ where }) => working.attempts.find(row => Object.entries(where).every(([key, value]) => row[key] === value)) ?? null,
         findUnique: async ({ where }) => { const row = working.attempts.find(a => a.id === where.id); return row ? { ...row, quiz } : null; },
         create: async ({ data }) => {
@@ -205,7 +210,8 @@ test('manual grading claims pending attempt once, authorizes owner and rejects s
 });
 
 test('legacy submission retains percentage scoring and manual-file flow without arbitrary rewards', async () => {
-  const h = harness();
+  // A quiz from before the exam settings (scoringVersion 1) keeps the percentage rule.
+  const h = harness({ scoringVersion: 1 });
   const response = await h.legacy(request({ quizId: 'quiz', answers: { q1: 1 }, points: 999 }));
   assert.equal(response.status, 201);
   assert.equal((await response.json()).attempt.score, 100);
@@ -251,10 +257,12 @@ test('quiz read access hides draft questions, preserves enrolled access and neve
       '@/lib/db': { prisma: {
         quiz: { findUnique: async query => {
           assert.equal(query.select.questions.select.correctAnswer, undefined);
-          return { id: 'quiz', title: 'Draft quiz', questions: [{ id: 'question', text: 'Question', options: '["A","B"]' }],
+          return { id: 'quiz', title: 'Draft quiz', kind: 'CHAPTER', isPublished: true, maxAttempts: null, passingScore: 1, totalMarks: 2, course: null,
+            questions: [{ id: 'question', text: 'Question', options: '["A","B"]' }],
             chapter: { isFree: true, course: { id: 'course', instructorId: 'teacher', status: 'PENDING', price: 0, priceSYP: 0 } } };
         } },
         enrollment: { findUnique: async () => options.enrolled ? { id: 'enrollment' } : null },
+        quizAttempt: { findMany: async () => [] },
       } },
     };
     const route = loadTs('../src/app/api/quizzes/[id]/route.ts', mocks).GET;

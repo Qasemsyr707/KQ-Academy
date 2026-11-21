@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { QUIZ_CONTEXT_SELECT, quizCourse } from '@/lib/course-exams';
 import { requireRequestUser } from '@/lib/request-user';
 import { CheckoutError } from '@/lib/payments/checkout-context';
 import { paymentBody, paymentId, walletError, WALLET_HEADERS } from '@/lib/payments/wallet-operations';
@@ -14,9 +15,9 @@ export async function POST(req: Request) {
       throw new CheckoutError(400, 'بيانات ناقصة');
     }
     const quiz = await prisma.quiz.findUnique({
-      where: { id: quizId }, select: { chapter: { select: { course: { select: { instructorId: true } } } } },
+      where: { id: quizId }, select: QUIZ_CONTEXT_SELECT,
     });
-    if (!quiz || (user.role === 'INSTRUCTOR' && quiz.chapter.course.instructorId !== user.id)) {
+    if (!quiz || (user.role === 'INSTRUCTOR' && quizCourse(quiz).instructorId !== user.id)) {
       throw new CheckoutError(403, 'لا تملك صلاحية إدارة هذا الاختبار');
     }
     const question = await prisma.question.create({ data: { text, options: JSON.stringify(options), correctAnswer, quizId } });
