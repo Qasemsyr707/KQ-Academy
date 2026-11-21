@@ -67,7 +67,7 @@ FROM "User";
 SQL
 }
 
-PROD_COUNTS=$(docker exec "$PROD_PG" sh -c "psql -X -At -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" -d $PROD_DB" <<SQL
+PROD_COUNTS=$(docker exec -i "$PROD_PG" sh -c "psql -X -At -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" -d $PROD_DB" <<SQL
 BEGIN READ ONLY;
 $COUNTS
 COMMIT;
