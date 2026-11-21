@@ -57,6 +57,15 @@ FINGERPRINT="SELECT md5(string_agg(r, '|' ORDER BY r)) FROM (
   UNION ALL SELECT concat_ws(',', id, \"userId\", \"courseId\", amount, status) FROM \"Payment\"
   UNION ALL SELECT concat_ws(',', id, \"userId\", \"courseId\", \"certificateNumber\") FROM \"Certificate\") z;"
 copy_sql() { docker exec -i "$PGC" psql -X -At -v ON_ERROR_STOP=1 -U postgres -d kqcheck -c "$1"; }
+# "<OWNER rows>|<rows that are OWNER, unbanned, with OWNER_EMAIL>|<md5 of every account id+role+ban>"
+owner_state() {
+  docker exec -i "$PGC" psql -X -At -v ON_ERROR_STOP=1 -U postgres -d kqcheck -v owner_email="$OWNER_EMAIL" <<'SQL'
+SELECT count(*) FILTER (WHERE role = 'OWNER') || '|' ||
+       count(*) FILTER (WHERE role = 'OWNER' AND NOT "isBanned" AND lower(email) = lower(:'owner_email')) || '|' ||
+       (SELECT md5(string_agg(id || ',' || role || ',' || "isBanned", '|' ORDER BY id)) FROM "User")
+FROM "User";
+SQL
+}
 
 PROD_COUNTS=$(docker exec "$PROD_PG" sh -c "psql -X -At -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" -d $PROD_DB" <<SQL
 BEGIN READ ONLY;
@@ -81,6 +90,12 @@ else
   fail "production schema differs from the baseline:"; cat /tmp/kq-baseline-diff.txt; exit 1
 fi
 BEFORE=$(copy_sql "$FINGERPRINT")
+OWNER_BEFORE=$(owner_state)
+case "$OWNER_BEFORE" in
+  1\|1\|*) pass "the owner account is the only OWNER and is not banned"; OWNER_MODE=existing ;;
+  0\|0\|*) echo "NOTE  no OWNER yet: the activation will be rehearsed on the copy"; OWNER_MODE=none ;;
+  *) fail "unexpected OWNER state before migration (OWNER rows|matching owner rows: ${OWNER_BEFORE%|*}); required: exactly one OWNER, unbanned, with OWNER_EMAIL"; OWNER_MODE=invalid ;;
+esac
 
 echo "== 4. run the exact start-up migration on the copy"
 run_app node scripts/release-migrate.cjs && pass "release-migrate succeeded" || { fail "release-migrate"; exit 1; }
@@ -94,14 +109,24 @@ AFTER=$(copy_sql "$FINGERPRINT")
 copy_sql "SELECT 'admins with all 15 permissions: ' || count(*) FILTER (WHERE cardinality(\"adminPermissions\") = 15) || ' of ' || count(*) FROM \"User\" WHERE role = 'ADMIN'"
 copy_sql "SELECT 'courses linked to the taxonomy: ' || count(\"categoryId\") || ' of ' || count(*) FROM \"Course\""
 
-echo "== 5. owner activation rehearsal (on the copy)"
-docker exec -i "$PGC" psql -X -v ON_ERROR_STOP=1 -U postgres -d kqcheck -v owner_email="$OWNER_EMAIL" -v confirm=ACTIVATE-OWNER \
-  < "$REPO/ops/release-20261121/activate-owner.sql" && pass "owner activation works on the copy" || fail "owner activation"
-copy_sql "SELECT 'owners: ' || count(*) FROM \"User\" WHERE role = 'OWNER'"
-docker exec -i "$PGC" psql -X -v ON_ERROR_STOP=1 -U postgres -d kqcheck -v owner_email="$OWNER_EMAIL" -v confirm=ACTIVATE-OWNER \
-  < "$REPO/ops/release-20261121/activate-owner.sql" >/dev/null 2>&1 && fail "a second activation was accepted" || pass "a second activation is refused"
-docker exec -i "$PGC" psql -X -v ON_ERROR_STOP=1 -U postgres -d kqcheck -v owner_email="$OWNER_EMAIL" -v confirm=ROLLBACK-OWNER \
-  < "$REPO/ops/release-20261121/rollback-owner.sql" >/dev/null && pass "owner rollback works on the copy" || fail "owner rollback"
+echo "== 5. owner account (on the copy)"
+OWNER_AFTER=$(owner_state)
+if [ "$OWNER_MODE" = existing ]; then
+  [ "$OWNER_AFTER" = "$OWNER_BEFORE" ] && pass "the owner is still the only OWNER after the migration; no account role or ban changed"     || fail "accounts changed by the migration (before ${OWNER_BEFORE%|*}, after ${OWNER_AFTER%|*})"
+  # A second activation must be refused and must not change anything. Its error is shown, not hidden.
+  if OUT=$(docker exec -i "$PGC" psql -X -v ON_ERROR_STOP=1 -U postgres -d kqcheck -v owner_email="$OWNER_EMAIL" -v confirm=ACTIVATE-OWNER       < "$REPO/ops/release-20261121/activate-owner.sql" 2>&1); then
+    fail "a second activation was accepted"; echo "$OUT"
+  else
+    echo "      refused with: $(echo "$OUT" | grep -m1 ERROR)"
+    echo "$OUT" | grep -q 'an OWNER already exists' && pass "a second activation is refused because the OWNER exists"       || fail "the activation failed for another reason (see above)"
+  fi
+  [ "$(owner_state)" = "$OWNER_BEFORE" ] && pass "the refused activation changed nothing" || fail "data changed after the refused activation"
+elif [ "$OWNER_MODE" = none ]; then
+  docker exec -i "$PGC" psql -X -v ON_ERROR_STOP=1 -U postgres -d kqcheck -v owner_email="$OWNER_EMAIL" -v confirm=ACTIVATE-OWNER     < "$REPO/ops/release-20261121/activate-owner.sql" && pass "owner activation works on the copy" || fail "owner activation"
+  docker exec -i "$PGC" psql -X -v ON_ERROR_STOP=1 -U postgres -d kqcheck -v owner_email="$OWNER_EMAIL" -v confirm=ACTIVATE-OWNER     < "$REPO/ops/release-20261121/activate-owner.sql" >/dev/null 2>&1 && fail "a second activation was accepted" || pass "a second activation is refused"
+else
+  fail "owner checks not run: fix the OWNER accounts first (exactly one OWNER, the platform owner)"
+fi
 
 docker rmi "$IMAGE" >/dev/null 2>&1 || true
 echo
