@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Users, UploadCloud, Video, FileEdit, Star, TrendingUp, DollarSign, Bot, ShieldCheck, HelpCircle, Wallet, Award, PlaySquare } from 'lucide-react';
+import { Users, UploadCloud, Video, FileEdit, Radio, CalendarClock, FileUp, Sparkles, Star, TrendingUp, DollarSign, Bot, ShieldCheck, HelpCircle, Wallet, Award, PlaySquare } from 'lucide-react';
 import RevenueChart from '@/components/instructor/RevenueChart';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
@@ -57,7 +57,7 @@ export default function InstructorDashboardClient({
       >
         <div>
           <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 2.5rem)', marginBottom: '0.5rem' }}>مرحباً بك أستاذ <span style={{ color: 'var(--primary)' }}>{firstName}</span> 👑</h1>
-          <p style={{ opacity: 0.8, fontSize: '1.1rem' }}>لديك <strong style={{ color: 'var(--success)' }}>3</strong> أسئلة طلاب بانتظار الإجابة، وتقييمك العام ارتفع هذا الأسبوع!</p>
+          <p style={{ opacity: 0.8, fontSize: '1.1rem' }}>من هنا تدير كورساتك واختباراتك وبثوثك المباشرة.</p>
         </div>
         <div style={{ display: 'flex', gap: '1.5rem', textAlign: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div>
@@ -89,8 +89,12 @@ export default function InstructorDashboardClient({
             <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.8rem' }}>إدارة المحتوى</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <Link href="/instructor/courses" className="btn btn-solid" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><UploadCloud size={20} /> رفع درس جديد (DRM)</Link>
-              <Link href="/instructor/live/schedule" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><Video size={20} /> جدولة بث مباشر</Link>
+              <Link href="/instructor/live?mode=now" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><Radio size={20} /> إنشاء بث مباشر</Link>
+              <Link href="/instructor/live?mode=schedule" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><CalendarClock size={20} /> جدولة بث مباشر</Link>
+              <Link href="/instructor/live" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><Video size={20} /> بثوثي المباشرة</Link>
               <Link href="/instructor/quizzes" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><FileEdit size={20} /> إدارة الاختبارات</Link>
+              <Link href="/instructor/quizzes?new=file" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><FileUp size={20} /> اختبار بملف</Link>
+              <Link href="/instructor/quizzes/ai" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><Sparkles size={20} /> توليد اختبار بالذكاء الاصطناعي</Link>
               <Link href="/instructor/certificates" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none' }}><Award size={20} /> شهادات طلابي</Link>
               <Link href="/instructor/shorts" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none', borderColor: '#3b82f6', color: '#3b82f6' }}><PlaySquare size={20} /> الريلز التسويقية</Link>
               <Link href="/instructor/wallet" className="btn" style={{ width: '100%', justifyContent: 'flex-start', textDecoration: 'none', borderColor: 'var(--success)', color: 'var(--success)' }}><Wallet size={20} /> سحب الأرباح</Link>
@@ -102,9 +106,9 @@ export default function InstructorDashboardClient({
               <Bot size={20} color="var(--primary)" /> مساعد المعلم الذكي
             </h3>
             <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '1.5rem' }}>
-              دع الذكاء الاصطناعي يقرأ ملف الـ PDF الخاص بك ويقوم بتوليد 50 سؤال اختبار تكيفي تلقائياً.
+              ارفع ملف PDF من مادتك، فيقترح الذكاء الاصطناعي حتى 50 سؤال اختيار من متعدد من محتواه. تراجع الأسئلة وتعدّلها قبل حفظها.
             </p>
-            <Link href="/instructor/quizzes/create" className="btn" style={{ width: '100%', fontSize: '0.9rem', borderColor: 'var(--primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>توليد أسئلة بالـ AI ✨</Link>
+            <Link href="/instructor/quizzes/ai" className="btn" style={{ width: '100%', fontSize: '0.9rem', borderColor: 'var(--primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>توليد أسئلة من PDF ✨</Link>
           </div>
         </motion.div>
 
