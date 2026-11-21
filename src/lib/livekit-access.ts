@@ -93,10 +93,10 @@ export async function serveLiveKitToken(req: Request, reference: RoomReference) 
       console.error('[livekit] not configured: LIVEKIT_API_KEY, LIVEKIT_API_SECRET and NEXT_PUBLIC_LIVEKIT_URL are all required');
       throw new LiveKitAccessError(503, 'خدمة البث غير مهيأة على الخادم حالياً؛ تواصل مع إدارة المنصة');
     }
-    const token = new AccessToken(apiKey, apiSecret, { identity: user.id, name: user.name || 'مستخدم', ttl: '15m' });
+    const token = new AccessToken(apiKey, apiSecret, { identity: user.id, name: user.name || 'مستخدم', ttl: '15m', metadata: access.canPublish && !access.audioOnly ? 'kq-role:host' : 'kq-role:student' });
     // Viewers (canPublish false) may send chat messages (data) but never audio or video.
     const grant: VideoGrant = {
-      roomJoin: true, room: access.room, canPublish: access.canPublish, canSubscribe: true, canPublishData: true,
+      roomJoin: true, room: access.room, canPublish: access.canPublish, canSubscribe: true, canPublishData: true, canUpdateOwnMetadata: false,
     };
     if (access.audioOnly) grant.canPublishSources = [TrackSource.MICROPHONE];
     token.addGrant(grant);

@@ -13,7 +13,7 @@ export default function SocialLinks({ className, linkClassName, variant = 'icons
   const [links, setLinks] = useState<Link[]>([]);
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/social-links').then(r => r.ok ? r.json() : { links: [] }).then(data => {
+    fetch('/api/social-links', { cache: 'no-store' }).then(r => r.ok ? r.json() : { links: [] }).then(data => {
       if (!cancelled && Array.isArray(data.links)) setLinks(data.links);
     }).catch(() => {});
     return () => { cancelled = true; };

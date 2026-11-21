@@ -37,6 +37,11 @@ export default function QuizzesListClient({ courses, storage, staff = false, ope
   const [editor, setEditor] = useState<EditorTarget | null>(openFileQuiz && courses.length ? fileQuiz() : null);
   const pickerCourses = courses.map(c => ({ id: c.id, title: c.title, chapters: c.chapters.map(ch => ({ id: ch.id, title: ch.title })) }));
   const [results, setResults] = useState<Results | null>(null);
+  const [scope, setScope] = useState<'all' | 'mine' | 'others'>('all');
+  const [search, setSearch] = useState('');
+  const visibleCourses = courses.filter(course =>
+    (!staff || scope === 'all' || (scope === 'mine' ? course.ownCourse !== false : course.ownCourse === false))
+    && course.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
   const [message, setMessage] = useState('');
 
   async function showResults(id: string) {
@@ -96,12 +101,22 @@ export default function QuizzesListClient({ courses, storage, staff = false, ope
           <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 3 }} /> اختبارات الملفات غير متاحة حتى يُضبط تخزين المستندات على الخادم: {storage.message}
         </p>
       )}
+      {courses.length > 0 && <section aria-label="تصفية الكورسات" style={{ background: 'var(--ink-3)', border: '1px solid rgba(201,164,92,.2)', borderRadius: 14, padding: 14, marginBottom: 18, display: 'grid', gap: 12 }}>
+        {staff && <div role="group" aria-label="نطاق الكورسات" style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+          {([['all', 'جميع الكورسات'], ['mine', 'كورساتي'], ['others', 'كورسات المدربين']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={scope === value} className={scope === value ? 'btn btn-solid' : 'btn'} onClick={() => setScope(value)}>{label} ({value === 'all' ? courses.length : courses.filter(c => value === 'mine' ? c.ownCourse !== false : c.ownCourse === false).length})</button>)}
+        </div>}
+        <label style={{ display: 'grid', gap: 6 }}>بحث باسم الكورس
+          <input className="input-field" value={search} maxLength={120} onChange={e => setSearch(e.target.value)} placeholder="اكتب اسم الكورس..." aria-label="بحث في الكورسات" />
+        </label>
+        <span role="status" style={{ opacity: .75, fontSize: 13 }}>يظهر {visibleCourses.length} من {courses.length} كورس. اضغط اسم الكورس لعرض فصوله واختباراته.</span>
+        {visibleCourses.length === 0 && <button type="button" className="btn" onClick={() => { setScope('all'); setSearch(''); }}>إعادة عرض جميع الكورسات</button>}
+      </section>}
       {courses.length === 0 && (
         <p style={{ lineHeight: 1.9 }}>{staff ? 'لا توجد كورسات على المنصة بعد.' : 'لا يوجد كورس مسجّل باسم حسابك كمدرّب.'} <Link href="/instructor/courses/create" style={{ color: 'var(--primary)' }}>أنشئ كورساً</Link> لإضافة الاختبارات.</p>
       )}
-      {courses.map(course => (
-        <section key={course.id} style={{ background: 'var(--ink-3)', borderRadius: 18, padding: 'clamp(1rem, 3vw, 1.5rem)', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>{course.title}{staff && course.ownCourse === false ? <small style={{ opacity: 0.6, fontSize: '0.8rem' }}> • مدرّب آخر</small> : null}</h2>
+      {visibleCourses.map(course => (
+        <details key={course.id} style={{ background: 'var(--ink-3)', borderRadius: 18, padding: 'clamp(1rem, 3vw, 1.5rem)', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <summary style={{ fontSize: '1.15rem', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem', lineHeight: 1.7, color: 'var(--gold-200)', outlineOffset: 4 }}>{course.title}{staff && course.ownCourse === false ? <small style={{ opacity: 0.7, fontSize: '0.8rem' }}> • مدرّب آخر</small> : null}<span style={{ opacity: 0.6, fontSize: 12, marginInlineStart: 12 }}>({course.chapters.length} فصل)</span></summary>
           {course.chapters.length === 0 && <p style={{ opacity: 0.7 }}>أضف فصولاً للكورس أولاً.</p>}
           {course.chapters.map(chapter => (
             <div key={chapter.id} style={{ marginBottom: '1rem' }}>
@@ -122,7 +137,7 @@ export default function QuizzesListClient({ courses, storage, staff = false, ope
             </div>
             {course.finalExam ? row(course.finalExam) : <p style={{ fontSize: '0.9rem', opacity: 0.75 }}>لا يوجد اختبار نهائي: الشهادة لا تتطلبه.</p>}
           </div>
-        </section>
+        </details>
       ))}
 
       {editor && <QuizEditor target={editor} courses={pickerCourses} storage={storage} onClose={saved => { setEditor(null); if (saved) { setMessage('تم حفظ الاختبار'); router.refresh(); } }} />}

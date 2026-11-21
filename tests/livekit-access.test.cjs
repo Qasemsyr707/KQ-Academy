@@ -125,8 +125,8 @@ test('all token aliases give an enrolled viewer subscription without media publi
     assert.equal(response.status, 200);
     assertPrivate(response);
     assert.deepEqual(await response.json(), { token: 'test-signed-room-token', roomName: `live_${CLASS.id}`, canPublish: false, status: 'live', serverUrl: 'wss://livekit.example.invalid' });
-    assert.deepEqual(h.issued, [{ options: { identity: USER.id, name: USER.name, ttl: '15m' }, grants: [{
-      roomJoin: true, room: `live_${CLASS.id}`, canPublish: false, canSubscribe: true, canPublishData: true,
+    assert.deepEqual(h.issued, [{ options: { identity: USER.id, name: USER.name, ttl: '15m', metadata: 'kq-role:student' }, grants: [{
+      roomJoin: true, room: `live_${CLASS.id}`, canPublish: false, canSubscribe: true, canPublishData: true, canUpdateOwnMetadata: false,
     }] }]);
   }
 });
@@ -221,8 +221,9 @@ test('real study rooms preserve collaborative microphone access for authenticate
     const h = harness();
     assert.equal((await h.call(route, { room: STUDY })).status, 200);
     assert.deepEqual(h.issued[0].grants[0], {
-      roomJoin: true, room: STUDY, canPublish: true, canSubscribe: true, canPublishData: true, canPublishSources: [2],
+      roomJoin: true, room: STUDY, canPublish: true, canSubscribe: true, canPublishData: true, canUpdateOwnMetadata: false, canPublishSources: [2],
     });
+    assert.equal(h.issued[0].options.metadata, 'kq-role:student', 'a study-room microphone is not a live-class host');
     assert.equal(h.issued[0].options.identity, USER.id);
   }
 });
@@ -289,4 +290,14 @@ test('an upcoming session past its window is rejected for everyone', async () =>
   }
   const viewer = harness({ enrolled: true, liveClass: expired });
   assert.equal((await viewer.call()).status, 410);
+});
+
+test('the signed participant role is host only for a live-class host, and nobody may rewrite it', async () => {
+  const host = harness({ user: { id: 'teacher-1', role: 'INSTRUCTOR' } });
+  assert.equal((await host.call()).status, 200);
+  assert.equal(host.issued[0].options.metadata, 'kq-role:host');
+  assert.equal(host.issued[0].grants[0].canUpdateOwnMetadata, false);
+  const viewer = harness({ enrolled: true });
+  assert.equal((await viewer.call()).status, 200);
+  assert.equal(viewer.issued[0].options.metadata, 'kq-role:student');
 });

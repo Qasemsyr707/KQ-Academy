@@ -6,6 +6,7 @@ import '@livekit/components-styles';
 import { ConnectionState } from 'livekit-client';
 import { Loader2, Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, MessageSquare, StopCircle, Radio } from 'lucide-react';
 import { ChatPanel, ConnectionBadge, LiveNotice } from '@/components/live/LiveRoomParts';
+import { HostClassroomTools } from '@/components/live/ClassroomInteractions';
 
 type Phase = 'connecting' | 'live' | 'start-failed';
 
@@ -15,7 +16,7 @@ async function setStatus(id: string, action: 'start' | 'end') {
   if (!res.ok) throw new Error(data.error || 'تعذّر تحديث حالة الجلسة');
 }
 
-function StudioRoom({ phase, startError, onEnd }: { phase: Phase; startError: string; onEnd: () => Promise<void> }) {
+function StudioRoom({ phase, startError, onEnd, liveId }: { phase: Phase; startError: string; onEnd: () => Promise<void>; liveId: string }) {
   const room = useRoomContext();
   const state = useConnectionState();
   const [mic, setMic] = useState(true);
@@ -71,6 +72,7 @@ function StudioRoom({ phase, startError, onEnd }: { phase: Phase; startError: st
         {deviceError && <p role="alert" style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', padding: '8px 20px', margin: 0 }}>{deviceError}</p>}
         <div style={{ flex: 1, overflow: 'hidden', background: '#000' }} data-lk-theme="default"><VideoConference /></div>
         <RoomAudioRenderer />
+        <HostClassroomTools liveId={liveId} />
         <div style={{ display: 'flex', justifyContent: 'center', gap: 14, padding: 16, background: 'var(--ink-2)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           <button type="button" onClick={() => toggle('mic')} style={round(false, !mic)} aria-label={mic ? 'كتم الميكروفون' : 'تشغيل الميكروفون'}>{mic ? <Mic size={22} /> : <MicOff size={22} />}</button>
           <button type="button" onClick={() => toggle('camera')} style={round(false, !camera)} aria-label={camera ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}>{camera ? <Video size={22} /> : <VideoOff size={22} />}</button>
@@ -129,7 +131,7 @@ export default function StudioPage() {
     <LiveKitRoom serverUrl={serverUrl} token={token} connect video audio onConnected={onConnected}
       onError={e => setStartError(`خطأ في الاتصال بخادم البث: ${e.message}`)}
       onMediaDeviceFailure={() => setStartError('تعذّر الوصول إلى الكاميرا أو الميكروفون؛ اسمح بهما من إعدادات المتصفح.')}>
-      <StudioRoom phase={phase} startError={startError} onEnd={handleEnd} />
+      <StudioRoom phase={phase} startError={startError} onEnd={handleEnd} liveId={id} />
     </LiveKitRoom>
   );
 }

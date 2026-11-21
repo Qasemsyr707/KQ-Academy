@@ -16,6 +16,9 @@ export default function SocialAdminClient({ initial }: { initial: Row[] }) {
     return [key, row ? { url: row.url, isActive: row.isActive, order: row.order, saved: true } : { url: '', isActive: true, order: i, saved: false }];
   })));
   const [busy, setBusy] = useState<string | null>(null);
+  const [publicLinks, setPublicLinks] = useState<string[] | null>(null);
+  const [publicError, setPublicError] = useState('');
+
   const [messages, setMessages] = useState<Record<string, { ok: boolean; text: string }>>({});
   const set = (key: string, patch: Partial<Draft>) => setDrafts(d => ({ ...d, [key]: { ...d[key], ...patch } }));
   const say = (key: string, ok: boolean, text: string) => setMessages(m => ({ ...m, [key]: { ok, text } }));
@@ -47,7 +50,22 @@ export default function SocialAdminClient({ initial }: { initial: Row[] }) {
     finally { setBusy(null); }
   }
 
+  const checkPublic = async () => {
+    setPublicError(''); setPublicLinks(null);
+    try {
+      const res = await fetch('/api/social-links', { cache: 'no-store' });
+      const body = await res.json();
+      if (!res.ok || !Array.isArray(body.links)) throw new Error('تعذّر قراءة روابط الموقع العامة');
+      setPublicLinks(body.links.map((link: { label: string }) => link.label));
+    } catch (e) { setPublicError(e instanceof Error ? e.message : 'فشل التحقق'); }
+  };
+
   return <div style={{ display: 'grid', gap: '1rem' }}>
+    <section style={{ background: 'var(--ink-3)', borderRadius: 14, padding: 14 }}>
+      <button type="button" className="btn" onClick={() => void checkPublic()}>فحص الروابط الظاهرة للزوار الآن</button>
+      {publicLinks && <p role="status" style={{ marginTop: 10 }}>الروابط الظاهرة: {publicLinks.length ? publicLinks.join('، ') : 'لا يوجد'}.</p>}
+      {publicError && <p role="alert" style={{ color: '#fca5a5' }}>{publicError}</p>}
+    </section>
     {SOCIAL_PLATFORM_KEYS.map(key => {
       const d = drafts[key];
       const m = messages[key];
