@@ -155,7 +155,8 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
                   { href: '/features/ai-tutor', icon: Bot, color: '#3b82f6', title: 'المساعد الذكي' },
                   { href: '/live', icon: Video, color: '#f43f5e', title: 'بث مباشر' },
                   { href: '/features/study-rooms', icon: Headphones, color: '#a855f7', title: 'غرف الدراسة' },
-                  { href: '/courses', icon: BookOpen, color: '#22c55e', title: 'تصفح الكورسات' }
+                  { href: '/courses', icon: BookOpen, color: '#22c55e', title: 'تصفح الكورسات' },
+                  { href: '/affiliate', icon: TrendingUp, color: '#c9a45c', title: 'برنامج الإحالة' }
                 ].map((item, idx) => (
                   <motion.div key={idx} variants={itemVariants}>
                     <Link 

@@ -9,7 +9,6 @@ type ExamQuestion = {
   id: string;
   text: string;
   options: string[];
-  correctAnswer: number;
 };
 
 export default function ExamSimulatorPage() {
@@ -22,6 +21,8 @@ export default function ExamSimulatorPage() {
   const [isFinished, setIsFinished] = useState(false);
   const [score, setScore] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emptyReason, setEmptyReason] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState('');
 
   // Fetch questions on mount
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function ExamSimulatorPage() {
         if (res.ok) {
           const data = await res.json();
           setExamQuestions(data.questions || []);
+          setEmptyReason(data.reason ?? null);
         }
       } catch (e) {
         console.error('Failed to fetch questions');
@@ -66,29 +68,28 @@ export default function ExamSimulatorPage() {
     });
   };
 
+  // Graded on the server: only the chosen options are sent; the result comes back from the database.
   const finishExam = async () => {
-    let calculatedScore = 0;
-    examQuestions.forEach((q, index) => {
-      if (selectedAnswers[index] === q.correctAnswer) {
-        calculatedScore += 1;
-      }
-    });
-    setScore(calculatedScore);
     setIsFinished(true);
     setIsSubmitting(true);
-    
-    // Save attempt
-    const percentage = Math.round((calculatedScore / examQuestions.length) * 100);
+    setSubmitError('');
+    const answers: Record<string, number> = {};
+    examQuestions.forEach((q, index) => { if (selectedAnswers[index] !== undefined) answers[q.id] = selectedAnswers[index]; });
     try {
-      await fetch('/api/exams/simulator', {
+      if (!Object.keys(answers).length) { setScore(0); return; }
+      const res = await fetch('/api/exams/simulator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ score: calculatedScore, total: examQuestions.length, passed: percentage >= 50 })
+        body: JSON.stringify({ answers })
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setSubmitError(data.error || 'تعذّر تصحيح الإجابات'); return; }
+      setScore(data.attempt.score);
     } catch (e) {
-      console.error('Failed to save attempt');
+      setSubmitError('تعذّر الاتصال بالخادم لتصحيح الإجابات');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   if (isLoading) {
@@ -105,7 +106,11 @@ export default function ExamSimulatorPage() {
         <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', borderRadius: '24px' }}>
           <AlertTriangle size={64} color="#ef4444" style={{ margin: '0 auto 1.5rem auto' }} />
           <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#fff' }}>لا توجد أسئلة متاحة</h2>
-          <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '2rem' }}>عذراً، لم نتمكن من العثور على أي أسئلة لمحاكي الامتحانات في الوقت الحالي.</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '2rem' }}>
+            {emptyReason === 'NOT_ENROLLED'
+              ? 'يعتمد المحاكي على أسئلة الكورسات المسجّل فيها. سجّل في كورس يحتوي اختبارات للبدء.'
+              : 'لا توجد أسئلة منشورة في كورساتك حالياً.'}
+          </p>
           <Link href="/dashboard" className="btn btn-solid" style={{ padding: '0.8rem 2rem' }}>العودة للوحة التحكم</Link>
         </div>
       </div>
@@ -141,6 +146,20 @@ export default function ExamSimulatorPage() {
     const percentage = Math.round((score / examQuestions.length) * 100);
     const passed = percentage >= 50;
 
+    if (submitError) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div className="glass-card" role="alert" style={{ padding: '3rem', textAlign: 'center', borderRadius: '24px' }}>
+            <h2 style={{ fontSize: '1.6rem', marginBottom: '1rem', color: '#fff' }}>تعذّر تصحيح الامتحان</h2>
+            <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '2rem' }}>{submitError}</p>
+            <Link href="/dashboard" className="btn btn-solid" style={{ padding: '0.8rem 2rem' }}>العودة للوحة التحكم</Link>
+          </div>
+        </div>
+      );
+    }
+    if (isSubmitting) {
+      return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><p style={{ color: 'var(--primary)' }}>جاري التصحيح على الخادم...</p></div>;
+    }
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <motion.div 

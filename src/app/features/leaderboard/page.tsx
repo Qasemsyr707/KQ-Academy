@@ -120,7 +120,7 @@ export default function LeaderboardPage() {
           {/* Filter tabs */}
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.04)', padding: '0.5rem', borderRadius: '14px', width: 'fit-content' }}>
             {[
-              { id: 'national', label: '🇸🇾 ترتيب قطري' },
+              { id: 'national', label: 'ترتيب الأكاديمية' },
               { id: 'weekly', label: '📅 أوائل الأسبوع' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveFilter(tab.id as any)} style={{ padding: '0.6rem 1.4rem', borderRadius: '10px', border: 'none', background: activeFilter === tab.id ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#fff', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.95rem' }}>

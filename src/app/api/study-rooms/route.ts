@@ -28,10 +28,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
-    const { title, themeColor = '#a855f7' } = await req.json();
+    const body = await req.json().catch(() => null);
+    const title = typeof body?.title === 'string' ? body.title.trim() : '';
+    // Rendered in a style attribute: only a plain hex colour is accepted.
+    const themeColor = typeof body?.themeColor === 'string' && /^#[0-9a-f]{6}$/i.test(body.themeColor) ? body.themeColor : '#a855f7';
 
-    if (!title) {
-      return NextResponse.json({ error: 'اسم الغرفة مطلوب' }, { status: 400 });
+    if (!title || title.length > 80) {
+      return NextResponse.json({ error: 'اسم الغرفة مطلوب (80 حرفاً كحد أقصى)' }, { status: 400 });
     }
 
     const room = await prisma.studyRoom.create({

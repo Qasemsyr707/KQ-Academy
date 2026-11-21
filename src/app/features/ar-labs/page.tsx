@@ -173,6 +173,9 @@ export default function ARLabsPage() {
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', lineHeight: 1.5 }}>
               قم باستخدام الفأرة (أو اللمس) لتدوير المجسم وتقريبه. إذا كنت تستخدم هاتفاً ذكياً، اضغط على زر "عرض في مساحتك" لرؤية المجسم في غرفتك باستخدام كاميرا الواقع المعزز!
             </p>
+            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.8rem', lineHeight: 1.5, marginTop: '0.75rem' }}>
+              مجسمات تجريبية عامة من مكتبة model-viewer (modelviewer.dev) لعرض التقنية، وليست جزءاً من محتوى كورسات الأكاديمية.
+            </p>
           </div>
 
         </div>

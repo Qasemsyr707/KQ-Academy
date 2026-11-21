@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { FileText, User, Briefcase, GraduationCap, Code, Download, Eye, Plus, Trash2, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -13,31 +14,40 @@ interface ResumeData {
   certificates: { id: number; name: string; issuer: string; year: string }[];
 }
 
+// An empty resume: no invented identity, employer or degree. The user's own name and email are
+// suggested from their account only when the draft is empty, and every field stays editable.
 const defaultData: ResumeData = {
-  personal: {
-    name: 'مراد ناصر',
-    title: 'محلل نظم',
-    email: 'hello@reallygreatsite.com',
-    phone: '+123-456-7890',
-    location: '123 Anywhere St., Any City',
-    website: 'www.reallygreatsite.com',
-    summary: 'أنا محلل أنظمة مركز على النتائج مع مهارات تواصل ممتازة، وكذلك فهم عميق للنظم الرقمية وعمليات سلسلة الإمداد.',
-    image: ''
-  },
-  experience: [
-    { id: 1, company: 'شركة الحلفاء بونيو', role: 'محلل نظم', period: '2018 - الآن', desc: 'مراجعة الأنظمة التنظيمية للعملاء\nترجمة متطلبات العمل إلى تصميمات وظيفية\nتدريب الموظفين والمستخدمين على برامج الكمبيوتر المختلفة' },
-    { id: 2, company: 'استوديو الأقمار', role: 'محلل بيانات خبير', period: '2017 - 2018', desc: 'جمع البيانات وتحليلها باستخدام أطر عمل مختلفة\nاستكشاف مشكلات البرامج وإصلاحها\nتطبيق الأساليب الإحصائية لتشخيص مشكلات العمل' }
-  ],
-  education: [
-    { id: 1, institution: 'معهد الرؤية', degree: 'شهادة دراسات عليا', year: '2018 - 2019' },
-    { id: 2, institution: 'جامعة القاهرة', degree: 'بكالوريوس علوم', year: '2011 - 2015' }
-  ],
-  skills: ['التطوير الأساسي للبرمجيات', 'توثيق المشروعات', 'تحليل نموذج العمل التجاري', 'حل المشكلات', 'اختبار الجودة', 'التفكير في تصميم', 'البحث والتدريب'],
-  certificates: []
+  personal: { name: '', title: '', email: '', phone: '', location: '', website: '', summary: '', image: '' },
+  experience: [],
+  education: [],
+  skills: [],
+  certificates: [],
 };
+const DRAFT_KEY = 'kq_resume_draft_v1';
 
 export default function ResumePage() {
+  const { data: session } = useSession();
   const [data, setData] = useState<ResumeData>(defaultData);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  // The draft is saved in this browser only (nothing is sent to a server).
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) setData({ ...defaultData, ...JSON.parse(saved) });
+    } catch { /* Storage unavailable or corrupt draft: start empty. */ }
+    setDraftLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!draftLoaded) return;
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+  }, [data, draftLoaded]);
+  useEffect(() => {
+    if (!draftLoaded || !session?.user) return;
+    setData(d => d.personal.name || d.personal.email ? d : {
+      ...d, personal: { ...d.personal, name: session.user?.name ?? '', email: session.user?.email ?? '' },
+    });
+  }, [draftLoaded, session]);
   const [activeSection, setActiveSection] = useState<string>('personal');
   const [showPreview, setShowPreview] = useState(false);
   const [newSkill, setNewSkill] = useState('');

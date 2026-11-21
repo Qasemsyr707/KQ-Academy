@@ -1,91 +1,63 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 
-export async function GET(request: Request) {
+const headers = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
+const MAX_QUESTIONS = 20;
+
+/** Questions of published automatic quizzes (chapter quizzes and final exams) in the student's enrolled courses. */
+async function allowedQuestionWhere(userId: string) {
+  const enrollments = await prisma.enrollment.findMany({ where: { userId }, select: { courseId: true } });
+  const courseIds = enrollments.map(e => e.courseId);
+  return {
+    courseIds,
+    where: { quiz: { isPublished: true, type: 'AUTOMATIC', OR: [{ chapter: { courseId: { in: courseIds } } }, { courseId: { in: courseIds } }] } },
+  };
+}
+
+/**
+ * Practice questions for the exam simulator. Never the correct answers, and never questions
+ * from courses the student is not enrolled in (no platform-wide fallback).
+ */
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as any;
-    
-    if (!session || !user) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
-
-    // Find courses the user is enrolled in
-    const enrollments = await prisma.enrollment.findMany({
-      where: { userId: user.id },
-      select: { courseId: true }
+    const user = await requireRequestUser(req);
+    const { courseIds, where } = await allowedQuestionWhere(user.id);
+    if (!courseIds.length) return NextResponse.json({ questions: [], reason: 'NOT_ENROLLED' }, { headers });
+    const pool = await prisma.question.findMany({ where, select: { id: true, text: true, options: true }, take: 200 });
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    const questions = pool.slice(0, MAX_QUESTIONS).flatMap(q => {
+      try { const options = JSON.parse(q.options); return Array.isArray(options) && options.length >= 2 ? [{ id: q.id, text: q.text, options }] : []; }
+      catch { return []; }
     });
-    
-    const courseIds = enrollments.map(e => e.courseId);
-
-    let questions: any[] = [];
-
-    if (courseIds.length > 0) {
-      // Get questions from courses they are enrolled in
-      questions = await prisma.question.findMany({
-        where: {
-          quiz: {
-            chapter: {
-              courseId: { in: courseIds }
-            }
-          }
-        },
-        take: 50 // Get up to 50 questions
-      });
-    }
-
-    // If no questions found from enrolled courses, fallback to any available questions in the platform
-    if (questions.length === 0) {
-      questions = await prisma.question.findMany({
-        take: 50
-      });
-    }
-
-    // Shuffle and pick up to 20 random questions
-    const shuffled = questions.sort(() => 0.5 - Math.random());
-    const selectedQuestions = shuffled.slice(0, 20).map(q => ({
-      id: q.id,
-      text: q.text,
-      options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
-      correctAnswer: q.correctAnswer
-    }));
-
-    return NextResponse.json({ questions: selectedQuestions });
+    return NextResponse.json({ questions, reason: questions.length ? null : 'NO_QUESTIONS' }, { headers });
   } catch (error) {
+    if (error instanceof RequestUserError) return NextResponse.json({ error: error.message }, { status: error.status, headers });
     console.error('Error fetching exam simulator questions:', error);
-    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
+    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500, headers });
   }
 }
 
-export async function POST(request: Request) {
+/** Grade the submitted answers on the server ({ answers: { questionId: optionIndex } }) and store the real result. */
+export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as any;
-    
-    if (!session || !user) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
-
-    const { score, total, passed } = await request.json();
-
-    if (score === undefined || total === undefined) {
-      return NextResponse.json({ error: 'البيانات غير مكتملة' }, { status: 400 });
-    }
-
-    const attempt = await (prisma as any).examSimulatorAttempt.create({
-      data: {
-        userId: user.id,
-        score: Number(score),
-        total: Number(total),
-        passed: Boolean(passed)
-      }
-    });
-
-    return NextResponse.json({ message: 'تم حفظ النتيجة بنجاح', attempt });
+    const user = await requireRequestUser(req);
+    const body = await req.json().catch(() => null) as { answers?: unknown } | null;
+    const answers = body?.answers && typeof body.answers === 'object' && !Array.isArray(body.answers) ? body.answers as Record<string, unknown> : null;
+    const ids = answers ? Object.keys(answers) : [];
+    if (!answers || !ids.length || ids.length > MAX_QUESTIONS) return NextResponse.json({ error: 'أجب عن سؤال واحد على الأقل' }, { status: 400, headers });
+    const { where } = await allowedQuestionWhere(user.id);
+    const questions = await prisma.question.findMany({ where: { ...where, id: { in: ids } }, select: { id: true, correctAnswer: true } });
+    // Every answered question must be one the student was allowed to receive.
+    if (questions.length !== ids.length) return NextResponse.json({ error: 'بعض الأسئلة غير متاحة لك' }, { status: 403, headers });
+    const score = questions.filter(q => answers[q.id] === q.correctAnswer).length;
+    const total = questions.length;
+    const passed = score / total >= 0.5;
+    const attempt = await prisma.examSimulatorAttempt.create({ data: { userId: user.id, score, total, passed } });
+    return NextResponse.json({ attempt: { id: attempt.id, score, total, passed } }, { headers });
   } catch (error) {
+    if (error instanceof RequestUserError) return NextResponse.json({ error: error.message }, { status: error.status, headers });
     console.error('Error saving exam attempt:', error);
-    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });
+    return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500, headers });
   }
 }

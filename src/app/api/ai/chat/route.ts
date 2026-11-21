@@ -1,72 +1,36 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireRequestUser, RequestUserError } from '@/lib/request-user';
+import { AiError, generate, limitAi } from '@/lib/ai-provider';
 
-// We initialize the Gemini API. If the key is not set, we'll gracefully handle it below.
-const apiKey = process.env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenerativeAI(apiKey);
+const headers = { 'Cache-Control': 'private, no-store' };
+const SYSTEM = 'أنت معلم ذكي وصبور في أكاديمية KQ Academy. مهمتك مساعدة الطلاب في فهم المواد الدراسية وشرح الأكواد والمفاهيم العلمية بطريقة مبسطة ومشجعة باللغة العربية، مع أمثلة عند الحاجة. إن لم تكن متأكداً من معلومة فقل ذلك بوضوح.';
 
+/** The AI tutor for signed-in users. Real provider replies only; honest errors otherwise. */
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
+    const user = await requireRequestUser(req);
+    limitAi(user.id);
+    const body = await req.json().catch(() => null) as { message?: unknown; history?: unknown } | null;
+    const message = typeof body?.message === 'string' ? body.message.trim() : '';
+    if (!message || message.length > 4000) return NextResponse.json({ error: 'اكتب سؤالك (4000 حرف كحد أقصى)' }, { status: 400, headers });
+    // Last turns only, alternating user/model, starting with the user (the provider requires it).
+    const turns: { role: 'user' | 'model'; text: string }[] = [];
+    const history = Array.isArray(body?.history) ? body.history.slice(-20) : [];
+    for (const raw of history) {
+      const item = raw as { role?: unknown; content?: unknown };
+      if (typeof item?.content !== 'string' || !item.content.trim()) continue;
+      const role = item.role === 'user' ? 'user' : 'model';
+      if (turns.length === 0 && role !== 'user') continue;
+      if (turns.length && turns[turns.length - 1].role === role) continue;
+      turns.push({ role, text: item.content.slice(0, 4000) });
     }
-
-    if (!apiKey) {
-      return NextResponse.json({ 
-        reply: 'مرحباً بك! لكي أعمل بشكل صحيح، يجب على مدير النظام إضافة مفتاح `GEMINI_API_KEY` في متغيرات البيئة في Coolify. أنا حالياً أعمل في وضع المحاكاة.'
-      }, { status: 200 });
-    }
-
-    const { message, history } = await req.json();
-
-    if (!message) {
-      return NextResponse.json({ error: 'الرسالة مطلوبة' }, { status: 400 });
-    }
-
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: "أنت معلم ذكي وصبور في أكاديمية KQ Academy. مهمتك هي مساعدة الطلاب في فهم المواد الدراسية، وشرح الأكواد البرمجية، والمفاهيم العلمية بطريقة مبسطة ومشجعة باللغة العربية. استخدم التنسيق المناسب والأمثلة كلما أمكن."
-    });
-
-    // Format history for Gemini API (user -> user, assistant -> model)
-    const formattedHistory = history.map((msg: any) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
-
-    // Gemini API strict rule: history MUST start with 'user' and alternate.
-    // Since our client starts with a welcome message from the 'assistant', we remove it.
-    if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
-      formattedHistory.shift();
-    }
-    
-    // To be extra safe against consecutive roles (which also crashes Gemini):
-    const safeHistory = [];
-    let expectedRole = 'user';
-    for (const msg of formattedHistory) {
-      if (msg.role === expectedRole) {
-        safeHistory.push(msg);
-        expectedRole = expectedRole === 'user' ? 'model' : 'user';
-      }
-    }
-
-    const chat = model.startChat({
-      history: safeHistory,
-      generationConfig: {
-        maxOutputTokens: 2000,
-      },
-    });
-
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    const text = response.text();
-
-    return NextResponse.json({ reply: text });
-  } catch (error: any) {
-    console.error('Gemini API Error:', error);
-    return NextResponse.json({ error: 'حدث خطأ أثناء معالجة طلبك' }, { status: 500 });
+    if (turns.length && turns[turns.length - 1].role === 'user') turns.pop();
+    turns.push({ role: 'user', text: message });
+    const reply = await generate(turns, { system: SYSTEM });
+    return NextResponse.json({ reply }, { headers });
+  } catch (error) {
+    if (error instanceof RequestUserError || error instanceof AiError) return NextResponse.json({ error: error.message }, { status: error.status, headers });
+    console.error('[ai chat]', error);
+    return NextResponse.json({ error: 'حدث خطأ أثناء معالجة طلبك' }, { status: 500, headers });
   }
 }
