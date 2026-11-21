@@ -82,6 +82,21 @@ async function resolveRoomAccess(user: RequestUser, reference: RoomReference): P
 }
 
 /** All token routes share authorization, so a second endpoint cannot bypass it. */
+/**
+ * The browser opens a WebSocket to this URL and, on failure, fetches <host>/rtc/validate.
+ * An https page cannot reach ws:// (mixed content) and a path/trailing slash breaks /rtc, both surfacing
+ * only as "could not establish signal connection: Failed to fetch". Normalise to a bare wss origin.
+ */
+export function browserLiveKitUrl(raw: string): string | null {
+  let url: URL;
+  try { url = new URL(raw); } catch { console.error('[livekit] NEXT_PUBLIC_LIVEKIT_URL is not a URL'); return null; }
+  if (url.protocol === 'https:') url.protocol = 'wss:';
+  const plainAllowed = process.env.NODE_ENV !== 'production' && url.protocol === 'ws:';
+  if (url.protocol !== 'wss:' && !plainAllowed) { console.error(`[livekit] NEXT_PUBLIC_LIVEKIT_URL must use wss:// (got ${url.protocol})`); return null; }
+  if (url.username || url.password || url.search || url.hash) { console.error('[livekit] NEXT_PUBLIC_LIVEKIT_URL must be a bare origin'); return null; }
+  return `${url.protocol}//${url.host}`;
+}
+
 export async function serveLiveKitToken(req: Request, reference: RoomReference) {
   try {
     const user = await requireRequestUser(req);
@@ -93,6 +108,8 @@ export async function serveLiveKitToken(req: Request, reference: RoomReference) 
       console.error('[livekit] not configured: LIVEKIT_API_KEY, LIVEKIT_API_SECRET and NEXT_PUBLIC_LIVEKIT_URL are all required');
       throw new LiveKitAccessError(503, 'خدمة البث غير مهيأة على الخادم حالياً؛ تواصل مع إدارة المنصة');
     }
+    const serverUrl = browserLiveKitUrl(process.env.NEXT_PUBLIC_LIVEKIT_URL!.trim());
+    if (!serverUrl) throw new LiveKitAccessError(503, 'عنوان خادم البث غير صالح على الخادم؛ تواصل مع إدارة المنصة');
     const token = new AccessToken(apiKey, apiSecret, { identity: user.id, name: user.name || 'مستخدم', ttl: '15m', metadata: access.canPublish && !access.audioOnly ? 'kq-role:host' : 'kq-role:student' });
     // Viewers (canPublish false) may send chat messages (data) but never audio or video.
     const grant: VideoGrant = {
@@ -100,7 +117,7 @@ export async function serveLiveKitToken(req: Request, reference: RoomReference) 
     };
     if (access.audioOnly) grant.canPublishSources = [TrackSource.MICROPHONE];
     token.addGrant(grant);
-    return NextResponse.json({ token: await token.toJwt(), roomName: access.room, canPublish: access.canPublish, status: access.status ?? null, serverUrl: process.env.NEXT_PUBLIC_LIVEKIT_URL!.trim() }, { headers: privateHeaders });
+    return NextResponse.json({ token: await token.toJwt(), roomName: access.room, canPublish: access.canPublish, status: access.status ?? null, serverUrl }, { headers: privateHeaders });
   } catch (error) {
     const known = error instanceof RequestUserError || error instanceof LiveKitAccessError;
     if (!known) console.error('Live session authorization failed');

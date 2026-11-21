@@ -6,7 +6,7 @@ import '@livekit/components-styles';
 import { ConnectionState } from 'livekit-client';
 import { Loader2, MessageSquare, Radio } from 'lucide-react';
 import { ChatPanel, ConnectionBadge, LiveNotice } from '@/components/live/LiveRoomParts';
-import { StudentClassroomTools } from '@/components/live/ClassroomInteractions';
+import { StudentClassroomTools, WhenLiveConnected } from '@/components/live/ClassroomInteractions';
 import { StudentLivePolls } from '@/components/live/LivePolls';
 
 const WAIT_POLL_MS = 15_000;
@@ -29,8 +29,7 @@ function ViewerRoom({ liveId }: { liveId: string }) {
         {/* The viewer token cannot publish audio or video (server grant); the publish controls are hidden. */}
         <div style={{ flex: 1, overflow: 'hidden', background: '#000' }} data-lk-theme="default"><VideoConference /></div>
         <RoomAudioRenderer />
-        <StudentClassroomTools liveId={liveId} />
-        <StudentLivePolls />
+        <WhenLiveConnected><StudentClassroomTools liveId={liveId} /><StudentLivePolls /></WhenLiveConnected>
       </div>
       {showChat && <ChatPanel onClose={() => setShowChat(false)} width={300} />}
     </div>

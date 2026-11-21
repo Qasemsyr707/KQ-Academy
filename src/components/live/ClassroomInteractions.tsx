@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { useParticipants, useRoomContext } from '@livekit/components-react';
-import { RoomEvent, Track, type Participant } from 'livekit-client';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useConnectionState, useRemoteParticipants, useRoomContext } from '@livekit/components-react';
+import { ConnectionState, RoomEvent, Track, type Participant } from 'livekit-client';
 import { Camera, CameraOff, Check, Hand, Mic, MicOff, Monitor, MonitorOff, Share2, ShieldOff, Smile, Users, X } from 'lucide-react';
 import { HostLivePolls } from './LivePolls';
 
@@ -78,6 +78,12 @@ function Reactions({ send }: { send: (msg: ClassSignal) => Promise<void> }) {
 }
 
 /** Student: request to speak, reactions, link sharing, and media tools unlocked by a host only. */
+/** Classroom tools talk over the LiveKit data channel; they appear only once the signal connection really succeeded. */
+export function WhenLiveConnected({ children }: { children: ReactNode }) {
+  const state = useConnectionState();
+  return state === ConnectionState.Connected || state === ConnectionState.Reconnecting ? <>{children}</> : null;
+}
+
 export function StudentClassroomTools({ liveId }: { liveId: string }) {
   const room = useRoomContext();
   const { send, reaction } = useClassEvents();
@@ -132,12 +138,12 @@ export function StudentClassroomTools({ liveId }: { liveId: string }) {
 
 /** Instructor/owner: secure participant permissions + hand-raise queue + classroom sharing. */
 export function HostClassroomTools({ liveId }: { liveId: string }) {
-  const participants = useParticipants();
-  const room = useRoomContext();
+  const remote = useRemoteParticipants();
   const { requests, setRequests, reaction, send } = useClassEvents();
   const [busy, setBusy] = useState('');
   const [notice, setNotice] = useState('');
-  const others = useMemo(() => participants.filter(p => p.identity !== room.localParticipant.identity), [participants, room.localParticipant.identity]);
+  // Attendance = remote participants only; the host (local participant) is never counted.
+  const others = useMemo(() => remote.filter(p => p.identity), [remote]);
   const queued = useMemo(() => Object.values(requests).filter(r => others.some(p => p.identity === r.identity)).sort((a, b) => a.time - b.time), [requests, others]);
   const moderate = async (identity: string, action: 'microphone' | 'camera' | 'screen' | 'revoke') => {
     setBusy(identity); setNotice('');

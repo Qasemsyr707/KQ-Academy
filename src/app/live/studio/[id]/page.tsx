@@ -6,7 +6,7 @@ import '@livekit/components-styles';
 import { ConnectionState } from 'livekit-client';
 import { Loader2, Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, MessageSquare, StopCircle, Radio } from 'lucide-react';
 import { ChatPanel, ConnectionBadge, LiveNotice } from '@/components/live/LiveRoomParts';
-import { HostClassroomTools } from '@/components/live/ClassroomInteractions';
+import { HostClassroomTools, WhenLiveConnected } from '@/components/live/ClassroomInteractions';
 
 type Phase = 'connecting' | 'live' | 'start-failed';
 
@@ -72,7 +72,7 @@ function StudioRoom({ phase, startError, onEnd, liveId }: { phase: Phase; startE
         {deviceError && <p role="alert" style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', padding: '8px 20px', margin: 0 }}>{deviceError}</p>}
         <div style={{ flex: 1, overflow: 'hidden', background: '#000' }} data-lk-theme="default"><VideoConference /></div>
         <RoomAudioRenderer />
-        <HostClassroomTools liveId={liveId} />
+        <WhenLiveConnected><HostClassroomTools liveId={liveId} /></WhenLiveConnected>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 14, padding: 16, background: 'var(--ink-2)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           <button type="button" onClick={() => toggle('mic')} style={round(false, !mic)} aria-label={mic ? 'كتم الميكروفون' : 'تشغيل الميكروفون'}>{mic ? <Mic size={22} /> : <MicOff size={22} />}</button>
           <button type="button" onClick={() => toggle('camera')} style={round(false, !camera)} aria-label={camera ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}>{camera ? <Video size={22} /> : <VideoOff size={22} />}</button>

@@ -301,3 +301,20 @@ test('the signed participant role is host only for a live-class host, and nobody
   assert.equal((await viewer.call()).status, 200);
   assert.equal(viewer.issued[0].options.metadata, 'kq-role:student');
 });
+
+test('the browser-facing LiveKit URL is normalised to a bare wss origin and invalid settings fail closed', () => {
+  const { browserLiveKitUrl } = loadTs('../src/lib/livekit-access.ts', {
+    'livekit-server-sdk': { TrackSource: {}, AccessToken: class {} }, '@/lib/db': { prisma: {} },
+  });
+  const prev = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'production';
+  const origError = console.error; console.error = () => {};
+  try {
+    assert.equal(browserLiveKitUrl('wss://lk.example.invalid'), 'wss://lk.example.invalid');
+    assert.equal(browserLiveKitUrl('wss://lk.example.invalid/'), 'wss://lk.example.invalid');
+    assert.equal(browserLiveKitUrl('https://lk.example.invalid:7880/'), 'wss://lk.example.invalid:7880');
+    for (const bad of ['ws://lk.example.invalid', 'lk.example.invalid', 'wss://u:p@lk.example.invalid', 'wss://lk.example.invalid/?a=1']) {
+      assert.equal(browserLiveKitUrl(bad), null, bad);
+    }
+  } finally { console.error = origError; process.env.NODE_ENV = prev; }
+});
