@@ -79,7 +79,9 @@ export default function LiveStreamsPage() {
                   <div className={`status-badge ${stream.status === 'live' ? 'status-live' : 'status-scheduled'}`}>
                     {stream.status === 'live' ? (
                       <><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor', animation: 'pulse 1.5s infinite' }} /> مباشر الآن</>
-                    ) : stream.status === 'ended' ? (
+                    ) : stream.status === 'cancelled' ? (
+                      <>ملغاة</>
+                    ) : stream.status === 'ended' || stream.status === 'expired' ? (
                       <>انتهت</>
                     ) : (
                       <><Calendar size={14} /> قادمة</>
@@ -125,7 +127,7 @@ export default function LiveStreamsPage() {
                   )}
 
                   <div style={{ marginTop: 'auto' }}>
-                    {stream.instructorId === viewerId && stream.status !== 'ended' ? (
+                    {stream.instructorId === viewerId && (stream.status === 'live' || stream.status === 'upcoming') ? (
                       <button className="btn-join btn-join-live" onClick={() => router.push(`/live/studio/${stream.id}`)}>
                         <Video size={18} /> {stream.status === 'live' ? 'العودة إلى الاستوديو' : 'ابدأ البث من الاستوديو'}
                       </button>
@@ -133,8 +135,8 @@ export default function LiveStreamsPage() {
                       <button className="btn-join btn-join-live" onClick={() => router.push(`/live/room/${stream.id}`)}>
                         <Video size={18} /> انضم للبث الآن
                       </button>
-                    ) : stream.status === 'ended' ? (
-                      <button className="btn-join btn-join-scheduled" disabled>انتهت الجلسة</button>
+                    ) : stream.status !== 'upcoming' ? (
+                      <button className="btn-join btn-join-scheduled" disabled>{stream.status === 'cancelled' ? 'أُلغيت الجلسة' : 'انتهت الجلسة'}</button>
                     ) : (
                       <button className="btn-join btn-join-scheduled" disabled>
                         بانتظار بدء البث <ChevronRight size={18} />

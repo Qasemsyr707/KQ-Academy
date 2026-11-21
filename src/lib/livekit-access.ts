@@ -3,13 +3,14 @@ import { AccessToken, TrackSource, type VideoGrant } from 'livekit-server-sdk';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { isPublicLesson } from '@/lib/lesson-playback';
+import { isExpired } from '@/lib/live-session-rules';
 import { requireRequestUser, RequestUserError, type RequestUser } from '@/lib/request-user';
 
 const privateHeaders = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 const courseSelect = { id: true, instructorId: true, status: true, price: true, priceSYP: true } as const;
 type Course = { id: string; instructorId: string; status: string; price: number; priceSYP: number };
 type RoomReference = { room: string | null } | { liveClassId: string | null };
-type RoomAccess = { room: string; canPublish: boolean; audioOnly?: boolean };
+type RoomAccess = { room: string; canPublish: boolean; audioOnly?: boolean; status?: string };
 
 class LiveKitAccessError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
@@ -35,13 +36,20 @@ async function requireCourseViewer(user: RequestUser, course: Course, isPublic =
 async function liveClassAccess(user: RequestUser, id: string): Promise<RoomAccess> {
   if (!validRoomReference(id)) throw new LiveKitAccessError(400, 'يرجى تحديد جلسة صالحة');
   const liveClass = await prisma.liveClass.findUnique({
-    where: { id }, select: { id: true, instructorId: true, status: true, course: { select: courseSelect } },
+    where: { id }, select: { id: true, instructorId: true, status: true, scheduledAt: true, course: { select: courseSelect } },
   });
   if (!liveClass) throw new LiveKitAccessError(404, 'الجلسة غير موجودة');
+  if (liveClass.status === 'ended') throw new LiveKitAccessError(410, 'انتهت هذه الجلسة');
+  if (liveClass.status === 'cancelled') throw new LiveKitAccessError(410, 'أُلغيت هذه الجلسة');
   if (!['upcoming', 'live'].includes(liveClass.status)) throw new LiveKitAccessError(409, 'هذه الجلسة غير متاحة حالياً');
+  if (isExpired(liveClass)) throw new LiveKitAccessError(410, 'انتهت مهلة هذه الجلسة المجدولة دون أن تبدأ');
   const host = await canHost(user, liveClass.course, liveClass.instructorId);
-  if (!host) await requireCourseViewer(user, liveClass.course);
-  return { room: `live_${liveClass.id}`, canPublish: host };
+  if (!host) {
+    await requireCourseViewer(user, liveClass.course);
+    // Students join only once the host's studio is really connected.
+    if (liveClass.status !== 'live') throw new LiveKitAccessError(425, 'لم يبدأ المدرّب البث بعد');
+  }
+  return { room: `live_${liveClass.id}`, canPublish: host, status: liveClass.status };
 }
 
 async function resolveRoomAccess(user: RequestUser, reference: RoomReference): Promise<RoomAccess> {
@@ -80,14 +88,19 @@ export async function serveLiveKitToken(req: Request, reference: RoomReference) 
     const access = await resolveRoomAccess(user, reference);
     const apiKey = process.env.LIVEKIT_API_KEY;
     const apiSecret = process.env.LIVEKIT_API_SECRET;
-    if (!apiKey?.trim() || !apiSecret?.trim()) throw new LiveKitAccessError(503, 'خدمة البث غير متاحة حالياً');
+    if (!apiKey?.trim() || !apiSecret?.trim() || !process.env.NEXT_PUBLIC_LIVEKIT_URL?.trim()) {
+      // Which setting is missing is logged for the operator, never sent to the browser.
+      console.error('[livekit] not configured: LIVEKIT_API_KEY, LIVEKIT_API_SECRET and NEXT_PUBLIC_LIVEKIT_URL are all required');
+      throw new LiveKitAccessError(503, 'خدمة البث غير مهيأة على الخادم حالياً؛ تواصل مع إدارة المنصة');
+    }
     const token = new AccessToken(apiKey, apiSecret, { identity: user.id, name: user.name || 'مستخدم', ttl: '15m' });
+    // Viewers (canPublish false) may send chat messages (data) but never audio or video.
     const grant: VideoGrant = {
       roomJoin: true, room: access.room, canPublish: access.canPublish, canSubscribe: true, canPublishData: true,
     };
     if (access.audioOnly) grant.canPublishSources = [TrackSource.MICROPHONE];
     token.addGrant(grant);
-    return NextResponse.json({ token: await token.toJwt(), roomName: access.room }, { headers: privateHeaders });
+    return NextResponse.json({ token: await token.toJwt(), roomName: access.room, canPublish: access.canPublish, status: access.status ?? null, serverUrl: process.env.NEXT_PUBLIC_LIVEKIT_URL!.trim() }, { headers: privateHeaders });
   } catch (error) {
     const known = error instanceof RequestUserError || error instanceof LiveKitAccessError;
     if (!known) console.error('Live session authorization failed');

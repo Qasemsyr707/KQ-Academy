@@ -198,6 +198,7 @@ model Lesson {
   chapter     Chapter          @relation(fields: [chapterId], references: [id])
   attachments Attachment[]
   progress    LessonProgress[]
+  liveClass   LiveClass?
 }
 
 model Attachment {
@@ -547,13 +548,21 @@ model LiveClass {
   courseId     String
   isImmediate  Boolean  @default(false)
   scheduledAt  DateTime
-  status       String   @default("upcoming") // upcoming, live, ended
+  status       String   @default("upcoming") // upcoming, live, ended, cancelled
   streamUrl    String?
+  // The course lesson that shows this session in the course player (scheduled from a chapter).
+  lessonId     String?   @unique
+  startedAt    DateTime?
+  endedAt      DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  instructor User   @relation(fields: [instructorId], references: [id], onDelete: Cascade)
-  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructor User    @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson     Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([instructorId, status])
+  @@index([courseId, status])
 }
 
 model StudyRoom {

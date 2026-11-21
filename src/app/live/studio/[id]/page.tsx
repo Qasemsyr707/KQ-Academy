@@ -1,140 +1,84 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  LiveKitRoom,
-  VideoConference,
-  RoomAudioRenderer,
-  useTracks,
-  ParticipantTile,
-  TrackRefContext,
-  useRoomContext,
-} from '@livekit/components-react';
+import { LiveKitRoom, VideoConference, RoomAudioRenderer, useRoomContext, useConnectionState } from '@livekit/components-react';
 import '@livekit/components-styles';
-import { Track } from 'livekit-client';
-import { Radio, Users, StopCircle, Loader2, Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, MessageSquare, X, Send } from 'lucide-react';
+import { ConnectionState } from 'livekit-client';
+import { Loader2, Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, MessageSquare, StopCircle, Radio } from 'lucide-react';
+import { ChatPanel, ConnectionBadge, LiveNotice } from '@/components/live/LiveRoomParts';
 
-function StudioRoom({ onEnd }: { onEnd: () => void }) {
+type Phase = 'connecting' | 'live' | 'start-failed';
+
+async function setStatus(id: string, action: 'start' | 'end') {
+  const res = await fetch(`/api/live/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'تعذّر تحديث حالة الجلسة');
+}
+
+function StudioRoom({ phase, startError, onEnd }: { phase: Phase; startError: string; onEnd: () => Promise<void> }) {
   const room = useRoomContext();
-  const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone, Track.Source.ScreenShare]);
-  const [participantCount, setParticipantCount] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isCameraOff, setIsCameraOff] = useState(false);
-  const [isSharingScreen, setIsSharingScreen] = useState(false);
-  const [chat, setChat] = useState<{ name: string; msg: string; time: string }[]>([]);
-  const [chatMsg, setChatMsg] = useState('');
+  const state = useConnectionState();
+  const [mic, setMic] = useState(true);
+  const [camera, setCamera] = useState(true);
+  const [screen, setScreen] = useState(false);
   const [showChat, setShowChat] = useState(true);
+  const [deviceError, setDeviceError] = useState('');
+  const [ending, setEnding] = useState(false);
 
-  useEffect(() => {
-    const updateCount = () => setParticipantCount(room.numParticipants);
-    room.on('participantConnected', updateCount);
-    room.on('participantDisconnected', updateCount);
-
-    // Listen for chat data messages
-    room.on('dataReceived', (payload: Uint8Array, participant: any) => {
-      try {
-        const decoded = JSON.parse(new TextDecoder().decode(payload));
-        if (decoded.type === 'chat') {
-          setChat(prev => [...prev, { name: participant?.identity || 'مجهول', msg: decoded.msg, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
-        }
-      } catch {}
-    });
-    return () => { room.off('participantConnected', updateCount); room.off('participantDisconnected', updateCount); };
-  }, [room]);
-
-  const toggleMic = async () => { await room.localParticipant.setMicrophoneEnabled(isMuted); setIsMuted(!isMuted); };
-  const toggleCamera = async () => { await room.localParticipant.setCameraEnabled(isCameraOff); setIsCameraOff(!isCameraOff); };
-  const toggleScreen = async () => {
-    if (!isSharingScreen) { await room.localParticipant.setScreenShareEnabled(true); setIsSharingScreen(true); }
-    else { await room.localParticipant.setScreenShareEnabled(false); setIsSharingScreen(false); }
+  const toggle = async (kind: 'mic' | 'camera' | 'screen') => {
+    setDeviceError('');
+    const p = room.localParticipant;
+    try {
+      if (kind === 'mic') { await p.setMicrophoneEnabled(!mic); setMic(!mic); }
+      if (kind === 'camera') { await p.setCameraEnabled(!camera); setCamera(!camera); }
+      if (kind === 'screen') { await p.setScreenShareEnabled(!screen); setScreen(!screen); }
+    } catch (error) {
+      const name = error instanceof Error ? error.name : '';
+      setDeviceError(name === 'NotAllowedError' ? 'رفض المتصفح الوصول؛ اسمح بالكاميرا/الميكروفون/مشاركة الشاشة من إعدادات الموقع.'
+        : name === 'NotFoundError' ? 'لم يُعثر على الجهاز المطلوب.' : 'تعذّر تشغيل الجهاز المطلوب.');
+    }
   };
-
-  const sendChat = async () => {
-    if (!chatMsg.trim()) return;
-    const payload = new TextEncoder().encode(JSON.stringify({ type: 'chat', msg: chatMsg }));
-    await room.localParticipant.publishData(payload, { reliable: true });
-    setChat(prev => [...prev, { name: 'أنت', msg: chatMsg, time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) }]);
-    setChatMsg('');
+  const end = async () => {
+    if (!confirm('إنهاء البث للجميع؟')) return;
+    setEnding(true);
+    await onEnd();
+    setEnding(false);
   };
+  const round = (active: boolean, danger = false) => ({
+    width: 54, height: 54, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center',
+    background: danger ? 'rgba(239,68,68,0.2)' : active ? 'rgba(203,161,83,0.2)' : 'rgba(255,255,255,0.1)',
+    color: danger ? '#ef4444' : active ? 'var(--primary)' : '#fff',
+  });
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--background)', overflow: 'hidden', direction: 'rtl' }}>
-      {/* Video Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Top Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', background: 'var(--ink-2)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', padding: '6px 14px', borderRadius: '999px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 1.5s infinite' }} />
-              <span style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '0.9rem' }}>مباشر</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
-              <Users size={16} />
-              <span>{participantCount} مشاهد</span>
-            </div>
+    <div dir="rtl" className="studio" style={{ display: 'flex', height: '100dvh', background: 'var(--background)', overflow: 'hidden', fontFamily: "'Cairo', sans-serif", color: '#fff' }}>
+      <style>{`@media (max-width: 820px){.studio{flex-direction:column}.studio .live-chat{width:100%!important;height:40dvh}} .studio .lk-control-bar{display:none}`}</style>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '12px 20px', background: 'var(--ink-2)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 999, fontWeight: 'bold', fontSize: '0.85rem',
+              background: phase === 'live' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)', color: phase === 'live' ? '#ef4444' : 'rgba(255,255,255,0.7)' }}>
+              <Radio size={14} /> {phase === 'live' ? 'مباشر الآن' : phase === 'start-failed' ? 'لم يبدأ البث' : 'جاري بدء البث…'}
+            </span>
+            <ConnectionBadge />
           </div>
-          <button onClick={onEnd} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', padding: '8px 18px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'inherit', transition: 'all 0.3s' }}>
-            <StopCircle size={18} /> إنهاء البث
+          <button type="button" onClick={end} disabled={ending} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', color: '#ef4444', padding: '8px 16px', borderRadius: 12, cursor: 'pointer', fontWeight: 'bold', fontFamily: 'inherit' }}>
+            {ending ? <Loader2 size={18} className="kq-spin" /> : <StopCircle size={18} />} إنهاء البث
           </button>
         </div>
-
-        {/* Tracks Grid */}
-        <div style={{ flex: 1, overflow: 'hidden', background: '#000' }}>
-          <VideoConference />
-        </div>
+        {startError && <p role="alert" style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', padding: '10px 20px', margin: 0 }}>{startError}</p>}
+        {state === ConnectionState.Reconnecting && <p role="status" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', padding: '8px 20px', margin: 0 }}>انقطع الاتصال مؤقتاً، تجري إعادة الاتصال تلقائياً…</p>}
+        {deviceError && <p role="alert" style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', padding: '8px 20px', margin: 0 }}>{deviceError}</p>}
+        <div style={{ flex: 1, overflow: 'hidden', background: '#000' }} data-lk-theme="default"><VideoConference /></div>
         <RoomAudioRenderer />
-
-        {/* Controls */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--ink-2)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-          <button onClick={toggleMic} style={{ width: '56px', height: '56px', borderRadius: '50%', border: 'none', background: isMuted ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.1)', color: isMuted ? '#ef4444' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-            {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
-          </button>
-          <button onClick={toggleCamera} style={{ width: '56px', height: '56px', borderRadius: '50%', border: 'none', background: isCameraOff ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.1)', color: isCameraOff ? '#ef4444' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-            {isCameraOff ? <VideoOff size={22} /> : <Video size={22} />}
-          </button>
-          <button onClick={toggleScreen} style={{ width: '56px', height: '56px', borderRadius: '50%', border: 'none', background: isSharingScreen ? 'rgba(203,161,83,0.2)' : 'rgba(255,255,255,0.1)', color: isSharingScreen ? 'var(--primary)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-            {isSharingScreen ? <MonitorOff size={22} /> : <Monitor size={22} />}
-          </button>
-          <button onClick={() => setShowChat(!showChat)} style={{ width: '56px', height: '56px', borderRadius: '50%', border: 'none', background: showChat ? 'rgba(203,161,83,0.2)' : 'rgba(255,255,255,0.1)', color: showChat ? 'var(--primary)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-            <MessageSquare size={22} />
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 14, padding: 16, background: 'var(--ink-2)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <button type="button" onClick={() => toggle('mic')} style={round(false, !mic)} aria-label={mic ? 'كتم الميكروفون' : 'تشغيل الميكروفون'}>{mic ? <Mic size={22} /> : <MicOff size={22} />}</button>
+          <button type="button" onClick={() => toggle('camera')} style={round(false, !camera)} aria-label={camera ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}>{camera ? <Video size={22} /> : <VideoOff size={22} />}</button>
+          <button type="button" onClick={() => toggle('screen')} style={round(screen)} aria-label={screen ? 'إيقاف مشاركة الشاشة' : 'مشاركة الشاشة'}>{screen ? <MonitorOff size={22} /> : <Monitor size={22} />}</button>
+          <button type="button" onClick={() => setShowChat(v => !v)} style={round(showChat)} aria-label="الدردشة"><MessageSquare size={22} /></button>
         </div>
       </div>
-
-      {/* Chat Sidebar */}
-      {showChat && (
-        <div style={{ width: '320px', display: 'flex', flexDirection: 'column', background: 'var(--ink-2)', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><MessageSquare size={18} color="var(--primary)" /> الدردشة المباشرة</span>
-            <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}><X size={18} /></button>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {chat.length === 0 && <p style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '40px', fontSize: '0.9rem' }}>لا توجد رسائل بعد...</p>}
-            {chat.map((m, i) => (
-              <div key={i} style={{ background: m.name === 'أنت' ? 'rgba(203,161,83,0.1)' : 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '12px', border: m.name === 'أنت' ? '1px solid rgba(203,161,83,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: m.name === 'أنت' ? 'var(--primary)' : '#fff' }}>{m.name}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>{m.time}</span>
-                </div>
-                <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', lineHeight: 1.5 }}>{m.msg}</p>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: '8px' }}>
-            <input
-              value={chatMsg}
-              onChange={e => setChatMsg(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && sendChat()}
-              placeholder="اكتب رسالة..."
-              style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#fff', fontFamily: 'inherit', outline: 'none', fontSize: '0.9rem' }}
-            />
-            <button onClick={sendChat} style={{ width: '42px', height: '42px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#000', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Send size={18} />
-            </button>
-          </div>
-        </div>
-      )}
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+      {showChat && <ChatPanel onClose={() => setShowChat(false)} />}
     </div>
   );
 }
@@ -143,61 +87,49 @@ export default function StudioPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [token, setToken] = useState('');
+  const [serverUrl, setServerUrl] = useState('');
   const [error, setError] = useState('');
-  const [connected, setConnected] = useState(false);
+  const [phase, setPhase] = useState<Phase>('connecting');
+  const [startError, setStartError] = useState('');
+  const started = useRef(false);
 
   useEffect(() => {
-    fetch(`/api/live/token?id=${id}`)
-      .then(r => r.json())
-      .then(d => { if (d.token) setToken(d.token); else setError(d.error || 'فشل الحصول على التوكن'); })
-      .catch(() => setError('حدث خطأ في الاتصال'));
+    let cancelled = false;
+    fetch(`/api/live/token?id=${encodeURIComponent(id)}`)
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        if (cancelled) return;
+        if (!ok || !d.token) { setError(d.error || 'تعذّر الحصول على إذن الدخول'); return; }
+        // Only a host gets a publishing token; anyone else watches from the viewer page.
+        if (!d.canPublish) { router.replace(`/live/room/${encodeURIComponent(id)}`); return; }
+        setServerUrl(d.serverUrl); setToken(d.token);
+      })
+      .catch(() => { if (!cancelled) setError('تعذّر الاتصال بالخادم'); });
+    return () => { cancelled = true; };
+  }, [id, router]);
+
+  // LIVE is recorded only after the host really connected to LiveKit, and only once.
+  const onConnected = useCallback(() => {
+    if (started.current) return;
+    started.current = true;
+    setStatus(id, 'start').then(() => { setPhase('live'); setStartError(''); })
+      .catch(e => { setPhase('start-failed'); setStartError(e instanceof Error ? e.message : 'تعذّر بدء البث'); started.current = false; });
   }, [id]);
 
-  const setStatus = useCallback((action: 'start' | 'end') => fetch(`/api/live/${id}`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }),
-  }).catch(() => {}), [id]);
   const handleEnd = useCallback(async () => {
-    await setStatus('end');
-    router.push('/instructor/live/schedule');
-  }, [router, setStatus]);
-  const serverUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+    try { await setStatus(id, 'end'); router.push('/instructor/live'); }
+    catch (e) { setStartError(e instanceof Error ? e.message : 'تعذّر إنهاء البث'); }
+  }, [id, router]);
 
-  if (!serverUrl) return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px', padding: '1rem', textAlign: 'center' }}>
-      <Radio size={48} color="#ef4444" />
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>خدمة البث غير مهيأة</h2>
-      <p style={{ color: 'rgba(255,255,255,0.6)' }}>عنوان خادم LiveKit (NEXT_PUBLIC_LIVEKIT_URL) غير مضبوط على المنصة. تواصل مع الإدارة.</p>
-    </div>
-  );
-
-  if (error) return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
-      <Radio size={48} color="#ef4444" />
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>لا يمكن الوصول للاستوديو</h2>
-      <p style={{ color: 'rgba(255,255,255,0.5)' }}>{error}</p>
-      <button onClick={() => router.back()} style={{ padding: '12px 24px', background: 'var(--primary)', color: '#000', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontFamily: 'inherit' }}>العودة</button>
-    </div>
-  );
-
-  if (!token) return (
-    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
-      <Loader2 size={48} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} />
-      <p style={{ color: 'rgba(255,255,255,0.6)' }}>جاري الاتصال بالاستوديو...</p>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  );
+  if (error) return <LiveNotice title="لا يمكن فتح الاستوديو" message={error}
+    action={<button type="button" className="btn btn-solid" onClick={() => router.push('/instructor/live')}>بثوثي المباشرة</button>} />;
+  if (!token) return <LiveNotice title="جاري تجهيز الاستوديو" message="نتحقق من صلاحيتك ونجهّز اتصال البث…" action={<Loader2 size={40} color="var(--primary)" className="kq-spin" />} />;
 
   return (
-    <LiveKitRoom
-      serverUrl={serverUrl}
-      token={token}
-      connect={true}
-      video={true}
-      audio={true}
-      // The session becomes LIVE only when the host is really connected.
-      onConnected={() => { setConnected(true); void setStatus('start'); }}
-    >
-      <StudioRoom onEnd={handleEnd} />
+    <LiveKitRoom serverUrl={serverUrl} token={token} connect video audio onConnected={onConnected}
+      onError={e => setStartError(`خطأ في الاتصال بخادم البث: ${e.message}`)}
+      onMediaDeviceFailure={() => setStartError('تعذّر الوصول إلى الكاميرا أو الميكروفون؛ اسمح بهما من إعدادات المتصفح.')}>
+      <StudioRoom phase={phase} startError={startError} onEnd={handleEnd} />
     </LiveKitRoom>
   );
 }

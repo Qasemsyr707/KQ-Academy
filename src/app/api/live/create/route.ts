@@ -1,50 +1,22 @@
 import { NextResponse } from 'next/server';
 import { requireRequestUser, RequestUserError } from '@/lib/request-user';
 import { prisma } from '@/lib/db';
+import { createLiveSession, displayStatus, LiveSessionError } from '@/lib/live-sessions';
 
+const noStore = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
+
+/** Create a live session now or for later; optional `chapterId` also adds it to the course player. */
 export async function POST(req: Request) {
   try {
     const actor = await requireRequestUser(req, ['INSTRUCTOR', 'ADMIN', 'OWNER'], 'LIVE_CLASSES');
-    const instructorId = actor.id;
-    const body = await req.json();
-    const { title, description, courseId, scheduledAt, isImmediate, thumbnail } = body;
-
-    if (typeof title !== 'string' || !title.trim() || title.length > 200 || typeof courseId !== 'string' || !courseId) {
-      return NextResponse.json({ error: 'العنوان والكورس مطلوبان' }, { status: 400 });
-    }
-    const when = isImmediate ? new Date() : new Date(scheduledAt);
-    if (Number.isNaN(when.getTime())) return NextResponse.json({ error: 'موعد الجلسة غير صالح' }, { status: 400 });
-
-    const course = await prisma.course.findUnique({ where: { id: courseId } });
-    if (!course || (actor.role === 'INSTRUCTOR' && course.instructorId !== instructorId)) {
-      return NextResponse.json({ error: 'الكورس غير موجود أو لا تملك صلاحية إدارته' }, { status: 403 });
-    }
-    // The host's open-session quota (User.maxLiveStreams, set by administrators).
-    const host = await prisma.user.findUnique({ where: { id: instructorId }, select: { maxLiveStreams: true } });
-    const open = await prisma.liveClass.count({ where: { instructorId, status: { in: ['upcoming', 'live'] } } });
-    if (host && open >= host.maxLiveStreams) {
-      return NextResponse.json({ error: `وصلت إلى الحد الأقصى للجلسات المفتوحة (${host.maxLiveStreams}). أنهِ أو ألغِ جلسة قبل إنشاء أخرى.` }, { status: 409 });
-    }
-
-    const liveClass = await prisma.liveClass.create({
-      data: {
-        title: title.trim(),
-        description: typeof description === 'string' ? description.slice(0, 5000) : null,
-        thumbnail: typeof thumbnail === 'string' && thumbnail.startsWith('https://') ? thumbnail : null,
-        courseId,
-        instructorId,
-        isImmediate: !!isImmediate,
-        scheduledAt: when,
-        // LIVE only once the host's studio has really connected (PATCH /api/live/[id] start).
-        status: 'upcoming',
-      },
-    });
-
-    return NextResponse.json({ success: true, liveClass });
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400, headers: noStore });
+    const liveClass = await createLiveSession(actor, body);
+    return NextResponse.json({ success: true, liveClass }, { status: 201, headers: noStore });
   } catch (error) {
-    if (error instanceof RequestUserError) return NextResponse.json({ error: error.message }, { status: error.status });
-    console.error('Create Live Error:', error);
-    return NextResponse.json({ error: 'Failed to create live class' }, { status: 500 });
+    if (error instanceof RequestUserError || error instanceof LiveSessionError) return NextResponse.json({ error: error.message }, { status: error.status, headers: noStore });
+    console.error('Create Live Error:', error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: 'تعذّر إنشاء جلسة البث' }, { status: 500, headers: noStore });
   }
 }
 
@@ -79,7 +51,8 @@ export async function GET(req: Request) {
       });
     }
 
-    return NextResponse.json({ liveClasses });
+    const now = Date.now();
+    return NextResponse.json({ liveClasses: liveClasses.map((c: { status: string; scheduledAt: Date }) => ({ ...c, status: displayStatus(c, now) })) }, { headers: noStore });
   } catch (error) {
     if (error instanceof RequestUserError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error('Get Live Error:', error);

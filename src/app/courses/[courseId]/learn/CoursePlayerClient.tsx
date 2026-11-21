@@ -95,6 +95,8 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
   // Live Session State
   const [liveToken, setLiveToken] = useState('');
   const [isFetchingToken, setIsFetchingToken] = useState(false);
+  const [liveError, setLiveError] = useState('');
+  const [liveServerUrl, setLiveServerUrl] = useState('');
 
   const router = useRouter();
   const [isLoaded, setIsLoaded] = useState(false);
@@ -167,28 +169,29 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
     }
   }, [activeItem, course.id, isLoaded]);
 
+  // A live lesson joins only while its host is connected (the server answers 425 before that);
+  // the player checks again every 15 s, and shows the server's real reason otherwise.
   useEffect(() => {
-    const fetchLiveToken = async () => {
-      if (!activeItem || !activeItem.isLive || !activeItem.liveRoomName) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    setLiveToken(''); setLiveError(''); setLiveServerUrl('');
+    if (!activeItem || !activeItem.isLive || !activeItem.liveRoomName) return;
+    const load = async () => {
       setIsFetchingToken(true);
       try {
-        const res = await fetch(`/api/livekit/token?room=${activeItem.liveRoomName}&username=Student_${Math.floor(Math.random() * 1000)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setLiveToken(data.token);
-        } else {
-          console.error("Failed to fetch token");
+        const res = await fetch(`/api/livekit/token?room=${encodeURIComponent(activeItem.liveRoomName)}`);
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && data.token) { setLiveToken(data.token); setLiveServerUrl(data.serverUrl || ''); }
+        else {
+          setLiveError(data.error || 'البث المباشر غير متاح حالياً');
+          if (res.status === 425) timer = setTimeout(load, 15_000);
         }
-      } catch (err) {
-        console.error(err);
-      }
-      setIsFetchingToken(false);
+      } catch { if (!cancelled) setLiveError('تعذّر الاتصال بالخادم'); }
+      if (!cancelled) setIsFetchingToken(false);
     };
-
-    setLiveToken('');
-    if (activeItem && activeItem.isLive) {
-      fetchLiveToken();
-    }
+    void load();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
   }, [activeItem]);
 
   const toggleChapter = (chapterId: string, isFree: boolean) => {
@@ -516,7 +519,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                         video={false}
                         audio={false}
                         token={liveToken}
-                        serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+                        serverUrl={liveServerUrl}
                         data-lk-theme="default"
                         style={{ height: '100%' }}
                       >
@@ -527,7 +530,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#fff' }}>
                         <Radio size={48} color="var(--danger, #ef4444)" style={{ marginBottom: '1rem' }} />
                         <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>البث المباشر غير متاح حالياً</h3>
-                        <p style={{ color: 'rgba(255,255,255,0.7)' }}>الرجاء المحاولة لاحقاً أو التأكد من موعد الجلسة</p>
+                        <p style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', padding: '0 1rem' }}>{liveError || 'الرجاء المحاولة لاحقاً أو التأكد من موعد الجلسة'}</p>
                       </div>
                     )}
                   </div>
@@ -708,6 +711,14 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                     {activeItem.type === 'MANUAL_FILE' ? (
                       <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '12px', textAlign: 'center' }}>
                         <h4 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>هذا الاختبار يتطلب تحميل ملف الأسئلة وحله، ثم رفع الإجابة.</h4>
+                        {activeItem.lastFileAttempt && (
+                          <div role="status" style={{ margin: '0 auto 1.5rem', maxWidth: 520, padding: '0.9rem 1rem', borderRadius: 12,
+                            background: activeItem.lastFileAttempt.status === 'PENDING_GRADING' ? 'rgba(203,161,83,0.1)' : activeItem.lastFileAttempt.passed ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
+                            {activeItem.lastFileAttempt.status === 'PENDING_GRADING'
+                              ? 'إجابتك الأخيرة قيد التصحيح لدى المدرّب.'
+                              : `تم تصحيح إجابتك الأخيرة: ${activeItem.lastFileAttempt.score ?? 0} / ${activeItem.totalMarks ?? 100} — ${activeItem.lastFileAttempt.passed ? 'ناجح' : 'لم تجتز الاختبار'}`}
+                          </div>
+                        )}
                         <a href={activeItem.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary)', color: '#000', padding: '1rem 2rem', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none', marginBottom: '2rem' }}>
                           <Download size={20} /> تحميل ملف أسئلة الاختبار
                         </a>
@@ -737,10 +748,12 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                                     if (submitRes.ok) {
                                       setQuizResult({ status: 'PENDING_GRADING' });
                                     } else {
-                                      alert('حدث خطأ أثناء إرسال الاختبار');
+                                      const failure = await submitRes.json().catch(() => ({}));
+                                      alert(failure.error || 'حدث خطأ أثناء إرسال الاختبار');
                                     }
                                   } else {
-                                    alert('حدث خطأ أثناء رفع الملف');
+                                    const failure = await res.json().catch(() => ({}));
+                                    alert(failure.error || 'حدث خطأ أثناء رفع الملف');
                                   }
                                 } catch (error) {
                                   alert('حدث خطأ أثناء الرفع');
@@ -748,7 +761,7 @@ export default function CoursePlayerClient({ course, chapters, hasAccess = false
                                 setIsSubmittingQuiz(false);
                               }}
                               style={{ width: '100%', cursor: 'pointer' }}
-                              accept=".pdf,.doc,.docx,.jpg,.png"
+                              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
                             />
                             {isSubmittingQuiz && <p style={{ marginTop: '1rem', color: 'var(--primary)' }}>جاري الرفع والإرسال...</p>}
                           </div>

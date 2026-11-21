@@ -20,6 +20,8 @@ before(() => {
     originalEnvironment[key] = process.env[key];
     process.env[key] = `test-only-${key.toLowerCase()}`;
   }
+  originalEnvironment.NEXT_PUBLIC_LIVEKIT_URL = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+  process.env.NEXT_PUBLIC_LIVEKIT_URL = 'wss://livekit.example.invalid';
 });
 after(() => {
   for (const [key, value] of Object.entries(originalEnvironment)) {
@@ -122,7 +124,7 @@ test('all token aliases give an enrolled viewer subscription without media publi
     const response = await h.call(route);
     assert.equal(response.status, 200);
     assertPrivate(response);
-    assert.deepEqual(await response.json(), { token: 'test-signed-room-token', roomName: `live_${CLASS.id}` });
+    assert.deepEqual(await response.json(), { token: 'test-signed-room-token', roomName: `live_${CLASS.id}`, canPublish: false, status: 'live', serverUrl: 'wss://livekit.example.invalid' });
     assert.deepEqual(h.issued, [{ options: { identity: USER.id, name: USER.name, ttl: '15m' }, grants: [{
       roomJoin: true, room: `live_${CLASS.id}`, canPublish: false, canSubscribe: true, canPublishData: true,
     }] }]);
@@ -153,10 +155,11 @@ test('a foreign instructor gets no host privileges; a demoted former instructor 
 });
 
 test('ended or unknown live-class states are unavailable even to administrators', async () => {
-  for (const status of ['ended', 'invalid']) {
+  // ended / cancelled are gone for good (410); an unknown state is a conflict (409).
+  for (const [status, code] of [['ended', 410], ['cancelled', 410], ['invalid', 409]]) {
     for (const route of routes) {
       const h = harness({ user: { role: 'ADMIN' }, liveClass: { ...CLASS, status } });
-      assert.equal((await h.call(route)).status, 409);
+      assert.equal((await h.call(route)).status, code);
       assert.deepEqual(h.issued, []);
     }
   }
@@ -242,7 +245,7 @@ test('invalid or missing room references are rejected before database access', a
 });
 
 test('missing LiveKit keys fail closed without development credentials or token creation', async () => {
-  for (const key of ['LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET']) {
+  for (const key of ['LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET', 'NEXT_PUBLIC_LIVEKIT_URL']) {
     const saved = process.env[key];
     try {
       delete process.env[key];
@@ -263,4 +266,27 @@ test('database failures return a safe private error and never mint a token', asy
   assertPrivate(response);
   assert.doesNotMatch(JSON.stringify(await response.json()), /database credentials|internal/);
   assert.deepEqual(h.issued, []);
+});
+
+test('students join only once the host is live; the host may enter an upcoming session early', async () => {
+  for (const route of routes) {
+    const waiting = harness({ enrolled: true, liveClass: { ...CLASS, status: 'upcoming', scheduledAt: new Date() } });
+    const response = await waiting.call(route);
+    assert.equal(response.status, 425, 'host not connected yet');
+    assert.deepEqual(waiting.issued, []);
+    const host = harness({ user: { id: 'teacher-1', role: 'INSTRUCTOR' }, liveClass: { ...CLASS, status: 'upcoming', scheduledAt: new Date() } });
+    assert.equal((await host.call(route)).status, 200);
+    assert.equal(host.issued[0].grants[0].canPublish, true);
+  }
+});
+
+test('an upcoming session past its window is rejected for everyone', async () => {
+  const expired = { ...CLASS, status: 'upcoming', scheduledAt: new Date(Date.now() - 13 * 60 * 60 * 1000) };
+  for (const user of [{ id: 'teacher-1', role: 'INSTRUCTOR' }, { role: 'OWNER' }]) {
+    const h = harness({ user, liveClass: expired });
+    assert.equal((await h.call()).status, 410);
+    assert.deepEqual(h.issued, []);
+  }
+  const viewer = harness({ enrolled: true, liveClass: expired });
+  assert.equal((await viewer.call()).status, 410);
 });
