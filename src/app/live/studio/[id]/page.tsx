@@ -7,6 +7,7 @@ import { ConnectionState } from 'livekit-client';
 import { Loader2, Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, MessageSquare, StopCircle, Radio } from 'lucide-react';
 import { ChatPanel, ConnectionBadge, LiveNotice } from '@/components/live/LiveRoomParts';
 import { HostClassroomTools, WhenLiveConnected } from '@/components/live/ClassroomInteractions';
+import LiveConnectionHelp from '@/components/live/LiveConnectionHelp';
 
 type Phase = 'connecting' | 'live' | 'start-failed';
 
@@ -67,7 +68,7 @@ function StudioRoom({ phase, startError, onEnd, liveId }: { phase: Phase; startE
             {ending ? <Loader2 size={18} className="kq-spin" /> : <StopCircle size={18} />} إنهاء البث
           </button>
         </div>
-        {startError && <p role="alert" style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', padding: '10px 20px', margin: 0 }}>{startError}</p>}
+        {startError && <LiveConnectionHelp message={startError} />}
         {state === ConnectionState.Reconnecting && <p role="status" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', padding: '8px 20px', margin: 0 }}>انقطع الاتصال مؤقتاً، تجري إعادة الاتصال تلقائياً…</p>}
         {deviceError && <p role="alert" style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', padding: '8px 20px', margin: 0 }}>{deviceError}</p>}
         <div style={{ flex: 1, overflow: 'hidden', background: '#000' }} data-lk-theme="default"><VideoConference /></div>

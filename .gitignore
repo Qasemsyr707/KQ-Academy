@@ -44,3 +44,6 @@ next-env.d.ts
 public/uploads
 /.data/bunny-uploads/
 /.data/documents/
+
+# Update/diagnostic packages are never committed
+*.zip
