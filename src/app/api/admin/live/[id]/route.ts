@@ -9,11 +9,14 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
 
     const params = await props.params;
     const { status } = await req.json();
+    if (!['upcoming', 'live', 'ended', 'cancelled'].includes(status)) {
+      return NextResponse.json({ error: 'حالة البث غير صالحة' }, { status: 400 });
+    }
 
     const stream = await prisma.liveClass.update({
       where: { id: params.id },
       data: { status },
-      include: { instructor: { select: { id: true, name: true, email: true } } }
+      include: { instructor: { select: { id: true, name: true } } }
     });
 
     return NextResponse.json({ message: 'تم تحديث حالة البث بنجاح', stream }, { status: 200 });

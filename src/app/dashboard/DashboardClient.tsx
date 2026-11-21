@@ -153,7 +153,7 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
                 {[
                   { href: '/dashboard/wallet', icon: Wallet, color: '#eab308', title: 'محفظتي' },
                   { href: '/features/ai-tutor', icon: Bot, color: '#3b82f6', title: 'المساعد الذكي' },
-                  { href: '/features/live-class', icon: Video, color: '#f43f5e', title: 'بث مباشر' },
+                  { href: '/live', icon: Video, color: '#f43f5e', title: 'بث مباشر' },
                   { href: '/features/study-rooms', icon: Headphones, color: '#a855f7', title: 'غرف الدراسة' },
                   { href: '/courses', icon: BookOpen, color: '#22c55e', title: 'تصفح الكورسات' }
                 ].map((item, idx) => (

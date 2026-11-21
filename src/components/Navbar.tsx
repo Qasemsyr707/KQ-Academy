@@ -37,7 +37,7 @@ const navLinksWithCurriculum = [...baseNavLinks.slice(0, 2), curriculumLink, ...
 
 const advancedLinks = [
   { href: '/verify', label: 'التحقق من شهادة', emoji: '📜' },
-  { href: '/features/live-class', label: 'مركز البث المباشر', emoji: '🎥' },
+  { href: '/live', label: 'مركز البث المباشر', emoji: '🎥' },
   { href: '/features/flashcards', label: 'البطاقات الذكية', emoji: '🃏' },
   { href: '/features/exam', label: 'محاكي الامتحان', emoji: '⏱️' },
   { href: '/features/jobs', label: 'سوق العمل', emoji: '💼' },

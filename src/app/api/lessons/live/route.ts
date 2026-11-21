@@ -30,6 +30,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'الكورس غير موجود أو أنك لا تملك صلاحية إدارته' }, { status: 403 });
     }
 
+    // The chapter must belong to this course: no live lesson inside another instructor's course.
+    const chapter = await prisma.chapter.findUnique({ where: { id: chapterId }, select: { courseId: true } });
+    if (!chapter || chapter.courseId !== courseId) {
+      return NextResponse.json({ error: 'الفصل لا ينتمي إلى هذا الكورس' }, { status: 403 });
+    }
+    const start = new Date(liveStartTime);
+    if (Number.isNaN(start.getTime())) return NextResponse.json({ error: 'موعد البث غير صالح' }, { status: 400 });
+
     // Generate a unique room name for LiveKit
     const liveRoomName = `room-${courseId}-${Date.now()}`;
 
@@ -48,7 +56,7 @@ export async function POST(request: Request) {
         order: newOrder,
         isLive: true,
         liveRoomName,
-        liveStartTime: new Date(liveStartTime),
+        liveStartTime: start,
       }
     });
 

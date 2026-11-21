@@ -9,25 +9,34 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { title, description, courseId, scheduledAt, isImmediate, thumbnail } = body;
 
-    if (!title || !courseId) {
-      return NextResponse.json({ error: 'Missing title or courseId' }, { status: 400 });
+    if (typeof title !== 'string' || !title.trim() || title.length > 200 || typeof courseId !== 'string' || !courseId) {
+      return NextResponse.json({ error: 'العنوان والكورس مطلوبان' }, { status: 400 });
     }
+    const when = isImmediate ? new Date() : new Date(scheduledAt);
+    if (Number.isNaN(when.getTime())) return NextResponse.json({ error: 'موعد الجلسة غير صالح' }, { status: 400 });
 
     const course = await prisma.course.findUnique({ where: { id: courseId } });
     if (!course || (actor.role === 'INSTRUCTOR' && course.instructorId !== instructorId)) {
-      return NextResponse.json({ error: 'Invalid course' }, { status: 403 });
+      return NextResponse.json({ error: 'الكورس غير موجود أو لا تملك صلاحية إدارته' }, { status: 403 });
+    }
+    // The host's open-session quota (User.maxLiveStreams, set by administrators).
+    const host = await prisma.user.findUnique({ where: { id: instructorId }, select: { maxLiveStreams: true } });
+    const open = await prisma.liveClass.count({ where: { instructorId, status: { in: ['upcoming', 'live'] } } });
+    if (host && open >= host.maxLiveStreams) {
+      return NextResponse.json({ error: `وصلت إلى الحد الأقصى للجلسات المفتوحة (${host.maxLiveStreams}). أنهِ أو ألغِ جلسة قبل إنشاء أخرى.` }, { status: 409 });
     }
 
     const liveClass = await prisma.liveClass.create({
       data: {
-        title,
-        description,
-        thumbnail,
+        title: title.trim(),
+        description: typeof description === 'string' ? description.slice(0, 5000) : null,
+        thumbnail: typeof thumbnail === 'string' && thumbnail.startsWith('https://') ? thumbnail : null,
         courseId,
         instructorId,
         isImmediate: !!isImmediate,
-        scheduledAt: isImmediate ? new Date() : new Date(scheduledAt),
-        status: isImmediate ? 'live' : 'upcoming',
+        scheduledAt: when,
+        // LIVE only once the host's studio has really connected (PATCH /api/live/[id] start).
+        status: 'upcoming',
       },
     });
 
@@ -46,7 +55,14 @@ export async function GET(req: Request) {
     const role = user.role;
 
     let liveClasses;
-    if (role === 'INSTRUCTOR') {
+    const visible = { status: { in: ['upcoming', 'live', 'ended'] } };
+    if (role === 'OWNER' || role === 'ADMIN') {
+      liveClasses = await prisma.liveClass.findMany({
+        where: visible, take: 200,
+        include: { instructor: { select: { name: true, image: true } }, course: { select: { title: true } } },
+        orderBy: { scheduledAt: 'desc' },
+      });
+    } else if (role === 'INSTRUCTOR') {
       liveClasses = await prisma.liveClass.findMany({
         where: { instructorId: userId },
         include: { instructor: { select: { name: true, image: true } }, course: { select: { title: true } } },
@@ -57,7 +73,7 @@ export async function GET(req: Request) {
       const enrollments = await prisma.enrollment.findMany({ where: { userId }, select: { courseId: true } });
       const courseIds = enrollments.map((e: any) => e.courseId);
       liveClasses = await prisma.liveClass.findMany({
-        where: { courseId: { in: courseIds } },
+        where: { courseId: { in: courseIds }, ...visible },
         include: { instructor: { select: { name: true, image: true } }, course: { select: { title: true } } },
         orderBy: { scheduledAt: 'asc' },
       });

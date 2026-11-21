@@ -2,27 +2,30 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Video, Calendar, Clock, Radio, Users, ChevronRight } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { useSession } from 'next-auth/react';
 
 export default function LiveStreamsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const viewerId = (session?.user as { id?: string } | undefined)?.id;
+  const [loadError, setLoadError] = useState('');
   const [streams, setStreams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/live/create')
-      .then(res => res.json())
-      .then(data => {
+      .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401) { router.push('/login?callbackUrl=/live'); return; }
+        if (!res.ok) { setLoadError(data.error || 'تعذّر تحميل الجلسات'); return; }
         if (data.liveClasses) setStreams(data.liveClasses);
       })
-      .catch(console.error)
+      .catch(() => setLoadError('تعذّر الاتصال بالخادم'))
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--background)', color: '#fff', direction: 'rtl', fontFamily: "'Cairo', sans-serif" }}>
-      <Navbar />
       <style>{`
         .live-page { max-width: 1200px; margin: 0 auto; padding: 120px 24px 80px; }
         .stream-card { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; overflow: hidden; transition: all 0.3s; position: relative; display: flex; flex-direction: column; height: 100%; }
@@ -53,6 +56,8 @@ export default function LiveStreamsPage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(203,161,83,0.3)', borderTopColor: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
           </div>
+        ) : loadError ? (
+          <div role="alert" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', padding: '24px', textAlign: 'center' }}>{loadError}</div>
         ) : streams.length === 0 ? (
           <div style={{ background: 'var(--ink-2)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '24px', padding: '60px 24px', textAlign: 'center' }}>
             <Radio size={48} color="rgba(255,255,255,0.2)" style={{ margin: '0 auto 20px' }} />
@@ -60,7 +65,7 @@ export default function LiveStreamsPage() {
             <p style={{ color: 'rgba(255,255,255,0.5)' }}>لم يقم المدربون بجدولة أو بدء أي بث مباشر في الكورسات الخاصة بك حتى الآن.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '24px' }}>
             {streams.map(stream => (
               <div key={stream.id} className="stream-card">
                 <div className="stream-thumb">
@@ -74,8 +79,10 @@ export default function LiveStreamsPage() {
                   <div className={`status-badge ${stream.status === 'live' ? 'status-live' : 'status-scheduled'}`}>
                     {stream.status === 'live' ? (
                       <><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor', animation: 'pulse 1.5s infinite' }} /> مباشر الآن</>
+                    ) : stream.status === 'ended' ? (
+                      <>انتهت</>
                     ) : (
-                      <><Calendar size={14} /> مجدول</>
+                      <><Calendar size={14} /> قادمة</>
                     )}
                   </div>
                 </div>
@@ -118,10 +125,16 @@ export default function LiveStreamsPage() {
                   )}
 
                   <div style={{ marginTop: 'auto' }}>
-                    {stream.status === 'live' ? (
+                    {stream.instructorId === viewerId && stream.status !== 'ended' ? (
+                      <button className="btn-join btn-join-live" onClick={() => router.push(`/live/studio/${stream.id}`)}>
+                        <Video size={18} /> {stream.status === 'live' ? 'العودة إلى الاستوديو' : 'ابدأ البث من الاستوديو'}
+                      </button>
+                    ) : stream.status === 'live' ? (
                       <button className="btn-join btn-join-live" onClick={() => router.push(`/live/room/${stream.id}`)}>
                         <Video size={18} /> انضم للبث الآن
                       </button>
+                    ) : stream.status === 'ended' ? (
+                      <button className="btn-join btn-join-scheduled" disabled>انتهت الجلسة</button>
                     ) : (
                       <button className="btn-join btn-join-scheduled" disabled>
                         بانتظار بدء البث <ChevronRight size={18} />
@@ -134,7 +147,6 @@ export default function LiveStreamsPage() {
           </div>
         )}
       </div>
-      <Footer />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
     </div>
   );

@@ -153,10 +153,22 @@ export default function StudioPage() {
       .catch(() => setError('حدث خطأ في الاتصال'));
   }, [id]);
 
+  const setStatus = useCallback((action: 'start' | 'end') => fetch(`/api/live/${id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }),
+  }).catch(() => {}), [id]);
   const handleEnd = useCallback(async () => {
-    await fetch(`/api/live/${id}/end`, { method: 'PATCH' }).catch(() => {});
-    router.push('/dashboard/instructor/live');
-  }, [id, router]);
+    await setStatus('end');
+    router.push('/instructor/live/schedule');
+  }, [router, setStatus]);
+  const serverUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
+
+  if (!serverUrl) return (
+    <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px', padding: '1rem', textAlign: 'center' }}>
+      <Radio size={48} color="#ef4444" />
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>خدمة البث غير مهيأة</h2>
+      <p style={{ color: 'rgba(255,255,255,0.6)' }}>عنوان خادم LiveKit (NEXT_PUBLIC_LIVEKIT_URL) غير مضبوط على المنصة. تواصل مع الإدارة.</p>
+    </div>
+  );
 
   if (error) return (
     <div style={{ minHeight: '100vh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexDirection: 'column', gap: '16px' }}>
@@ -177,12 +189,13 @@ export default function StudioPage() {
 
   return (
     <LiveKitRoom
-      serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+      serverUrl={serverUrl}
       token={token}
       connect={true}
       video={true}
       audio={true}
-      onConnected={() => setConnected(true)}
+      // The session becomes LIVE only when the host is really connected.
+      onConnected={() => { setConnected(true); void setStatus('start'); }}
     >
       <StudioRoom onEnd={handleEnd} />
     </LiveKitRoom>
