@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { assertOwnedDocumentReference } from '@/lib/owned-document';
+import { PrivateFileError } from '@/lib/private-file-storage';
 import { prisma } from '@/lib/db';
 import { getCourseViewer, managesCourse } from '@/lib/course-access';
 import { requireRequestUser, RequestUserError } from '@/lib/request-user';
@@ -7,7 +9,7 @@ import { ExamError, parseQuestions, parseSettings, passingPercent, QUIZ_CONTEXT_
 const headers = { 'Cache-Control': 'private, no-store', 'CDN-Cache-Control': 'no-store', Vary: 'Cookie, Authorization' };
 
 function fail(error: unknown) {
-  if (error instanceof ExamError || error instanceof RequestUserError) return NextResponse.json({ error: error.message }, { status: error.status, headers });
+  if (error instanceof ExamError || error instanceof RequestUserError || error instanceof PrivateFileError) return NextResponse.json({ error: error.message }, { status: error.status, headers });
   if (error instanceof SyntaxError) return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400, headers });
   console.error('[quiz]', error);
   return NextResponse.json({ error: 'خطأ في الخادم' }, { status: 500, headers });
@@ -66,15 +68,24 @@ async function managedQuiz(req: Request, id: string) {
 export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await props.params;
-    const { quiz } = await managedQuiz(req, id);
+    const { user, quiz } = await managedQuiz(req, id);
     const body = await req.json();
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new ExamError(400, 'بيانات غير صالحة');
     const questions = body.questions === undefined ? null : parseQuestions(body.questions);
     if (questions && quiz.type !== 'AUTOMATIC') throw new ExamError(400, 'لا يمكن إضافة أسئلة اختيار من متعدد لاختبار ملف');
+    // A file quiz may replace its document (the instructor's own upload) and change its maximum mark.
+    let fileUrl: string | undefined;
+    if (quiz.type === 'MANUAL_FILE' && body.fileUrl !== undefined && body.fileUrl !== quiz.fileUrl) {
+      if (typeof body.fileUrl !== 'string' || !body.fileUrl) throw new ExamError(400, 'يجب رفع ملف الاختبار');
+      await assertOwnedDocumentReference(user, body.fileUrl);
+      fileUrl = body.fileUrl;
+    }
+    const fileMarks = body.totalMarks === undefined ? (quiz.totalMarks ?? 100) : Number(body.totalMarks);
+    if (quiz.type === 'MANUAL_FILE' && (!Number.isFinite(fileMarks) || fileMarks <= 0 || fileMarks > 1000)) throw new ExamError(400, 'العلامة القصوى يجب أن تكون بين 1 و1000');
     const total = questions ? questions.reduce((sum, q) => sum + q.points, 0)
       : quiz.type === 'AUTOMATIC'
         ? (await prisma.question.aggregate({ where: { quizId: id }, _sum: { points: true } }))._sum.points ?? 0
-        : quiz.totalMarks ?? 100;
+        : fileMarks;
     if (quiz.type === 'AUTOMATIC' && total <= 0) throw new ExamError(400, 'أضف سؤالاً واحداً على الأقل');
     const settings = parseSettings(body, total);
     const requiredSince = settings.requiredForCertificate
@@ -85,7 +96,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         await tx.question.deleteMany({ where: { quizId: id } });
         await tx.question.createMany({ data: questions.map(q => ({ quizId: id, text: q.text, options: JSON.stringify(q.options), correctAnswer: q.correctAnswer, points: q.points })) });
       }
-      await tx.quiz.update({ where: { id }, data: { ...settings, requiredSince } });
+      await tx.quiz.update({ where: { id }, data: { ...settings, requiredSince, ...(fileUrl ? { fileUrl } : {}) } });
     });
     return NextResponse.json({ success: true }, { headers });
   } catch (error) { return fail(error); }

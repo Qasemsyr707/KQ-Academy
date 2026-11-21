@@ -51,6 +51,15 @@ export default async function CourseLearnPage(props: { params: Promise<{ courseI
   const attemptCounts = new Map((await prisma.quizAttempt.groupBy({
     by: ['quizId'], where: { userId: viewer.id, quizId: { in: allQuizIds } }, _count: { _all: true },
   })).map(row => [row.quizId, row._count._all]));
+  // File quizzes: the student's latest submission (pending grading, or graded with its result).
+  const fileQuizIds = [...course.chapters.flatMap(c => c.quizzes), ...course.finalExams].filter(q => q.type === 'MANUAL_FILE').map(q => q.id);
+  const lastFileAttempt = new Map<string, { status: string; score: number | null; passed: boolean; at: string }>();
+  if (fileQuizIds.length) {
+    for (const row of await prisma.quizAttempt.findMany({
+      where: { userId: viewer.id, quizId: { in: fileQuizIds } }, orderBy: { createdAt: 'desc' },
+      select: { quizId: true, status: true, score: true, passed: true, createdAt: true },
+    })) if (!lastFileAttempt.has(row.quizId)) lastFileAttempt.set(row.quizId, { status: row.status, score: row.score, passed: row.passed, at: row.createdAt.toISOString() });
+  }
   type PlayerQuiz = (typeof course.chapters)[number]['quizzes'][number] | (typeof course.finalExams)[number];
   // What the student sees of a quiz: questions without answers, its rules, and their attempts.
   const playerQuiz = (quiz: PlayerQuiz, readable: boolean) => {
@@ -59,6 +68,7 @@ export default async function CourseLearnPage(props: { params: Promise<{ courseI
       isRequirement: isCertificateRequirement(quiz, enrolledAt ?? new Date()),
       requiredForCertificate: quiz.requiredForCertificate, passingPercent: passingPercent(quiz),
       maxAttempts: quiz.maxAttempts, attemptsUsed: attemptCounts.get(quiz.id) ?? 0, instructions: quiz.instructions,
+      lastFileAttempt: lastFileAttempt.get(quiz.id) ?? null,
     };
     if (!readable) return meta;
     return { ...meta, fileUrl: quiz.fileUrl, totalMarks: quiz.scoringVersion >= 2 ? quiz.totalMarks : 100, questions: quiz.questions };

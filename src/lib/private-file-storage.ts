@@ -1,5 +1,5 @@
 import { constants } from 'node:fs';
-import { lstat, mkdir, open, realpath, rename } from 'node:fs/promises';
+import { access, lstat, mkdir, open, realpath, rename } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 
@@ -233,5 +233,22 @@ export async function recordLegacyImageOwner(id: string, ownerId: string): Promi
     const parent = path.dirname(current);
     if (parent === current) break;
     current = parent;
+  }
+}
+
+/**
+ * Whether quiz and lesson documents can be stored now: DOCUMENT_STORAGE_DIR is set (absolute in
+ * production), private (outside the app, public files and Bunny uploads) and writable. The path
+ * itself is not returned. A container without this volume would lose every document on redeploy.
+ */
+export async function documentStorageStatus(): Promise<{ ready: boolean; message: string | null }> {
+  try {
+    const directory = await baseDirectory(true);
+    if (!directory) return { ready: false, message: 'مسار تخزين المستندات غير متاح' };
+    await access(directory, constants.W_OK);
+    return { ready: true, message: null };
+  } catch (error) {
+    if (error instanceof PrivateFileError) return { ready: false, message: error.message };
+    return { ready: false, message: 'مسار تخزين المستندات (DOCUMENT_STORAGE_DIR) غير قابل للكتابة على الخادم' };
   }
 }

@@ -21,7 +21,8 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
     return NextResponse.json({ quiz: {
       id: quiz.id, title: quiz.title, kind: quiz.kind, type: quiz.type, instructions: quiz.instructions,
       isPublished: quiz.isPublished, requiredForCertificate: quiz.requiredForCertificate, maxAttempts: quiz.maxAttempts,
-      passingPercent: passingPercent(quiz),
+      passingPercent: passingPercent(quiz), fileUrl: quiz.type === 'MANUAL_FILE' ? quiz.fileUrl : null, totalMarks: quiz.totalMarks,
+      courseId: quizCourse(quiz).id,
       questions: quiz.questions.map(q => ({ ...q, options: (() => { try { return JSON.parse(q.options); } catch { return []; } })() })),
     } }, { headers });
   } catch (error) {

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, FileEdit, Plus, Award, BarChart3, Trash2, Pencil, EyeOff, ShieldCheck } from 'lucide-react';
+import { ArrowRight, FileEdit, Plus, Award, BarChart3, Trash2, Pencil, EyeOff, ShieldCheck, FileUp, Sparkles, AlertTriangle } from 'lucide-react';
 import QuizEditor, { type EditorTarget } from './QuizEditor';
 
 export type QuizSummary = {
@@ -11,7 +11,7 @@ export type QuizSummary = {
   passingPercent: number; questions: number; attempts: number;
 };
 export type CourseExams = {
-  id: string; title: string; status: string;
+  id: string; title: string; status: string; ownCourse?: boolean;
   chapters: { id: string; title: string; quizzes: QuizSummary[] }[];
   finalExam: QuizSummary | null;
 };
@@ -28,9 +28,14 @@ const badge = (on: boolean, yes: string, no: string, color: string) => (
   </span>
 );
 
-export default function QuizzesListClient({ courses }: { courses: CourseExams[] }) {
+export default function QuizzesListClient({ courses, storage, staff = false, openFileQuiz = false }: {
+  courses: CourseExams[]; storage: { ready: boolean; message: string | null }; staff?: boolean; openFileQuiz?: boolean;
+}) {
   const router = useRouter();
-  const [editor, setEditor] = useState<EditorTarget | null>(null);
+  const fileQuiz = (courseId?: string, chapterId?: string, context = ''): EditorTarget =>
+    ({ mode: 'create', kind: 'CHAPTER', type: 'MANUAL_FILE', courseId, chapterId, context: context || 'اختبار بملف' });
+  const [editor, setEditor] = useState<EditorTarget | null>(openFileQuiz && courses.length ? fileQuiz() : null);
+  const pickerCourses = courses.map(c => ({ id: c.id, title: c.title, chapters: c.chapters.map(ch => ({ id: ch.id, title: ch.title })) }));
   const [results, setResults] = useState<Results | null>(null);
   const [message, setMessage] = useState('');
 
@@ -76,7 +81,8 @@ export default function QuizzesListClient({ courses }: { courses: CourseExams[] 
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <Link href="/instructor/quizzes/submissions" className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FileEdit size={18} /> تصحيح اختبارات الملفات</Link>
-          <Link href="/instructor/quizzes/create" className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Plus size={18} /> اختبار بملف</Link>
+          <button type="button" className="btn" disabled={!courses.length} onClick={() => setEditor(fileQuiz())} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FileUp size={18} /> اختبار بملف</button>
+          <Link href="/instructor/quizzes/ai" className="btn btn-solid" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles size={18} /> توليد اختبار بالذكاء الاصطناعي</Link>
         </div>
       </div>
       <p style={{ opacity: 0.75, marginBottom: '1.5rem', lineHeight: 1.8 }}>
@@ -85,16 +91,26 @@ export default function QuizzesListClient({ courses }: { courses: CourseExams[] 
       </p>
       <p role="status" aria-live="polite" style={{ minHeight: '1.4em', color: 'var(--gold-300)' }}>{message}</p>
 
-      {courses.length === 0 && <p>لا توجد كورسات بعد. أنشئ كورساً لإضافة الاختبارات.</p>}
+      {!storage.ready && (
+        <p role="alert" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', color: '#fca5a5', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, padding: '0.75rem 1rem', marginBottom: '1rem' }}>
+          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: 3 }} /> اختبارات الملفات غير متاحة حتى يُضبط تخزين المستندات على الخادم: {storage.message}
+        </p>
+      )}
+      {courses.length === 0 && (
+        <p style={{ lineHeight: 1.9 }}>{staff ? 'لا توجد كورسات على المنصة بعد.' : 'لا يوجد كورس مسجّل باسم حسابك كمدرّب.'} <Link href="/instructor/courses/create" style={{ color: 'var(--primary)' }}>أنشئ كورساً</Link> لإضافة الاختبارات.</p>
+      )}
       {courses.map(course => (
         <section key={course.id} style={{ background: 'var(--ink-3)', borderRadius: 18, padding: 'clamp(1rem, 3vw, 1.5rem)', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>{course.title}</h2>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>{course.title}{staff && course.ownCourse === false ? <small style={{ opacity: 0.6, fontSize: '0.8rem' }}> • مدرّب آخر</small> : null}</h2>
           {course.chapters.length === 0 && <p style={{ opacity: 0.7 }}>أضف فصولاً للكورس أولاً.</p>}
           {course.chapters.map(chapter => (
             <div key={chapter.id} style={{ marginBottom: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <h3 style={{ fontSize: '1rem', opacity: 0.9 }}>{chapter.title}</h3>
-                <button type="button" className="btn" onClick={() => setEditor({ mode: 'create', kind: 'CHAPTER', chapterId: chapter.id, courseId: course.id, context: chapter.title })}><Plus size={16} /> اختبار نهاية الفصل</button>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button type="button" className="btn" onClick={() => setEditor({ mode: 'create', kind: 'CHAPTER', chapterId: chapter.id, courseId: course.id, context: chapter.title })}><Plus size={16} /> اختبار نهاية الفصل</button>
+                  <button type="button" className="btn" onClick={() => setEditor(fileQuiz(course.id, chapter.id, chapter.title))}><FileUp size={16} /> اختبار بملف</button>
+                </div>
               </div>
               <div style={{ display: 'grid', gap: 8 }}>{chapter.quizzes.length ? chapter.quizzes.map(row) : <p style={{ fontSize: '0.85rem', opacity: 0.55 }}>لا يوجد اختبار لهذا الفصل.</p>}</div>
             </div>
@@ -109,7 +125,7 @@ export default function QuizzesListClient({ courses }: { courses: CourseExams[] 
         </section>
       ))}
 
-      {editor && <QuizEditor target={editor} onClose={saved => { setEditor(null); if (saved) { setMessage('تم حفظ الاختبار'); router.refresh(); } }} />}
+      {editor && <QuizEditor target={editor} courses={pickerCourses} storage={storage} onClose={saved => { setEditor(null); if (saved) { setMessage('تم حفظ الاختبار'); router.refresh(); } }} />}
 
       {results && (
         <div role="dialog" aria-modal="true" aria-label="نتائج الاختبار" onClick={() => setResults(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'grid', placeItems: 'center', padding: '1rem', zIndex: 50 }}>

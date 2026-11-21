@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       if (typeof body.fileUrl !== 'string' || !body.fileUrl) throw new ExamError(400, 'يجب رفع ملف الاختبار');
       await assertOwnedDocumentReference(user, body.fileUrl);
     }
-    const total = type === 'AUTOMATIC' ? questions.reduce((sum, q) => sum + q.points, 0) : Number(body.totalMarks) > 0 ? Number(body.totalMarks) : 100;
+    const total = type === 'AUTOMATIC' ? questions.reduce((sum, q) => sum + q.points, 0) : Number(body.totalMarks) > 0 && Number(body.totalMarks) <= 1000 ? Number(body.totalMarks) : 100;
     // Older clients sent a pass mark in points ("passingScore"); the form now sends a percentage.
     if (body.passingPercent === undefined && body.passingScore !== undefined && total > 0) {
       body.passingPercent = Math.min(100, Math.max(1, Math.round(Number(body.passingScore) / total * 100)));
