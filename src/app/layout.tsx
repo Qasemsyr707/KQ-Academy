@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import MotionLayer from '@/components/motion/MotionLayer';
+import ReferralCapture from '@/components/referral/ReferralCapture';
 import { serializeJsonLd } from '@/lib/safe-json-ld';
 import { curriculumHidden } from '@/lib/catalogue-visibility';
 
@@ -123,6 +124,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <MotionLayer />
+          <ReferralCapture />
         </AuthProvider>
         <WhatsAppButton />
       </body>

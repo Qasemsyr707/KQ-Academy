@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { Globe } from 'lucide-react';
 import BrandLogo from '@/components/ui/BrandLogo';
 import styles from './Footer.module.css';
+import SocialLinks from '@/components/social/SocialLinks';
 import { curriculumHidden } from '@/lib/catalogue-visibility';
 
 const footerLinks = [
@@ -64,12 +65,6 @@ const footerLinks = [
   },
 ];
 
-const socialLinks = [
-  { label: 'فيسبوك', href: 'https://www.facebook.com/profile.php?id=61594346671502', external: true },
-  { label: 'تويتر', href: '#', external: false },
-  { label: 'انستغرام', href: '#', external: false },
-  { label: 'يوتيوب', href: '#', external: false },
-];
 
 /** Server component — no client JavaScript is shipped for the footer. */
 export default function Footer() {
@@ -86,19 +81,8 @@ export default function Footer() {
             <p className={styles.tagline}>
               منصة تعليم إلكتروني تجمع المعرفة والمهارات العملية في مكان واحد.
             </p>
-            <ul className={styles.socials} aria-label="حساباتنا على وسائل التواصل">
-              {socialLinks.map(social => (
-                <li key={social.label}>
-                  <a
-                    href={social.href}
-                    className={styles.social}
-                    {...(social.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  >
-                    {social.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            {/* Official links managed in /admin/social; nothing is shown until a real link exists. */}
+            <SocialLinks className={styles.socials} linkClassName={styles.social} />
           </div>
 
           <div className={styles.columns}>

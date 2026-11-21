@@ -1,3 +1,4 @@
+import { recordReferralCommission } from '@/lib/referrals';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { PaymentFactory } from './PaymentFactory';
@@ -93,6 +94,8 @@ export async function handlePaymentWebhook(req: Request, provider: string) {
         where: { userId_courseId: { userId: expected.userId, courseId: expected.courseId } },
         update: {}, create: { userId: expected.userId, courseId: expected.courseId, progress: 0 },
       });
+      // Gateway-verified payment: the referrer's commission (once per payment).
+      await recordReferralCommission(tx, { sourceKey: `payment:${payment.id}`, buyerId: expected.userId, amount: expected.amountMinor / 100, currency: expected.currency, courseId: expected.courseId });
     });
     // After the payment is committed; the dedupe key makes a repeated delivery harmless,
     // and a notification problem must never make the gateway retry a paid order.

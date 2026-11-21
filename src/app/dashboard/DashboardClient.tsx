@@ -12,7 +12,8 @@ export default function DashboardClient({ enrollments, points }: { enrollments: 
   const { data: session } = useSession();
   
   const firstName = session?.user?.name?.split(' ')[0] || 'طالبنا العزيز';
-  const isAdmin = (session?.user as any)?.role === 'ADMIN';
+  // OWNER, or an ADMIN with the dashboard permission (display only; /admin checks the database).
+  const isAdmin = (session?.user as any)?.canAdmin === true || (session?.user as any)?.role === 'OWNER';
 
   const displayCourses = enrollments.length > 0 ? enrollments : [];
   

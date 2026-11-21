@@ -92,7 +92,7 @@ async function startCheckout(req: Request, channel: 'web' | 'mobile') {
     const existing = await tx.payment.findUnique({ where: { id: paymentId } });
     if (existing) return { enrolled: false as const, created: false, payment: existing };
     const payment = await tx.payment.create({ data: {
-      id: paymentId, amount, paymentMethod: provider, provider, userId: user.id,
+      id: paymentId, amount, paymentMethod: provider, provider, userId: user.id, currency,
       courseId, couponId, receiptImage, status: 'PENDING', providerResponse: JSON.stringify(context),
     } });
     if (provider === 'MANUAL') {

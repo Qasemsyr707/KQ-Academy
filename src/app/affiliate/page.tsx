@@ -13,8 +13,12 @@ export default function AffiliatePage() {
 
   useEffect(() => {
     fetch('/api/affiliate/stats')
-      .then(r => r.json())
-      .then(d => { setStats(d); setLoading(false); });
+      .then(async r => {
+        if (r.status === 401) { window.location.href = '/login?callbackUrl=/affiliate'; return; }
+        setStats(r.ok ? await r.json() : null);
+      })
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const copyLink = () => {
@@ -45,9 +49,9 @@ export default function AffiliatePage() {
 
   const statCards = [
     { icon: Users, label: 'إجمالي الإحالات', value: stats?.totalReferrals || 0, color: '#3b82f6', suffix: 'شخص' },
-    { icon: DollarSign, label: 'إجمالي الأرباح', value: `$${(stats?.totalEarned || 0).toFixed(2)}`, color: '#22c55e', suffix: '' },
-    { icon: Clock, label: 'أرباح معلقة', value: `$${(stats?.pendingEarnings || 0).toFixed(2)}`, color: '#CBA153', suffix: '' },
-    { icon: Wallet, label: 'تم صرفها', value: `$${(stats?.paidEarnings || 0).toFixed(2)}`, color: '#a855f7', suffix: '' },
+    { icon: Clock, label: 'قيد مراجعة الإدارة', value: `$${(stats?.pendingEarnings || 0).toFixed(2)}`, color: '#CBA153', suffix: '' },
+    { icon: DollarSign, label: 'معتمدة وجاهزة للتحويل', value: `$${(stats?.claimable || 0).toFixed(2)}`, color: '#22c55e', suffix: '' },
+    { icon: Wallet, label: 'حُوّلت إلى محفظتك', value: `$${(stats?.paidEarnings || 0).toFixed(2)}`, color: '#a855f7', suffix: '' },
   ];
 
   return (
@@ -61,7 +65,9 @@ export default function AffiliatePage() {
             <h1 style={{ fontSize: '2.5rem', fontWeight: 900, margin: 0 }}>برنامج الإحالة</h1>
           </div>
           <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-            شارك رابطك الخاص واكسب <strong style={{ color: '#CBA153' }}>10%</strong> عمولة عن كل عملية شراء يقوم بها أصدقاؤك!
+            {stats?.commissionPercent > 0
+              ? <>شارك رابطك الخاص واحصل على <strong style={{ color: '#CBA153' }}>{stats.commissionPercent}%</strong> عمولة عن كل عملية شراء مؤكدة يقوم بها من سجّل عبر رابطك. تُراجَع العمولة ثم تُحوَّل إلى محفظتك.</>
+              : <>برنامج العمولات متوقف مؤقتاً. يبقى رابطك يعمل لتسجيل من تدعوهم.</>}
           </p>
         </div>
 
@@ -98,24 +104,24 @@ export default function AffiliatePage() {
         </div>
 
         {/* Claim Earnings CTA */}
-        {(stats?.pendingEarnings || 0) > 0 && (
+        {(stats?.claimable || 0) > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
             <div>
-              <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1.1rem' }}>💰 لديك أرباح معلقة!</p>
-              <p style={{ margin: '0.25rem 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>اضغط لتحويل أرباحك إلى محفظتك الداخلية فوراً</p>
+              <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1.1rem' }}>لديك أرباح معتمدة</p>
+              <p style={{ margin: '0.25rem 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>حوّلها إلى رصيد محفظتك بالدولار</p>
             </div>
             <button onClick={claimEarnings} disabled={claiming}
               style={{ padding: '0.875rem 2rem', background: '#22c55e', color: '#000', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: claiming ? 0.7 : 1 }}>
               <ArrowUpRight size={18} />
-              {claiming ? 'جاري التحويل...' : `تحويل $${(stats?.pendingEarnings || 0).toFixed(2)} للمحفظة`}
+              {claiming ? 'جاري التحويل...' : `تحويل $${(stats?.claimable || 0).toFixed(2)} للمحفظة`}
             </button>
           </motion.div>
         )}
 
         {claimMsg && (
           <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', borderRadius: '12px', padding: '1rem 1.5rem', marginBottom: '2rem', color: '#22c55e' }}>
-            ✅ {claimMsg}
+            {claimMsg}
           </div>
         )}
 
@@ -153,9 +159,9 @@ export default function AffiliatePage() {
         <div style={{ marginTop: '3rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
           {[
             { step: '١', title: 'انسخ رابطك', desc: 'انسخ الرابط الخاص بك أعلاه وشاركه مع أصدقائك عبر أي وسيلة.' },
-            { step: '٢', title: 'صديقك يشتري', desc: 'عندما ينضم صديقك عبر رابطك ويشتري أي كورس أو حزمة.' },
-            { step: '٣', title: 'اكسب 10%', desc: 'تحصل فوراً على 10% من قيمة كل عملية شراء في رصيد إحالتك.' },
-            { step: '٤', title: 'اسحب للمحفظة', desc: 'حوّل أرباحك إلى محفظتك الداخلية متى أردت واستخدمها للشراء أو السحب.' },
+            { step: '٢', title: 'صديقك يسجّل ويشتري', desc: 'يُنسب إليك من ينشئ حسابه عبر رابطك، ثم يشتري كورساً أو حزمة بدفع مؤكد.' },
+            { step: '٣', title: 'تُسجَّل عمولتك', desc: 'تُحسب العمولة بالنسبة المعتمدة من قيمة الدفع المؤكد، وتراجعها الإدارة.' },
+            { step: '٤', title: 'حوّلها للمحفظة', desc: 'بعد اعتمادها، حوّل أرباحك إلى محفظتك الداخلية واستخدمها في الشراء.' },
           ].map((item, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '1.5rem', textAlign: 'center' }}>
@@ -166,6 +172,22 @@ export default function AffiliatePage() {
           ))}
         </div>
 
+        {stats?.earnings?.length > 0 && (
+          <div style={{ marginTop: '2rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'auto' }}>
+            <h3 style={{ margin: 0, padding: '1.5rem' }}>سجل العمولات</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+              <thead><tr><th style={{ padding: '0.75rem 1.5rem' }}>التاريخ</th><th>قيمة الشراء</th><th>العمولة</th><th>الحالة</th></tr></thead>
+              <tbody>{stats.earnings.map((e: any) => (
+                <tr key={e.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <td style={{ padding: '0.75rem 1.5rem' }}>{new Date(e.createdAt).toLocaleDateString('ar')}</td>
+                  <td>{e.baseAmount != null ? `${e.baseAmount} ${e.baseCurrency === 'SYP' ? 'ل.س' : '$'}` : '—'}</td>
+                  <td>${Number(e.amount).toFixed(2)}{e.ratePercent ? ` (${e.ratePercent}%)` : ''}</td>
+                  <td>{({ PENDING: 'قيد المراجعة', APPROVED: 'معتمدة', PAID: 'حُوّلت للمحفظة', REVERSED: 'أُلغيت' } as Record<string, string>)[e.status] ?? e.status}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
       </motion.div>
     </div>
   );

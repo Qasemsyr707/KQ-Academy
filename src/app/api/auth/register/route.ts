@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { notifySafely } from '@/lib/notifications';
+import { resolveReferrer } from '@/lib/referrals';
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, ref } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'الرجاء ملء جميع الحقول' }, { status: 400 });
@@ -28,11 +29,14 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create User
+    // Referral attribution happens once, here, from a valid code that is not the new user's own.
+    const referredById = await resolveReferrer(prisma, ref, String(email)).catch(() => null);
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        ...(referredById ? { referredById } : {}),
       }
     });
 

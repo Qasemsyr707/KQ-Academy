@@ -21,7 +21,7 @@ type NotificationItem = {
   createdAt: string;
 };
 
-type SessionUserWithRole = { role?: string };
+type SessionUserWithRole = { role?: string; canAdmin?: boolean };
 
 const baseNavLinks = [
   { href: '/', label: 'الرئيسية', icon: Home },
@@ -213,8 +213,10 @@ export default function Navbar({ showCurriculum = false }: { showCurriculum?: bo
     };
   }, [drawerOpen]);
 
-  const role = (session?.user as SessionUserWithRole | undefined)?.role;
-  const isAdmin = role === 'ADMIN';
+  const sessionUser = session?.user as SessionUserWithRole | undefined;
+  const role = sessionUser?.role;
+  // OWNER, or an ADMIN holding the dashboard permission (refreshed from the database by the session).
+  const isAdmin = sessionUser?.canAdmin === true || role === 'OWNER';
   const isInstructor = role === 'INSTRUCTOR';
   const initial = session?.user?.name?.charAt(0)?.toUpperCase() || 'أ';
 

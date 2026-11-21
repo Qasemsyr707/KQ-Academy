@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+﻿import { recordReferralCommission } from '@/lib/referrals';
+import { NextResponse } from 'next/server';
 import { requireRequestUser } from '@/lib/request-user';
 import { CheckoutError } from '@/lib/payments/checkout-context';
 import { withPaymentTransaction } from '@/lib/payments/transactions';
@@ -26,14 +27,12 @@ export async function POST(req: Request) {
         throw new CheckoutError(404, 'الحزمة غير موجودة');
       }
       if (!await debitWallet(tx, user.id, 'USD', amount)) throw new CheckoutError(400, 'رصيد المحفظة غير كافٍ');
-      await tx.bundlePayment.create({ data: { userId: user.id, bundleId: bundle.id, amount, provider: 'WALLET', status: 'APPROVED' } });
+      const bundlePayment = await tx.bundlePayment.create({ data: { userId: user.id, bundleId: bundle.id, amount, provider: 'WALLET', status: 'APPROVED' } });
       for (const course of bundle.courses) {
         await tx.enrollment.upsert({ where: { userId_courseId: { userId: user.id, courseId: course.courseId } }, update: {}, create: { userId: user.id, courseId: course.courseId, progress: 0 } });
       }
-      if (referralCode) {
-        const referrer = await tx.user.findFirst({ where: { affiliateCode: referralCode, id: { not: user.id } } });
-        if (referrer) await tx.affiliateEarning.create({ data: { ownerId: referrer.id, buyerId: user.id, bundleId: bundle.id, amount: amount * 0.1, status: 'PENDING' } });
-      }
+      // Commission only for the referrer recorded at registration, never for a code typed at checkout.
+      await recordReferralCommission(tx, { sourceKey: `bundle:${bundlePayment.id}`, buyerId: user.id, amount, currency: 'USD', bundleId: bundle.id });
     });
     return NextResponse.json({ success: true, message: 'تم شراء الحزمة بنجاح! تم تسجيلك في جميع الكورسات.' }, { headers: WALLET_HEADERS });
   } catch (error) { return walletError(error); }

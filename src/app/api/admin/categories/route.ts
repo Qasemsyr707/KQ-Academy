@@ -9,7 +9,7 @@ const HEADERS = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authoriza
 
 /** Category management: administrators (and the owner) only. */
 export async function GET() {
-  const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+  const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'COURSES');
   if (!authorized) return errorResponse;
   try {
     return NextResponse.json({ categories: await listAdminCategories(prisma) }, { headers: HEADERS });
@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+  const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'COURSES');
   if (!authorized) return errorResponse;
   try {
     const body = await req.json().catch(() => null);

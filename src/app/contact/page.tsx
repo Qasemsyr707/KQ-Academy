@@ -1,3 +1,4 @@
+import SocialLinks from '@/components/social/SocialLinks';
 import { MapPin, MessageCircle, Mail, Phone } from 'lucide-react';
 
 export default function ContactPage() {
@@ -48,8 +49,8 @@ export default function ContactPage() {
                 <MessageCircle size={24} />
               </div>
               <div>
-                <h4 style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>فيسبوك</h4>
-                <a href="https://www.facebook.com/profile.php?id=61594346671502" target="_blank" rel="noopener noreferrer" style={{ margin: 0, fontWeight: 'bold', color: '#fff', textDecoration: 'none' }}>KQ Academy | Damascus</a>
+                <h4 style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>تابعنا</h4>
+                <SocialLinks variant="list" />
               </div>
             </div>
           </div>

@@ -13,6 +13,8 @@ function harness(options = {}) {
   let queue = Promise.resolve();
   const proof = { transactionId: 'transaction', referenceId: 'payment', amountMinor: 2500, currency: 'USD', ...options.proof };
   const mocks = {
+    // Referral commissions have their own tests (referrals.test.cjs); recorded calls are checked here.
+    '@/lib/referrals': { recordReferralCommission: async (_tx, source) => { (globalThis.__kqCommissions ??= []).push(source); return null; } },
     '@/lib/db': { prisma: { payment: { findMany: async args => {
       calls.push({ name: 'lookup', args });
       if (options.ambiguous) return [state.payment, { ...state.payment, id: 'duplicate' }];

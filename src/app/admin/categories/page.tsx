@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 /** Course taxonomy management: administrators and the owner only. */
 export default async function AdminCategoriesPage() {
-  await requireRolePage(['ADMIN']);
+  await requireRolePage(['ADMIN'], '/dashboard', 'COURSES');
   const categories = await listAdminCategories(prisma);
 
   return (

@@ -41,6 +41,8 @@ function harness({ payment = makePayment(), role = 'ADMIN', banned = false, sess
   const transitions = [];
   const mocks = {
     '@/lib/auth': { authOptions: {} },
+    // Referral commissions have their own tests (referrals.test.cjs); recorded calls are checked here.
+    '@/lib/referrals': { recordReferralCommission: async (_tx, source) => { (globalThis.__kqCommissions ??= []).push(source); return null; } },
     // Records notifications in the transaction's staged state, with the database's unique dedupe key.
     '@/lib/notifications': (() => {
       const store = (tx, userId, key, title) => {

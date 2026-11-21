@@ -2,10 +2,37 @@
 
 import type { Permission } from '@/lib/permissions';
 import { useState } from 'react';
-import { Tag, CheckCircle, XCircle, Users, BookOpen, CreditCard, Video, Shield, Settings, Activity, Megaphone, Award } from 'lucide-react';
+import { Tag, CheckCircle, XCircle, Users, BookOpen, CreditCard, Video, Shield, Settings, Activity, Megaphone, Award, ShieldCheck, ClipboardCheck, Layers, Film, Receipt, Share2, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
+
+type AdminStats = { totalUsers: number; totalCourses: number; liveStreams: number; pendingWallets: number; pendingPayments?: number; pendingCourseReviews?: number; pendingReferrals?: number };
+type AdminItem = { permission: Permission; href: string; icon: typeof Users; color: string; title: string; subtitle: (s: AdminStats) => string };
+
+/** Every administrative page, grouped; each card shows only with its permission (OWNER has all). */
+const ADMIN_SECTIONS: { title: string; items: AdminItem[] }[] = [
+  { title: 'المستخدمون والفريق', items: [
+    { permission: 'USERS', href: '/admin/users', icon: Users, color: '#3b82f6', title: 'إدارة المستخدمين', subtitle: s => `${s.totalUsers} مستخدم` },
+  ] },
+  { title: 'المحتوى التعليمي', items: [
+    { permission: 'COURSES', href: '/admin/courses', icon: BookOpen, color: '#8b5cf6', title: 'إدارة الكورسات', subtitle: s => `${s.totalCourses} كورس` },
+    { permission: 'COURSE_PUBLISHING', href: '/admin/course-requests', icon: ClipboardCheck, color: '#0ea5e9', title: 'مراجعة الكورسات', subtitle: s => s.pendingCourseReviews ? `${s.pendingCourseReviews} بانتظار المراجعة` : 'كورسات جديدة وطلبات تعديل' },
+    { permission: 'COURSES', href: '/admin/categories', icon: Layers, color: '#14b8a6', title: 'التصنيفات', subtitle: () => 'تصنيفات المهارات والفروع' },
+    { permission: 'CERTIFICATES', href: '/admin/certificates', icon: Award, color: '#f59e0b', title: 'الشهادات', subtitle: () => 'سجل الشهادات المصدرة' },
+    { permission: 'LIVE_CLASSES', href: '/admin/live', icon: Video, color: '#ef4444', title: 'البث المباشر', subtitle: s => s.liveStreams ? `${s.liveStreams} بث مباشر الآن` : 'لا يوجد بث الآن' },
+    { permission: 'MODERATION', href: '/admin/shorts', icon: Film, color: '#ec4899', title: 'الإشراف على الفيديوهات القصيرة', subtitle: () => 'مراجعة المقاطع المنشورة' },
+  ] },
+  { title: 'المال', items: [
+    { permission: 'PAYMENTS', href: '/admin/payments', icon: Receipt, color: '#22c55e', title: 'المدفوعات', subtitle: s => s.pendingPayments ? `${s.pendingPayments} إيصال بانتظار المراجعة` : 'سجل المدفوعات' },
+    { permission: 'WALLETS', href: '/admin/wallet', icon: CreditCard, color: '#10b981', title: 'المحافظ', subtitle: s => s.pendingWallets ? `${s.pendingWallets} طلب شحن معلّق` : 'طلبات الشحن والأرصدة' },
+  ] },
+  { title: 'التسويق والتواصل', items: [
+    { permission: 'MARKETING', href: '/admin/marketing', icon: Megaphone, color: '#CBA153', title: 'التسويق والنمو', subtitle: () => 'حزم • اشتراكات • إيميل' },
+    { permission: 'MARKETING', href: '/admin/referrals', icon: Share2, color: '#a855f7', title: 'الإحالات والعمولات', subtitle: s => s.pendingReferrals ? `${s.pendingReferrals} عمولة بانتظار المراجعة` : 'التقارير ونسبة العمولة' },
+    { permission: 'MARKETING', href: '/admin/social', icon: Globe, color: '#38bdf8', title: 'روابط التواصل الاجتماعي', subtitle: () => 'روابط صفحات الأكاديمية الرسمية' },
+  ] },
+];
 
 export default function AdminClient({ initialPayments, initialCoupons, stats, permissions, isOwner }: { permissions: Permission[], isOwner: boolean, initialPayments: any[], initialCoupons: any[], stats: any }) {
   const [payments, setPayments] = useState(initialPayments);
@@ -95,64 +122,70 @@ export default function AdminClient({ initialPayments, initialCoupons, stats, pe
         </div>
       )}
       
-      {isOwner && <Link href="/admin/permissions">إدارة صلاحيات المدراء وسجل التغييرات</Link>}
-      {/* Quick Links Bento Grid */}
-      <motion.div 
-        initial="hidden"
-        animate="show"
-        variants={{ show: { transition: { staggerChildren: 0.1 } } }}
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}
-      >
-        {[
-          { permission: 'USERS' as Permission, href: '/admin/users', icon: Users, color: '#3b82f6', title: 'إدارة المستخدمين', subtitle: `${stats.totalUsers} مستخدم` },
-          { permission: 'COURSES' as Permission, href: '/admin/courses', icon: BookOpen, color: '#8b5cf6', title: 'إدارة الكورسات', subtitle: `${stats.totalCourses} كورس` },
-          { permission: 'COURSE_PUBLISHING' as Permission, href: '/admin/course-requests', icon: BookOpen, color: '#0ea5e9', title: 'مراجعة الكورسات', subtitle: 'كورسات جديدة وطلبات تعديل' },
-          { permission: 'CERTIFICATES' as Permission, href: '/admin/certificates', icon: Award, color: '#f59e0b', title: 'إدارة الشهادات', subtitle: 'سجل الشهادات المصدرة' },
-          { permission: 'LIVE_CLASSES' as Permission, href: '/admin/live', icon: Video, color: '#ef4444', title: 'البث المباشر', subtitle: `${stats.liveStreams} بث حالي` },
-          { permission: 'WALLETS' as Permission, href: '/admin/wallet', icon: CreditCard, color: '#22c55e', title: 'إدارة المحافظ', subtitle: `${stats.pendingWallets} طلب معلق` },
-          { permission: 'MARKETING' as Permission, href: '/admin/marketing', icon: Megaphone, color: '#CBA153', title: 'التسويق والنمو', subtitle: 'حزم • اشتراكات • إيميل' }
-        ].filter(item => permissions.includes(item.permission)).map((item, idx) => (
-          <motion.div key={idx} variants={cardVariants}>
-            <Link 
-              href={item.href} 
-              className="group"
-              style={{ 
-                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', textDecoration: 'none',
-                transition: 'all 0.3s ease', cursor: 'pointer', height: '100%'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'translateY(-5px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ width: '50px', height: '50px', background: `${item.color}15`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <item.icon size={24} color={item.color} />
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <h3 style={{ color: '#fff', fontWeight: 'bold', marginBottom: '0.2rem' }}>{item.title}</h3>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>{item.subtitle}</p>
-              </div>
-            </Link>
-          </motion.div>
-        ))}
-      </motion.div>
+      {/* Owner-only: granular administrator permissions (checked again on the server). */}
+      {isOwner && (
+        <Link href="/admin/permissions" className="kq-admin-gold-card"
+          style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem', marginBottom: '2rem', borderRadius: 20, textDecoration: 'none', color: '#1f1a12',
+            background: 'var(--gold-gradient)', boxShadow: '0 18px 40px rgba(201,164,92,0.25)', border: '1px solid var(--gold-300)' }}>
+          <span style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.35)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <ShieldCheck size={30} color="#1f1a12" />
+          </span>
+          <span>
+            <strong style={{ display: 'block', fontSize: '1.3rem' }}>إدارة الصلاحيات</strong>
+            <span style={{ opacity: 0.85 }}>التحكم بصلاحيات المديرين وسجل التغييرات</span>
+          </span>
+        </Link>
+      )}
+
+      {ADMIN_SECTIONS.map(section => {
+        const items = section.items.filter(item => permissions.includes(item.permission));
+        if (!items.length) return null;
+        return (
+          <section key={section.title} aria-label={section.title} style={{ marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.05rem', color: 'var(--gold-300)', marginBottom: '0.9rem', letterSpacing: 0 }}>{section.title}</h2>
+            <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 210px), 1fr))', gap: '1rem' }}>
+              {items.map(item => (
+                <motion.div key={item.href} variants={cardVariants}>
+                  <Link href={item.href} className="kq-admin-card"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.25rem',
+                      display: 'flex', alignItems: 'center', gap: '0.9rem', textDecoration: 'none', height: '100%', transition: 'transform 0.25s ease, border-color 0.25s ease' }}>
+                    <span style={{ width: 46, height: 46, background: `${item.color}1f`, borderRadius: 12, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                      <item.icon size={22} color={item.color} />
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <strong style={{ color: '#fff', display: 'block' }}>{item.title}</strong>
+                      <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem' }}>{item.subtitle(stats)}</span>
+                    </span>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          </section>
+        );
+      })}
+      <style>{`.kq-admin-card:hover{transform:translateY(-3px);border-color:var(--gold-400)!important}.kq-admin-gold-card:hover{filter:brightness(1.04)}@media (prefers-reduced-motion: reduce){.kq-admin-card{transition:none!important}.kq-admin-card:hover{transform:none}}`}</style>
 
       {/* Main Stats Bento Grid */}
       <motion.div 
         initial="hidden"
         animate="show"
         variants={{ show: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } } }}
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1.5rem', marginBottom: '2rem' }}
       >
-        {/* Revenue Card (Large) */}
-        <motion.div variants={cardVariants} style={{ background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.02) 100%)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(251, 191, 36, 0.2)', display: 'flex', alignItems: 'center', gap: '1.5rem', gridColumn: '1 / -1' }}>
+        {/* Revenue: financial data, shown only with the PAYMENTS permission. Currencies are never added together. */}
+        {permissions.includes('PAYMENTS') && <motion.div variants={cardVariants} style={{ background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.02) 100%)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(251, 191, 36, 0.2)', display: 'flex', alignItems: 'center', gap: '1.5rem', gridColumn: '1 / -1', flexWrap: 'wrap' }}>
           <div style={{ width: '60px', height: '60px', background: 'rgba(251, 191, 36, 0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Activity size={32} color="#fbbf24" />
           </div>
           <div>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', marginBottom: '0.2rem' }}>إجمالي الأرباح من الكورسات</p>
-            <h3 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#fbbf24' }}>${formatNumber(stats.totalRevenue)}</h3>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', marginBottom: '0.2rem' }}>إيرادات الكورسات المعتمدة</p>
+            <h3 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.3rem)', fontWeight: 'bold', color: '#fbbf24' }}>
+              ${formatNumber(stats.revenue?.USD ?? 0)} <span style={{ opacity: 0.6, fontSize: '0.6em' }}>+</span> {formatNumber(stats.revenue?.SYP ?? 0)} ل.س
+            </h3>
+            {stats.revenue?.unrecorded > 0 && <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem' }}>{stats.revenue.unrecorded} دفعة قديمة لم تُسجَّل عملتها، غير محتسبة أعلاه.</p>}
           </div>
-        </motion.div>
+        </motion.div>}
 
         {/* Instructors Card */}
         <motion.div variants={cardVariants} style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -167,7 +200,7 @@ export default function AdminClient({ initialPayments, initialCoupons, stats, pe
       </motion.div>
 
       {/* Two Columns Grid for Payments and Coupons */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '2rem' }}>
         
         {/* Pending Payments Section */}
         {permissions.includes('PAYMENTS') && <div style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>

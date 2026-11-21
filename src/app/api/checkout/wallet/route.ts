@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+﻿import { recordReferralCommission } from '@/lib/referrals';
+import { NextResponse } from 'next/server';
 import { requireRequestUser } from '@/lib/request-user';
 import { CheckoutError } from '@/lib/payments/checkout-context';
 import { withPaymentTransaction } from '@/lib/payments/transactions';
@@ -40,7 +41,9 @@ export async function POST(req: Request) {
       if (!deducted) throw new CheckoutError(400, 'رصيد المحفظة غير كافٍ');
       await tx.walletTransaction.create({ data: { userId: user.id, amount, currency, type: 'PURCHASE', status: 'APPROVED', provider: 'WALLET' } });
       await tx.enrollment.upsert({ where: { userId_courseId: { userId: user.id, courseId } }, update: {}, create: { userId: user.id, courseId } });
-      const payment = await tx.payment.create({ data: { userId: user.id, courseId, amount, couponId, paymentMethod: 'WALLET', provider: 'WALLET', status: 'APPROVED' } });
+      const payment = await tx.payment.create({ data: { userId: user.id, courseId, amount, currency, couponId, paymentMethod: 'WALLET', provider: 'WALLET', status: 'APPROVED' } });
+      // Paid from the wallet inside this transaction: the referrer's commission (once per payment).
+      await recordReferralCommission(tx, { sourceKey: `payment:${payment.id}`, buyerId: user.id, amount, currency, courseId });
       await notifyEnrollment(tx, { userId: user.id, courseId, courseTitle: course.title, instructorId: course.instructorId, eventKey: payment.id });
     });
     return NextResponse.json({ message: 'تم الشراء بنجاح' }, { headers: WALLET_HEADERS });

@@ -13,7 +13,7 @@ const failure = (error: unknown, action: string) => {
 };
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+  const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'COURSES');
   if (!authorized) return errorResponse;
   try {
     const { id } = await params;
@@ -28,7 +28,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { authorized, errorResponse } = await requireRoleApi(['ADMIN']);
+  const { authorized, errorResponse } = await requireRoleApi(['ADMIN'], 'COURSES');
   if (!authorized) return errorResponse;
   try {
     await deleteCategory(prisma, (await params).id);

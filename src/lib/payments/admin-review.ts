@@ -1,3 +1,4 @@
+import { recordReferralCommission } from '@/lib/referrals';
 import { CheckoutError, readCheckoutContext } from '@/lib/payments/checkout-context';
 import { withPaymentTransaction } from '@/lib/payments/transactions';
 import { notify, notifyEnrollment } from '@/lib/notifications';
@@ -54,6 +55,8 @@ export async function reviewManualPayment(paymentId: string, status: ManualRevie
           walletSYP: context.currency === 'SYP' ? { increment: amount } : undefined,
         },
       });
+      // The referrer's commission, created only now that the receipt is approved (once per payment).
+      await recordReferralCommission(tx, { sourceKey: `payment:${payment.id}`, buyerId: payment.userId, amount, currency: context.currency, courseId: payment.courseId });
     }
 
     if (status === 'APPROVED') {

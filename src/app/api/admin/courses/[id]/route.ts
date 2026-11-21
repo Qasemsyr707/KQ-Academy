@@ -96,13 +96,19 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     const chapters = await prisma.chapter.findMany({ where: { courseId: params.id }, select: { id: true } });
     const chapterIds = chapters.map((c: any) => c.id);
 
+    // The final exam hangs off the course, not a chapter: removed even when there are no chapters.
+    await prisma.$transaction([
+      prisma.question.deleteMany({ where: { quiz: { courseId: params.id, kind: 'FINAL' } } }),
+      prisma.quizAttempt.deleteMany({ where: { quiz: { courseId: params.id, kind: 'FINAL' } } }),
+      prisma.quiz.deleteMany({ where: { courseId: params.id, kind: 'FINAL' } }),
+    ]);
     if (chapterIds.length > 0) {
       await prisma.$transaction([
         prisma.attachment.deleteMany({ where: { chapterId: { in: chapterIds } } }),
         prisma.lesson.deleteMany({ where: { chapterId: { in: chapterIds } } }),
-        prisma.question.deleteMany({ where: { quiz: { OR: [{ chapterId: { in: chapterIds } }, { courseId: params.id }] } } }),
-        prisma.quizAttempt.deleteMany({ where: { quiz: { OR: [{ chapterId: { in: chapterIds } }, { courseId: params.id }] } } }),
-        prisma.quiz.deleteMany({ where: { OR: [{ chapterId: { in: chapterIds } }, { courseId: params.id }] } }),
+        prisma.question.deleteMany({ where: { quiz: { chapterId: { in: chapterIds } } } }),
+        prisma.quizAttempt.deleteMany({ where: { quiz: { chapterId: { in: chapterIds } } } }),
+        prisma.quiz.deleteMany({ where: { chapterId: { in: chapterIds } } }),
         prisma.chapter.deleteMany({ where: { courseId: params.id } }),
       ]);
     }

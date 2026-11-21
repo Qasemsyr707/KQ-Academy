@@ -13,19 +13,25 @@ export default async function AdminDashboard() {
   const permissions = (await Promise.all(PERMISSION_KEYS.map(async key =>
     await hasPermission(session.user.id, key) ? key : null))).filter(key => key !== null);
 
-  // Fetch stats
-  const totalUsers = await prisma.user.count();
-  const totalCourses = await prisma.course.count();
-  const totalRevenueAggr = await prisma.payment.aggregate({
-    _sum: { amount: true },
-    where: { status: 'APPROVED' }
-  });
-  const totalRevenue = totalRevenueAggr._sum.amount || 0;
-
-  // Additional Stats
-  const activeInstructors = await prisma.user.count({ where: { role: 'INSTRUCTOR', isBanned: false } });
-  const liveStreams = await prisma.liveClass.count({ where: { status: 'live' } });
-  const pendingWallets = await prisma.walletTransaction.count({ where: { status: 'PENDING', type: 'DEPOSIT' } });
+  // Real counts from the database; financial totals only for PAYMENTS, split by currency.
+  const [totalUsers, totalCourses, activeInstructors, liveStreams, pendingWallets, pendingPaymentCount, pendingCourseReviews, pendingReferrals] = await Promise.all([
+    prisma.user.count(),
+    prisma.course.count(),
+    prisma.user.count({ where: { role: 'INSTRUCTOR', isBanned: false } }),
+    prisma.liveClass.count({ where: { status: 'live' } }),
+    prisma.walletTransaction.count({ where: { status: 'PENDING', type: 'DEPOSIT' } }),
+    prisma.payment.count({ where: { status: 'PENDING' } }),
+    prisma.course.count({ where: { status: 'PENDING' } }).then(async n => n + await prisma.courseChangeRequest.count({ where: { status: 'PENDING' } })),
+    prisma.affiliateEarning.count({ where: { status: 'PENDING', sourceKey: { not: null } } }),
+  ]);
+  const revenueRows = permissions.includes('PAYMENTS')
+    ? await prisma.payment.groupBy({ by: ['currency'], where: { status: 'APPROVED' }, _sum: { amount: true }, _count: { _all: true } })
+    : [];
+  const revenue = {
+    USD: revenueRows.find(r => r.currency === 'USD')?._sum.amount ?? 0,
+    SYP: revenueRows.find(r => r.currency === 'SYP')?._sum.amount ?? 0,
+    unrecorded: revenueRows.filter(r => r.currency !== 'USD' && r.currency !== 'SYP').reduce((n, r) => n + r._count._all, 0),
+  };
 
   // Fetch Pending Payments
   const pendingPayments = permissions.includes('PAYMENTS') ? await prisma.payment.findMany({
@@ -39,7 +45,7 @@ export default async function AdminDashboard() {
   }) : [];
 
   // Fetch Coupons
-  const coupons = permissions.includes('SETTINGS') ? await prisma.coupon.findMany({
+  const coupons = permissions.includes('MARKETING') ? await prisma.coupon.findMany({
     include: {
       course: { select: { title: true } }
     },
@@ -77,10 +83,13 @@ export default async function AdminDashboard() {
         stats={{
           totalUsers,
           totalCourses,
-          totalRevenue,
+          revenue,
           activeInstructors,
           liveStreams,
           pendingWallets,
+          pendingPayments: pendingPaymentCount,
+          pendingCourseReviews,
+          pendingReferrals,
           paymentSettings
         }} 
       />

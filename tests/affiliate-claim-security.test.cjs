@@ -15,7 +15,11 @@ function harness(options = {}) {
   let queue = Promise.resolve();
   let attempts = 0;
   const observed = [];
-  const matches = (row, where) => row.ownerId === where.ownerId && row.status === where.status
+  // Claimable = APPROVED, or historical PENDING rows without a sourceKey (see lib/referrals.ts).
+  const statusMatches = (row, where) => where.OR
+    ? where.OR.some(c => row.status === c.status && (c.sourceKey === undefined || (row.sourceKey ?? null) === c.sourceKey))
+    : row.status === where.status;
+  const matches = (row, where) => row.ownerId === where.ownerId && statusMatches(row, where)
     && (!where.id || where.id.in.includes(row.id));
   const db = {
     user: { findUnique: async ({ where }) => {

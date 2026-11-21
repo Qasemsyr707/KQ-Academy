@@ -1,5 +1,6 @@
 'use client';
 
+import { pendingReferralCode } from '@/components/referral/ReferralCapture';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,7 +68,7 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, ref: pendingReferralCode() }),
       });
 
       if (!res.ok) {

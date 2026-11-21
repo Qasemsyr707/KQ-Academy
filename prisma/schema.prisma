@@ -305,6 +305,8 @@ model Payment {
   userId           String
   courseId         String
   couponId         String?
+  // USD | SYP for payments made from 2026-11-22; null for older rows (currency not recorded).
+  currency         String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -582,17 +584,44 @@ model MatchmakingRequest {
 // ============================================================
 
 model AffiliateEarning {
-  id        String   @id @default(cuid())
-  ownerId   String // The affiliate who earned the commission
-  buyerId   String // The person who made the purchase
-  courseId  String?
-  bundleId  String?
-  amount    Float // Commission amount in USD
-  status    String   @default("PENDING") // PENDING, PAID
-  createdAt DateTime @default(now())
+  id           String    @id @default(cuid())
+  ownerId      String // The affiliate who earned the commission
+  buyerId      String // The person who made the purchase
+  courseId     String?
+  bundleId     String?
+  amount       Float // Commission amount in USD
+  // PENDING (awaiting review) -> APPROVED -> PAID (moved to the wallet), or REVERSED.
+  // Rows from before 2026-11-22 have no sourceKey and stay claimable as before.
+  status       String    @default("PENDING")
+  // One commission per confirmed payment ("payment:<id>", "bundle:<id>"): retries cannot double-credit.
+  sourceKey    String?   @unique
+  ratePercent  Float?
+  baseAmount   Float?
+  baseCurrency String?
+  reviewedById String?
+  approvedAt   DateTime?
+  paidAt       DateTime?
+  reversedAt   DateTime?
+  reason       String?
+  createdAt    DateTime  @default(now())
 
   owner User @relation("AffiliateOwner", fields: [ownerId], references: [id])
   buyer User @relation("AffiliateBuyer", fields: [buyerId], references: [id])
+
+  @@index([ownerId, status])
+  @@index([status, createdAt])
+}
+
+/// Links to the Academy's official social media pages (URLs only, no account integration).
+model SocialLink {
+  id          String   @id @default(cuid())
+  platform    String   @unique // FACEBOOK, INSTAGRAM, YOUTUBE, TIKTOK, TELEGRAM, WHATSAPP, LINKEDIN, X
+  url         String
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ============================================================
