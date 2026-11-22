@@ -5,12 +5,13 @@ import { prisma } from '@/lib/db';
 import { isPublicLesson } from '@/lib/lesson-playback';
 import { isExpired } from '@/lib/live-session-rules';
 import { requireRequestUser, RequestUserError, type RequestUser } from '@/lib/request-user';
+import { admitForToken, ClassroomError, settingsOf, type ClassroomSettings } from '@/lib/live-classroom';
 
 const privateHeaders = { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' };
 const courseSelect = { id: true, instructorId: true, status: true, price: true, priceSYP: true } as const;
 type Course = { id: string; instructorId: string; status: string; price: number; priceSYP: number };
 type RoomReference = { room: string | null } | { liveClassId: string | null };
-type RoomAccess = { room: string; canPublish: boolean; audioOnly?: boolean; status?: string };
+type RoomAccess = { room: string; canPublish: boolean; audioOnly?: boolean; status?: string; canPublishData?: boolean; settings?: ClassroomSettings; seatRole?: string };
 
 class LiveKitAccessError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
@@ -36,7 +37,8 @@ async function requireCourseViewer(user: RequestUser, course: Course, isPublic =
 async function liveClassAccess(user: RequestUser, id: string): Promise<RoomAccess> {
   if (!validRoomReference(id)) throw new LiveKitAccessError(400, 'يرجى تحديد جلسة صالحة');
   const liveClass = await prisma.liveClass.findUnique({
-    where: { id }, select: { id: true, instructorId: true, status: true, scheduledAt: true, course: { select: courseSelect } },
+    where: { id }, select: { id: true, instructorId: true, status: true, scheduledAt: true, locked: true, waitingRoom: true, chatEnabled: true,
+      reactionsEnabled: true, screenShareAllowed: true, course: { select: courseSelect } },
   });
   if (!liveClass) throw new LiveKitAccessError(404, 'الجلسة غير موجودة');
   if (liveClass.status === 'ended') throw new LiveKitAccessError(410, 'انتهت هذه الجلسة');
@@ -49,7 +51,14 @@ async function liveClassAccess(user: RequestUser, id: string): Promise<RoomAcces
     // Students join only once the host's studio is really connected.
     if (liveClass.status !== 'live') throw new LiveKitAccessError(425, 'لم يبدأ المدرّب البث بعد');
   }
-  return { room: `live_${liveClass.id}`, canPublish: host, status: liveClass.status };
+  const settings = settingsOf(liveClass);
+  if (host) return { room: `live_${liveClass.id}`, canPublish: true, status: liveClass.status, settings, canPublishData: true, seatRole: 'host' };
+  // Waiting room, lock and removals are decided here, before any token is signed.
+  let seatRole: string;
+  try { seatRole = await admitForToken(user.id, liveClass); }
+  catch (error) { if (error instanceof ClassroomError) throw new LiveKitAccessError(error.status, error.message); throw error; }
+  return { room: `live_${liveClass.id}`, canPublish: false, status: liveClass.status, settings, seatRole,
+    canPublishData: settings.chatEnabled || seatRole === 'assistant' };
 }
 
 async function resolveRoomAccess(user: RequestUser, reference: RoomReference): Promise<RoomAccess> {
@@ -113,11 +122,12 @@ export async function serveLiveKitToken(req: Request, reference: RoomReference) 
     const token = new AccessToken(apiKey, apiSecret, { identity: user.id, name: user.name || 'مستخدم', ttl: '15m', metadata: access.canPublish && !access.audioOnly ? 'kq-role:host' : 'kq-role:student' });
     // Viewers (canPublish false) may send chat messages (data) but never audio or video.
     const grant: VideoGrant = {
-      roomJoin: true, room: access.room, canPublish: access.canPublish, canSubscribe: true, canPublishData: true, canUpdateOwnMetadata: false,
+      roomJoin: true, room: access.room, canPublish: access.canPublish, canSubscribe: true, canPublishData: access.canPublishData ?? true, canUpdateOwnMetadata: false,
     };
     if (access.audioOnly) grant.canPublishSources = [TrackSource.MICROPHONE];
     token.addGrant(grant);
-    return NextResponse.json({ token: await token.toJwt(), roomName: access.room, canPublish: access.canPublish, status: access.status ?? null, serverUrl }, { headers: privateHeaders });
+    return NextResponse.json({ token: await token.toJwt(), roomName: access.room, canPublish: access.canPublish, status: access.status ?? null, serverUrl,
+      settings: access.settings ?? null, seatRole: access.seatRole ?? null }, { headers: privateHeaders });
   } catch (error) {
     const known = error instanceof RequestUserError || error instanceof LiveKitAccessError;
     if (!known) console.error('Live session authorization failed');

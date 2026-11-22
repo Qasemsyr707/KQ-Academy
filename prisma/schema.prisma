@@ -55,6 +55,7 @@ model User {
   shorts                Short[]
   shortComments         ShortComment[]
   liveClasses           LiveClass[]
+  liveClassSeats        LiveClassParticipant[]
   matchmakingRequests   MatchmakingRequest[]   @relation("UserMatchmaking")
   matchedWithRequests   MatchmakingRequest[]   @relation("UserMatchedWith")
   notifications         Notification[]
@@ -554,15 +555,58 @@ model LiveClass {
   lessonId     String?   @unique
   startedAt    DateTime?
   endedAt      DateTime?
+  // Classroom controls, enforced by the token route and the moderation API.
+  locked             Boolean @default(false)
+  waitingRoom        Boolean @default(false)
+  chatEnabled        Boolean @default(true)
+  reactionsEnabled   Boolean @default(true)
+  screenShareAllowed Boolean @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  instructor User    @relation(fields: [instructorId], references: [id], onDelete: Cascade)
-  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lesson     Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  instructor   User    @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  course       Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson       Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  participants LiveClassParticipant[]
+  auditLogs    LiveClassAuditLog[]
 
   @@index([instructorId, status])
   @@index([courseId, status])
+}
+
+/// One row per student per live session: admission, assistant role, hand raise and removal.
+model LiveClassParticipant {
+  id            String    @id @default(cuid())
+  liveClassId   String
+  userId        String
+  status        String    @default("admitted") // pending, admitted, denied, removed
+  role          String    @default("student")  // student, assistant
+  handRaisedAt  DateTime?
+  removedReason String?
+  firstJoinedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([liveClassId, userId])
+  @@index([liveClassId, status])
+}
+
+/// Append-only record of every moderation action taken in a live session.
+model LiveClassAuditLog {
+  id           String   @id @default(cuid())
+  liveClassId  String
+  actorId      String
+  action       String
+  targetUserId String?
+  detail       Json?
+  createdAt    DateTime @default(now())
+
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+
+  @@index([liveClassId, createdAt])
 }
 
 model StudyRoom {

@@ -58,6 +58,11 @@ function harness(config = {}) {
         return where.liveRoomName === ROOM ? (config.lessons ?? [{ isLive: true, liveRoomName: ROOM,
           chapter: { isFree: !!config.freeChapter, course: { ...COURSE, ...config.course } } }]) : [];
       }) },
+      liveClassParticipant: {
+        findUnique: record('seat', () => config.seat ?? null),
+        upsert: record('seatUpsert', ({ create }) => create),
+        update: record('seatUpdate', ({ data }) => data),
+      },
       studyRoom: { findUnique: record('studyRoom', ({ where }) => where.id === STUDY || config.studyRoomCollision
         ? { id: where.id } : null) },
       enrollment: { findUnique: record('enrollment', ({ where }) => {
@@ -124,7 +129,8 @@ test('all token aliases give an enrolled viewer subscription without media publi
     const response = await h.call(route);
     assert.equal(response.status, 200);
     assertPrivate(response);
-    assert.deepEqual(await response.json(), { token: 'test-signed-room-token', roomName: `live_${CLASS.id}`, canPublish: false, status: 'live', serverUrl: 'wss://livekit.example.invalid' });
+    assert.deepEqual(await response.json(), { token: 'test-signed-room-token', roomName: `live_${CLASS.id}`, canPublish: false, status: 'live', serverUrl: 'wss://livekit.example.invalid',
+      settings: { locked: false, waitingRoom: false, chatEnabled: true, reactionsEnabled: true, screenShareAllowed: true }, seatRole: 'student' });
     assert.deepEqual(h.issued, [{ options: { identity: USER.id, name: USER.name, ttl: '15m', metadata: 'kq-role:student' }, grants: [{
       roomJoin: true, room: `live_${CLASS.id}`, canPublish: false, canSubscribe: true, canPublishData: true, canUpdateOwnMetadata: false,
     }] }]);
@@ -317,4 +323,39 @@ test('the browser-facing LiveKit URL is normalised to a bare wss origin and inva
       assert.equal(browserLiveKitUrl(bad), null, bad);
     }
   } finally { console.error = origError; process.env.NODE_ENV = prev; }
+});
+
+
+test('classroom admission: waiting room, lock, removal and chat policy are decided before any token is signed', async () => {
+  const cases = [
+    [{ seat: { status: 'removed', role: 'student' } }, 403],
+    [{ seat: { status: 'denied', role: 'student' } }, 403],
+    [{ liveClass: { ...CLASS, locked: true } }, 423],
+    [{ liveClass: { ...CLASS, waitingRoom: true } }, 202],
+    [{ liveClass: { ...CLASS, waitingRoom: true, locked: true }, seat: { status: 'pending', role: 'student' } }, 423],
+  ];
+  for (const [config, status] of cases) {
+    const h = harness({ enrolled: true, ...config });
+    const response = await h.call(routes[2]);
+    assert.equal(response.status, status, JSON.stringify(config));
+    assert.equal(h.issued.length, 0, 'no token may be signed');
+  }
+  const waiting = harness({ enrolled: true, liveClass: { ...CLASS, waitingRoom: true } });
+  await waiting.call(routes[2]);
+  assert.equal(waiting.calls.find(c => c.name === 'seatUpsert').args.create.status, 'pending');
+
+  // An admitted student rejoins a locked class after a dropped connection.
+  const rejoin = harness({ enrolled: true, liveClass: { ...CLASS, locked: true, waitingRoom: true }, seat: { status: 'admitted', role: 'student', firstJoinedAt: new Date() } });
+  assert.equal((await rejoin.call(routes[2])).status, 200);
+
+  // Chat off: students lose the data channel, an assistant keeps it; nobody may publish media on join.
+  for (const [role, data] of [['student', false], ['assistant', true]]) {
+    const h = harness({ enrolled: true, liveClass: { ...CLASS, chatEnabled: false }, seat: { status: 'admitted', role, firstJoinedAt: new Date() } });
+    const response = await h.call(routes[2]);
+    assert.equal(response.status, 200);
+    const grant = h.issued[0].grants[0];
+    assert.equal(grant.canPublishData, data, role);
+    assert.equal(grant.canPublish, false);
+    assert.equal((await response.json()).seatRole, role);
+  }
 });
