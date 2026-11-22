@@ -131,7 +131,7 @@ test('all token aliases give an enrolled viewer subscription without media publi
     assertPrivate(response);
     assert.deepEqual(await response.json(), { token: 'test-signed-room-token', roomName: `live_${CLASS.id}`, canPublish: false, status: 'live', serverUrl: 'wss://livekit.example.invalid',
       settings: { locked: false, waitingRoom: false, chatEnabled: true, reactionsEnabled: true, screenShareAllowed: true }, seatRole: 'student' });
-    assert.deepEqual(h.issued, [{ options: { identity: USER.id, name: USER.name, ttl: '15m', metadata: 'kq-role:student' }, grants: [{
+    assert.deepEqual(h.issued, [{ options: { identity: USER.id, name: USER.name, ttl: '5m', metadata: 'kq-role:student' }, grants: [{
       roomJoin: true, room: `live_${CLASS.id}`, canPublish: false, canSubscribe: true, canPublishData: true, canUpdateOwnMetadata: false,
     }] }]);
   }
@@ -348,8 +348,8 @@ test('classroom admission: waiting room, lock, removal and chat policy are decid
   const rejoin = harness({ enrolled: true, liveClass: { ...CLASS, locked: true, waitingRoom: true }, seat: { status: 'admitted', role: 'student', firstJoinedAt: new Date() } });
   assert.equal((await rejoin.call(routes[2])).status, 200);
 
-  // Chat off: students lose the data channel, an assistant keeps it; nobody may publish media on join.
-  for (const [role, data] of [['student', false], ['assistant', true]]) {
+  // Chat off does not close the data channel (polls need it; chat is policed by the server relay).
+  for (const [role, data] of [['student', true], ['assistant', true]]) {
     const h = harness({ enrolled: true, liveClass: { ...CLASS, chatEnabled: false }, seat: { status: 'admitted', role, firstJoinedAt: new Date() } });
     const response = await h.call(routes[2]);
     assert.equal(response.status, 200);

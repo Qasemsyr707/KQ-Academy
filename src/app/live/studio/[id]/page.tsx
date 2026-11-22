@@ -17,10 +17,11 @@ import {
 
 type Phase = 'connecting' | 'live' | 'start-failed';
 
-async function setStatus(id: string, action: 'start' | 'end') {
+async function setStatus(id: string, action: 'start' | 'end'): Promise<{ roomClosed?: boolean }> {
   const res = await fetch(`/api/live/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'تعذّر تحديث حالة الجلسة');
+  return data;
 }
 
 function StudioRoom({ liveId, phase, startError, initialSettings, onEnd }: {
@@ -30,8 +31,8 @@ function StudioRoom({ liveId, phase, startError, initialSettings, onEnd }: {
   const [panelOpen, setPanelOpen] = useState(true);
   const [deviceError, setDeviceError] = useState('');
   const [ending, setEnding] = useState(false);
-  const chat = useLiveChat();
-  const { send, reaction } = useClassEvents();
+  const chat = useLiveChat(liveId);
+  const { send, reaction } = useClassEvents(liveId);
   const panel = useClassroomPanel(liveId);
   const settings = useClassroomSettings(initialSettings);
   useClassroomShortcuts({ p: () => setPanelOpen(v => !v) });
@@ -150,8 +151,16 @@ export default function StudioPage() {
 
   const handleEnd = useCallback(async () => {
     ending.current = true;
-    try { await setStatus(id, 'end'); router.push('/instructor/live'); }
-    catch (e) { ending.current = false; setStartError(e instanceof Error ? e.message : 'تعذّر إنهاء البث'); }
+    try {
+      const result = await setStatus(id, 'end');
+      // The class is ended in the database either way. If LiveKit could not close the room, say so and let
+      // the host retry (PATCH end is idempotent and only ever targets this session's own room).
+      if (result.roomClosed === false) {
+        setStartError('أُنهيت الحصة في المنصة، لكن تعذّر إغلاق غرفة البث على خادم LiveKit. اضغط «إنهاء الحصة» مرة أخرى لإعادة المحاولة.');
+        return;
+      }
+      router.push('/instructor/live');
+    } catch (e) { ending.current = false; setStartError(e instanceof Error ? e.message : 'تعذّر إنهاء البث'); }
   }, [id, router]);
 
   const options = useMemo(() => (choices ? roomOptionsFor(choices) : undefined), [choices]);

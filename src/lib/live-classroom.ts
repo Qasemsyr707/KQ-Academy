@@ -1,4 +1,4 @@
-import { RoomServiceClient, TrackSource } from 'livekit-server-sdk';
+import { DataPacket_Kind, RoomServiceClient, TrackSource } from 'livekit-server-sdk';
 import { prisma } from '@/lib/db';
 import { hasPermission } from '@/lib/permission-check';
 import { consume } from '@/lib/rate-limit';
@@ -17,6 +17,11 @@ type Actor = { id: string; role?: string | null };
 const ID = /^[A-Za-z0-9_-]{1,200}$/;
 const MODERATION_RULE = { name: 'live-moderation', burst: 40, perMinute: 120 } as const;
 const HAND_RULE = { name: 'live-hand', burst: 6, perMinute: 20 } as const;
+const CHAT_RULE = { name: 'live-chat', burst: 10, perMinute: 40 } as const;
+const REACTION_RULE = { name: 'live-reaction', burst: 8, perMinute: 30 } as const;
+export const REACTION_EMOJIS = ['👏', '👍', '❤️', '🎉', '💡'] as const;
+export const CHAT_TOPIC = 'kq-chat';
+export const REACTION_TOPIC = 'kq-reaction';
 
 export const SETTINGS = ['locked', 'waitingRoom', 'chatEnabled', 'reactionsEnabled', 'screenShareAllowed'] as const;
 export type Setting = (typeof SETTINGS)[number];
@@ -107,6 +112,16 @@ export async function classroomState(actor: Actor, id: string) {
   ]);
   const svc = roomService();
   const online = new Set((svc ? await connectedIdentities(svc, id) : []).map(p => p.identity));
+  if (svc) {
+    // Enforcement sweep: a removed, denied or still-pending student who is connected anyway (for example
+    // with a token issued before the decision) is disconnected again while the panel is open.
+    for (const s of seats) {
+      if (online.has(s.userId) && s.status !== 'admitted') {
+        await svc.removeParticipant(roomName(id), s.userId).catch(() => undefined);
+        online.delete(s.userId);
+      }
+    }
+  }
   return {
     power, status: session.status, settings: settingsOf(session), liveKitReady: !!svc,
     participants: seats.map(s => ({
@@ -143,9 +158,9 @@ function needService() {
   return svc;
 }
 
-async function setPublish(svc: RoomServiceClient, id: string, identity: string, sources: readonly TrackSource[], canPublishData: boolean) {
+async function setPublish(svc: RoomServiceClient, id: string, identity: string, sources: readonly TrackSource[]) {
   await svc.updateParticipant(roomName(id), identity, undefined, {
-    canPublish: sources.length > 0, canPublishSources: [...sources], canSubscribe: true, canPublishData, canUpdateMetadata: false,
+    canPublish: sources.length > 0, canPublishSources: [...sources], canSubscribe: true, canPublishData: true, canUpdateMetadata: false,
   });
 }
 
@@ -176,23 +191,13 @@ export async function moderate(actor: Actor, id: string, raw: unknown): Promise<
     const next = { ...settings, ...changes };
     const svc = roomService();
     await publishRoomSettings(id, next, svc);
-    if (svc && 'chatEnabled' in changes) {
-      // Chat travels on the data channel: revoke or restore it for every connected student now.
-      const seats = await prisma.liveClassParticipant.findMany({ where: { ...key, status: 'admitted' }, select: { userId: true, role: true } });
-      const roles = new Map(seats.map(s => [s.userId, s.role]));
-      for (const p of await connectedIdentities(svc, id)) {
-        if (!roles.has(p.identity)) continue;
-        const assistant = roles.get(p.identity) === 'assistant';
-        await svc.updateParticipant(roomName(id), p.identity, undefined, {
-          ...p.permission, canPublishData: next.chatEnabled || assistant, canUpdateMetadata: false,
-        }).catch(() => undefined);
-      }
-    }
+    // Chat and reactions are relayed by the server (relayMessage), so their switches need no LiveKit
+    // permission change; the data channel stays open for polls, which are independent of both.
     if (svc && changes.screenShareAllowed === false) {
       for (const p of await connectedIdentities(svc, id)) {
         const sources = p.permission?.canPublishSources ?? [];
         if (!sources.includes(TrackSource.SCREEN_SHARE) || !(await prisma.liveClassParticipant.count({ where: { ...key, userId: p.identity } }))) continue;
-        await setPublish(svc, id, p.identity, sources.filter(s => s !== TrackSource.SCREEN_SHARE && s !== TrackSource.SCREEN_SHARE_AUDIO), p.permission?.canPublishData ?? true).catch(() => undefined);
+        await setPublish(svc, id, p.identity, sources.filter(s => s !== TrackSource.SCREEN_SHARE && s !== TrackSource.SCREEN_SHARE_AUDIO)).catch(() => undefined);
       }
     }
     await audit(id, actor.id, 'settings', null, changes);
@@ -242,7 +247,7 @@ export async function moderate(actor: Actor, id: string, raw: unknown): Promise<
       const online = (await connectedIdentities(svc, id)).some(p => p.identity === userId);
       if (!online) throw new ClassroomError(404, 'الطالب غير متصل بالبث حالياً');
       const sources = media ? GRANTS[media as keyof typeof GRANTS] : [];
-      await setPublish(svc, id, userId, sources, settings.chatEnabled || seat.role === 'assistant');
+      await setPublish(svc, id, userId, sources);
       if (!media) await muteAllTracks(svc, id, userId);
       else await prisma.liveClassParticipant.update({ where, data: { handRaisedAt: null } });
       await audit(id, actor.id, body.action, userId, media ? { media } : undefined);
@@ -264,10 +269,6 @@ export async function moderate(actor: Actor, id: string, raw: unknown): Promise<
       if (seat?.status !== 'admitted') throw new ClassroomError(409, 'يجب أن يكون الطالب مقبولاً في الحصة أولاً');
       const assistant = body.action === 'setAssistant';
       await prisma.liveClassParticipant.update({ where, data: { role: assistant ? 'assistant' : 'student' } });
-      const svc = roomService();
-      if (svc && !assistant && !settings.chatEnabled) {
-        await svc.updateParticipant(roomName(id), userId, undefined, { canPublishData: false, canSubscribe: true, canUpdateMetadata: false }).catch(() => undefined);
-      }
       await audit(id, actor.id, body.action, userId);
       return assistant ? 'تم تعيين الطالب مساعداً' : 'تم إلغاء صلاحية المساعد';
     }
@@ -331,8 +332,51 @@ export async function closeLiveRoom(actorId: string, id: string) {
   const svc = roomService();
   let closed = false;
   if (svc) {
-    try { await svc.deleteRoom(roomName(id)); closed = true; } catch { /* already gone or unreachable */ }
+    try { await svc.deleteRoom(roomName(id)); closed = true; }
+    catch (error) {
+      // A room LiveKit no longer knows is already closed; any other failure is reported so the host can retry.
+      const e = error as { status?: number; code?: string };
+      closed = e?.status === 404 || e?.code === 'not_found';
+    }
   }
   await audit(id, actorId, 'end', null, { roomClosed: closed }).catch(() => undefined);
   return closed;
+}
+
+/**
+ * Chat and reactions are relayed by the server: it checks the class settings, the sender's seat and a
+ * rate limit, then broadcasts with RoomService.sendData. Clients only accept these topics from the
+ * server, so disabling chat or reactions cannot be bypassed by publishing on the data channel directly.
+ */
+export async function relayMessage(actor: Actor, id: string, raw: unknown) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ClassroomError(400, 'بيانات الطلب غير صالحة');
+  const body = raw as Body;
+  const kind = body.kind;
+  if (kind !== 'chat' && kind !== 'reaction') throw new ClassroomError(400, 'نوع الرسالة غير صالح');
+  let text = '';
+  if (kind === 'chat') {
+    text = typeof body.text === 'string' ? body.text.trim().slice(0, 500) : '';
+    if (!text) throw new ClassroomError(400, 'الرسالة فارغة');
+  } else if (typeof body.emoji !== 'string' || !(REACTION_EMOJIS as readonly string[]).includes(body.emoji)) {
+    throw new ClassroomError(400, 'التفاعل غير مسموح');
+  }
+  const { session, power } = await classroomAccess(actor, id);
+  if (session.status !== 'live') throw new ClassroomError(409, 'الحصة ليست مباشرة الآن');
+  if (power !== 'host') {
+    const seat = await prisma.liveClassParticipant.findUnique({
+      where: { liveClassId_userId: { liveClassId: id, userId: actor.id } }, select: { status: true },
+    });
+    if (seat?.status !== 'admitted') throw new ClassroomError(403, 'لست مشاركاً في هذه الحصة');
+    const settings = settingsOf(session);
+    if (kind === 'chat' && !settings.chatEnabled && power !== 'assistant') throw new ClassroomError(403, 'أوقف المدرّب الدردشة مؤقتاً');
+    if (kind === 'reaction' && !settings.reactionsEnabled) throw new ClassroomError(403, 'أوقف المدرّب التفاعلات مؤقتاً');
+  }
+  if (!consume(kind === 'chat' ? CHAT_RULE : REACTION_RULE, actor.id).allowed) throw new ClassroomError(429, 'رسائل كثيرة خلال وقت قصير، انتظر قليلاً');
+  const svc = needService();
+  const sender = await prisma.user.findUnique({ where: { id: actor.id }, select: { name: true } });
+  const payload = { type: kind, from: actor.id, name: sender?.name || 'مشارك', role: power ?? 'student',
+    ...(kind === 'chat' ? { msg: text } : { emoji: body.emoji as string }), at: Date.now() };
+  await svc.sendData(roomName(id), new TextEncoder().encode(JSON.stringify(payload)), DataPacket_Kind.RELIABLE,
+    { topic: kind === 'chat' ? CHAT_TOPIC : REACTION_TOPIC });
+  return payload;
 }

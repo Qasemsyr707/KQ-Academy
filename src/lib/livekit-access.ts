@@ -57,8 +57,8 @@ async function liveClassAccess(user: RequestUser, id: string): Promise<RoomAcces
   let seatRole: string;
   try { seatRole = await admitForToken(user.id, liveClass); }
   catch (error) { if (error instanceof ClassroomError) throw new LiveKitAccessError(error.status, error.message); throw error; }
-  return { room: `live_${liveClass.id}`, canPublish: false, status: liveClass.status, settings, seatRole,
-    canPublishData: settings.chatEnabled || seatRole === 'assistant' };
+  // The data channel stays open for polls; chat and reactions are relayed and policed by the server.
+  return { room: `live_${liveClass.id}`, canPublish: false, status: liveClass.status, settings, seatRole, canPublishData: true };
 }
 
 async function resolveRoomAccess(user: RequestUser, reference: RoomReference): Promise<RoomAccess> {
@@ -119,7 +119,7 @@ export async function serveLiveKitToken(req: Request, reference: RoomReference) 
     }
     const serverUrl = browserLiveKitUrl(process.env.NEXT_PUBLIC_LIVEKIT_URL!.trim());
     if (!serverUrl) throw new LiveKitAccessError(503, 'عنوان خادم البث غير صالح على الخادم؛ تواصل مع إدارة المنصة');
-    const token = new AccessToken(apiKey, apiSecret, { identity: user.id, name: user.name || 'مستخدم', ttl: '15m', metadata: access.canPublish && !access.audioOnly ? 'kq-role:host' : 'kq-role:student' });
+    const token = new AccessToken(apiKey, apiSecret, { identity: user.id, name: user.name || 'مستخدم', ttl: '5m', metadata: access.canPublish && !access.audioOnly ? 'kq-role:host' : 'kq-role:student' });
     // Viewers (canPublish false) may send chat messages (data) but never audio or video.
     const grant: VideoGrant = {
       roomJoin: true, room: access.room, canPublish: access.canPublish, canSubscribe: true, canPublishData: access.canPublishData ?? true, canUpdateOwnMetadata: false,

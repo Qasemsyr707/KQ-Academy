@@ -151,6 +151,23 @@ test('HTTP/PostgreSQL: classroom management is enforced on the server for every 
     await status(act('teacher', { action: 'grant', userId: ids.s1, media: 'screen' }), 409, 'screen disallowed');
   });
 
+  await t.test('direct API calls cannot bypass the chat or reaction switches, and the two are independent', async () => {
+    const say = (who, body) => c[who].json('POST', `/api/live/${liveId}/message`, body);
+    await status(act('teacher', { action: 'settings', chatEnabled: false }), 200, 'chat off');
+    await status(say('s1', { kind: 'chat', text: 'تجاوز' }), 403, 'student chat while off');
+    // Allowed by policy; the test server has no LiveKit, so relaying fails closed instead of faking success.
+    await status(say('s1', { kind: 'reaction', emoji: '👏' }), 503, 'reaction unaffected by chat switch');
+    await status(say('teacher', { kind: 'chat', text: 'تنبيه' }), 503, 'host may still talk');
+    await status(act('teacher', { action: 'settings', chatEnabled: true, reactionsEnabled: false }), 200, 'reactions off');
+    await status(say('s1', { kind: 'reaction', emoji: '👏' }), 403, 'reaction while off');
+    await status(say('s1', { kind: 'chat', text: 'سؤال' }), 503, 'chat unaffected by reaction switch');
+    for (const who of ['s2', 'outsider']) await status(say(who, { kind: 'chat', text: 'x' }), 403, `${who} not admitted`);
+    await status(anonymous.json('POST', `/api/live/${liveId}/message`, { kind: 'chat', text: 'x' }), 401, 'anonymous');
+    await status(say('s1', { kind: 'reaction', emoji: '<img>' }), 400, 'forged emoji');
+    await status(say('s1', { kind: 'system', text: 'x' }), 400, 'forged kind');
+    await status(act('teacher', { action: 'settings', reactionsEnabled: true }), 200, 'restore');
+  });
+
   await t.test('malformed and foreign targets are refused', async () => {
     await status(act('teacher', { action: 'xyz' }), 400, 'unknown action');
     await status(act('teacher', { action: 'admit', userId: '../x' }), 400, 'bad id');

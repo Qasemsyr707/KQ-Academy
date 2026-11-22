@@ -26,12 +26,13 @@ function ViewerRoom({ liveId, initialSettings, assistant, onLeave }: { liveId: s
   const [view, setView] = useState<StageView>('speaker');
   const [panelOpen, setPanelOpen] = useState(true);
   const [deviceError, setDeviceError] = useState('');
-  const chat = useLiveChat();
-  const { send, reaction } = useClassEvents();
+  const chat = useLiveChat(liveId);
+  const { send, reaction } = useClassEvents(liveId);
   const settings = useClassroomSettings(initialSettings);
   useClassroomShortcuts({ p: () => setPanelOpen(v => !v) });
   const chatOn = settings?.chatEnabled !== false || assistant;
-  const reactionsOn = settings?.reactionsEnabled !== false && chatOn;
+  // Chat, reactions and polls are independent switches; polls are never affected by either.
+  const reactionsOn = settings?.reactionsEnabled !== false;
   const tabs = [
     { id: 'chat', label: 'الدردشة', content: <ChatBox chat={chat} disabled={!chatOn} /> },
     { id: 'polls', label: 'الاستطلاع', content: <StudentLivePolls /> },
