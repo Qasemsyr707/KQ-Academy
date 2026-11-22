@@ -1,78 +1,155 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { LiveKitRoom, RoomAudioRenderer, VideoConference, useConnectionState } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer, useRoomContext } from '@livekit/components-react';
 import '@livekit/components-styles';
-import { ConnectionState } from 'livekit-client';
-import { Loader2, MessageSquare, Radio } from 'lucide-react';
-import { ChatPanel, ConnectionBadge, LiveNotice } from '@/components/live/LiveRoomParts';
-import { StudentClassroomTools, WhenLiveConnected } from '@/components/live/ClassroomInteractions';
+import { DisconnectReason } from 'livekit-client';
+import { Loader2, PanelLeft, Radio } from 'lucide-react';
+import { ChatBox, LiveNotice, useLiveChat } from '@/components/live/LiveRoomParts';
+import { Reactions, ShareClassButton, WhenLiveConnected, useClassEvents } from '@/components/live/ClassroomInteractions';
 import { StudentLivePolls } from '@/components/live/LivePolls';
+import {
+  ClassroomPreJoin, ClassroomStage, ClassroomStatus, ConnectingScreen, DeviceSettings, HandButton, KQC_CSS, LeaveButton, MediaToggles,
+  ParticipantsPanel, ReconnectingBanner, SidePanel, ViewSwitcher, roomOptionsFor, useClassroomPanel, useClassroomSettings,
+  useClassroomShortcuts, type ClassroomSettings, type JoinChoices, type StageView,
+} from '@/components/live/ClassroomPro';
 
-const WAIT_POLL_MS = 15_000;
+const WAIT_POLL_MS = 10_000;
 
-function ViewerRoom({ liveId }: { liveId: string }) {
-  const state = useConnectionState();
-  const [showChat, setShowChat] = useState(true);
+function AssistantTab({ liveId }: { liveId: string }) {
+  const panel = useClassroomPanel(liveId);
+  return <ParticipantsPanel panel={panel} />;
+}
+
+function ViewerRoom({ liveId, initialSettings, assistant, onLeave }: { liveId: string; initialSettings: ClassroomSettings | null; assistant: boolean; onLeave: () => void }) {
+  const room = useRoomContext();
+  const [view, setView] = useState<StageView>('speaker');
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [deviceError, setDeviceError] = useState('');
+  const chat = useLiveChat();
+  const { send, reaction } = useClassEvents();
+  const settings = useClassroomSettings(initialSettings);
+  useClassroomShortcuts({ p: () => setPanelOpen(v => !v) });
+  const chatOn = settings?.chatEnabled !== false || assistant;
+  const reactionsOn = settings?.reactionsEnabled !== false && chatOn;
+  const tabs = [
+    { id: 'chat', label: 'الدردشة', content: <ChatBox chat={chat} disabled={!chatOn} /> },
+    { id: 'polls', label: 'الاستطلاع', content: <StudentLivePolls /> },
+    ...(assistant ? [{ id: 'assist', label: 'إدارة (مساعد)', content: <AssistantTab liveId={liveId} /> }] : []),
+    { id: 'devices', label: 'الأجهزة', content: <DeviceSettings /> },
+  ];
   return (
-    <div dir="rtl" className="viewer" style={{ display: 'flex', height: '100dvh', background: 'var(--background)', overflow: 'hidden', fontFamily: "'Cairo', sans-serif", color: '#fff' }}>
-      <style>{`@media (max-width: 820px){.viewer{flex-direction:column}.viewer .live-chat{width:100%!important;height:40dvh}} .viewer .lk-control-bar{display:none}`}</style>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '12px 18px', background: 'var(--ink-2)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#ef4444', fontWeight: 'bold', fontSize: '0.85rem' }}><Radio size={14} /> مباشر</span>
-            <ConnectionBadge />
-          </div>
-          <button type="button" onClick={() => setShowChat(v => !v)} aria-label="الدردشة" style={{ width: 38, height: 38, borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)', background: showChat ? 'rgba(203,161,83,0.15)' : 'rgba(255,255,255,0.05)', color: showChat ? 'var(--primary)' : '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center' }}><MessageSquare size={18} /></button>
+    <div dir="rtl" className="kqc">
+      <style>{KQC_CSS}</style>
+      <header className="kqc-top">
+        <div className="kqc-row">
+          <span className="kqc-chip live"><Radio size={13} /> مباشر</span>
+          <ClassroomStatus />
+          {assistant && <span className="kqc-chip gold">أنت مساعد المدرّب</span>}
+          {reaction && reactionsOn && <span className="kqc-chip gold" role="status">{reaction}</span>}
         </div>
-        {state === ConnectionState.Reconnecting && <p role="status" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', padding: '8px 18px', margin: 0 }}>انقطع الاتصال مؤقتاً، تجري إعادة الاتصال…</p>}
-        {/* The viewer token cannot publish audio or video (server grant); the publish controls are hidden. */}
-        <div style={{ flex: 1, overflow: 'hidden', background: '#000' }} data-lk-theme="default"><VideoConference /></div>
-        <RoomAudioRenderer />
-        <WhenLiveConnected><StudentClassroomTools liveId={liveId} /><StudentLivePolls /></WhenLiveConnected>
+        <div className="kqc-row">
+          <ViewSwitcher view={view} setView={setView} />
+          <LeaveButton onLeave={() => { void room.disconnect(); onLeave(); }} />
+        </div>
+      </header>
+      <ReconnectingBanner />
+      {deviceError && <p className="kqc-alert err" role="alert">{deviceError}</p>}
+      <div className="kqc-body">
+        <main className="kqc-stage" aria-label="المسرح الرئيسي"><ClassroomStage view={view} /></main>
+        <SidePanel open={panelOpen} tabs={tabs} />
       </div>
-      {showChat && <ChatPanel onClose={() => setShowChat(false)} width={300} />}
+      <RoomAudioRenderer />
+      <nav className="kqc-bar" aria-label="أدوات الحصة">
+        <HandButton liveId={liveId} />
+        {/* Shown only once the host grants a source on the LiveKit server; state comes from LiveKit itself. */}
+        <MediaToggles screenAllowed={settings?.screenShareAllowed !== false} onError={setDeviceError} />
+        {reactionsOn && <Reactions send={send} />}
+        <ShareClassButton liveId={liveId} />
+        <button type="button" className="kqc-btn" aria-pressed={panelOpen} onClick={() => setPanelOpen(v => !v)} title="اللوحة الجانبية (Alt+P)">
+          <PanelLeft size={17} /><span className="kqc-label">اللوحة</span>
+        </button>
+      </nav>
     </div>
   );
 }
+
+type Gate = { title: string; message: string; poll: boolean } | null;
 
 export default function LiveRoomPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [token, setToken] = useState('');
   const [serverUrl, setServerUrl] = useState('');
+  const [settings, setSettings] = useState<ClassroomSettings | null>(null);
+  const [assistant, setAssistant] = useState(false);
   const [error, setError] = useState('');
-  const [waiting, setWaiting] = useState(false);
-  const [ended, setEnded] = useState(false);
+  const [gate, setGate] = useState<Gate>(null);
+  const [ended, setEnded] = useState<{ title: string; message: string; rejoin: boolean } | null>(null);
+  const [choices, setChoices] = useState<JoinChoices | null>(null);
+  const [connectError, setConnectError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const retries = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const alive = useRef(true);
+  const loadRef = useRef<() => void>(() => undefined);
 
-  useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const load = () => fetch(`/api/live/token?id=${encodeURIComponent(id)}`)
+  const load = useCallback(() => {
+    clearTimeout(timer.current);
+    fetch(`/api/live/token?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
       .then(r => r.json().then(d => ({ status: r.status, d })))
       .then(({ status, d }) => {
-        if (cancelled) return;
-        // 425: the host has not connected yet. Check again shortly instead of failing.
-        if (status === 425) { setWaiting(true); timer = setTimeout(load, WAIT_POLL_MS); return; }
-        setWaiting(false);
+        if (!alive.current) return;
+        // 425: host not connected yet. 202: waiting room. Both are checked again automatically.
+        if (status === 425 || status === 202) {
+          setGate(status === 425 ? { title: 'لم يبدأ البث بعد', message: 'ستنضم تلقائياً فور اتصال المدرّب. يمكنك إبقاء هذه الصفحة مفتوحة.', poll: true }
+            : { title: 'غرفة الانتظار', message: d.error || 'سيسمح لك المدرّب بالدخول قريباً.', poll: true });
+          timer.current = setTimeout(() => loadRef.current(), status === 202 ? 5000 : WAIT_POLL_MS);
+          return;
+        }
+        setGate(null);
         if (status !== 200 || !d.token) { setError(d.error || 'تعذّر الانضمام للبث'); return; }
-        setServerUrl(d.serverUrl); setToken(d.token);
+        setServerUrl(d.serverUrl); setSettings(d.settings ?? null); setAssistant(d.seatRole === 'assistant'); setToken(d.token);
       })
-      .catch(() => { if (!cancelled) setError('تعذّر الاتصال بالخادم'); });
-    load();
-    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+      .catch(() => { if (alive.current) setError('تعذّر الاتصال بالخادم'); });
   }, [id]);
+  useEffect(() => { loadRef.current = load; }, [load]);
+  useEffect(() => { alive.current = true; const first = setTimeout(load, 0); return () => { clearTimeout(first); alive.current = false; clearTimeout(timer.current); }; }, [load]);
 
+  const rejoin = useCallback(() => { setEnded(null); setConnectError(''); setToken(''); setAttempt(a => a + 1); load(); }, [load]);
+
+  const onDisconnected = useCallback((reason?: DisconnectReason) => {
+    if (reason === DisconnectReason.CLIENT_INITIATED) return;
+    if (reason === DisconnectReason.ROOM_DELETED) { setEnded({ title: 'انتهت الحصة', message: 'أنهى المدرّب هذه الحصة.', rejoin: false }); return; }
+    if (reason === DisconnectReason.PARTICIPANT_REMOVED) { setEnded({ title: 'خرجت من الحصة', message: 'أزالك المدرّب من هذه الحصة.', rejoin: false }); return; }
+    if (reason === DisconnectReason.DUPLICATE_IDENTITY) { setEnded({ title: 'الحصة مفتوحة في مكان آخر', message: 'دخلت بحسابك من نافذة أو جهاز آخر.', rejoin: true }); return; }
+    // A temporary network loss is not the end of the class: get a fresh token and reconnect.
+    if (retries.current < 3) { retries.current += 1; setTimeout(rejoin, 2000 * retries.current); return; }
+    setEnded({ title: 'انقطع الاتصال', message: 'تعذّرت إعادة الاتصال تلقائياً. تحقق من الشبكة ثم أعد المحاولة؛ الحصة ما زالت قائمة.', rejoin: true });
+  }, [rejoin]);
+
+  const options = useMemo(() => (choices ? roomOptionsFor(choices) : undefined), [choices]);
   const back = <button type="button" className="btn btn-solid" onClick={() => router.push('/live')}>العودة للبثوث</button>;
-  if (ended) return <LiveNotice title="انتهى البث" message="أنهى المدرّب هذه الجلسة أو انقطع اتصالك بها." action={back} />;
+
+  if (ended) return <LiveNotice title={ended.title} message={ended.message}
+    action={ended.rejoin ? <div style={{ display: 'flex', gap: 10 }}><button type="button" className="btn btn-solid" onClick={() => { retries.current = 0; rejoin(); }}>إعادة الدخول</button>{back}</div> : back} />;
   if (error) return <LiveNotice title="لا يمكن الانضمام للبث" message={error} action={back} />;
-  if (waiting) return <LiveNotice title="لم يبدأ البث بعد" message="ستنضم تلقائياً فور اتصال المدرّب. يمكنك إبقاء هذه الصفحة مفتوحة." action={<Loader2 size={40} color="var(--primary)" className="kq-spin" />} />;
+  if (gate) return <LiveNotice title={gate.title} message={gate.message} action={<Loader2 size={40} color="var(--primary)" className="kq-spin" />} />;
   if (!token) return <LiveNotice title="جاري الاتصال بالبث" message="نتحقق من اشتراكك في الكورس…" action={<Loader2 size={40} color="var(--primary)" className="kq-spin" />} />;
+  if (!choices) return <ClassroomPreJoin title="الاستعداد لدخول الحصة" role="student" onJoin={setChoices} />;
 
   return (
-    <LiveKitRoom serverUrl={serverUrl} token={token} connect video={false} audio={false} onDisconnected={() => setEnded(true)}
-      onError={e => setError(`خطأ في الاتصال بخادم البث: ${e.message}`)}>
-      <ViewerRoom liveId={id} />
+    // Students join without publishing; the host grants sources on the LiveKit server when needed.
+    <LiveKitRoom key={attempt} serverUrl={serverUrl} token={token} connect options={options} video={false} audio={false}
+      onConnected={() => { retries.current = 0; setConnectError(''); }}
+      onDisconnected={onDisconnected}
+      onError={e => setConnectError(`خطأ في الاتصال بخادم البث: ${e.message}`)}>
+      <WhenLiveConnected>
+        <ViewerRoom liveId={id} initialSettings={settings} assistant={assistant}
+          onLeave={() => setEnded({ title: 'غادرت الحصة', message: 'يمكنك العودة ما دامت الحصة قائمة.', rejoin: true })} />
+      </WhenLiveConnected>
+      <ConnectingScreen error={connectError} renderError={message => <><p role="alert" style={{ color: '#fca5a5' }}>{message}</p>
+        <button type="button" className="btn btn-solid" onClick={() => { retries.current = 0; rejoin(); }}>إعادة المحاولة</button></>} />
     </LiveKitRoom>
   );
 }

@@ -22,7 +22,7 @@ async function shareLesson(liveId: string): Promise<'copied' | 'shared'> {
   return 'copied';
 }
 
-function ShareClassButton({ liveId }: { liveId: string }) {
+export function ShareClassButton({ liveId }: { liveId: string }) {
   const [message, setMessage] = useState('');
   const onClick = async () => {
     try { const result = await shareLesson(liveId); setMessage(result === 'copied' ? 'تم نسخ رابط الصف' : 'تمت المشاركة'); }
@@ -34,7 +34,7 @@ function ShareClassButton({ liveId }: { liveId: string }) {
   </div>;
 }
 
-function useClassEvents() {
+export function useClassEvents() {
   const room = useRoomContext();
   const [requests, setRequests] = useState<Record<string, RaiseRequest>>({});
   const [reaction, setReaction] = useState('');
@@ -67,7 +67,7 @@ function useClassEvents() {
   return { requests, setRequests, reaction, send };
 }
 
-function Reactions({ send }: { send: (msg: ClassSignal) => Promise<void> }) {
+export function Reactions({ send }: { send: (msg: ClassSignal) => Promise<void> }) {
   const [error, setError] = useState('');
   return <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }} aria-label="تفاعلات الصف">
     <Smile size={18} color="#c9a45c" aria-hidden="true" />
@@ -81,7 +81,7 @@ function Reactions({ send }: { send: (msg: ClassSignal) => Promise<void> }) {
 /** Classroom tools talk over the LiveKit data channel; they appear only once the signal connection really succeeded. */
 export function WhenLiveConnected({ children }: { children: ReactNode }) {
   const state = useConnectionState();
-  return state === ConnectionState.Connected || state === ConnectionState.Reconnecting ? <>{children}</> : null;
+  return state === ConnectionState.Connected || state === ConnectionState.Reconnecting || state === ConnectionState.SignalReconnecting ? <>{children}</> : null;
 }
 
 export function StudentClassroomTools({ liveId }: { liveId: string }) {
