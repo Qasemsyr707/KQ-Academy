@@ -92,22 +92,53 @@ async function connectedIdentities(svc: RoomServiceClient, id: string) {
   try { return await svc.listParticipants(roomName(id)); } catch { return []; }
 }
 
+const isGone = (error: unknown) => {
+  const e = error as { status?: number; code?: string } | null;
+  return e?.status === 404 || e?.code === 'not_found';
+};
+
+/** Disconnects one identity. "Not in the room" counts as done; any other LiveKit failure is thrown. */
+async function kick(svc: RoomServiceClient, room: string, identity: string) {
+  try { await svc.removeParticipant(room, identity); }
+  catch (error) { if (!isGone(error)) throw error; }
+}
+
 /**
- * Disconnects anyone in the room whose seat is not admitted (removed, denied, or still pending), for
- * example after joining with a token issued before the decision. Returns the identities removed.
+ * Who may be connected to a class room without a seat: only a verified host (the session's instructor,
+ * the OWNER, or an ADMIN with LIVE_CLASSES) whose account exists and is not banned. Anyone else without
+ * a seat never went through admission (for example a token minted outside this app) and is removed.
+ */
+async function seatlessAllowed(identity: string, session: { instructorId: string; course: { instructorId: string } }) {
+  const user = await prisma.user.findUnique({ where: { id: identity }, select: { id: true, role: true, isBanned: true } });
+  if (!user || user.isBanned) return false;
+  return isHost(user, session);
+}
+
+/**
+ * Disconnects anyone in the room who is not allowed there: a removed, denied or still-pending seat, or no
+ * seat and not a verified host. Returns the identities removed; a failed removal is left for the next
+ * sweep or webhook retry instead of being reported as done.
  */
 async function enforceSeats(svc: RoomServiceClient, id: string,
   connected: { identity: string }[], seats?: { userId: string; status: string }[]) {
   if (!connected.length) return [];
+  const identities = connected.map(p => p.identity);
   const list = seats ?? await prisma.liveClassParticipant.findMany({
-    where: { liveClassId: id, userId: { in: connected.map(p => p.identity) } }, select: { userId: true, status: true },
+    where: { liveClassId: id, userId: { in: identities } }, select: { userId: true, status: true },
   });
-  const online = new Set(connected.map(p => p.identity));
+  const byUser = new Map(list.map(s => [s.userId, s.status]));
+  const session = await prisma.liveClass.findUnique({ where: { id }, select: SESSION_SELECT });
   const removed: string[] = [];
-  for (const s of list) {
-    if (online.has(s.userId) && s.status !== 'admitted') {
-      await svc.removeParticipant(roomName(id), s.userId).catch(() => undefined);
-      removed.push(s.userId);
+  for (const identity of new Set(identities)) {
+    const status = byUser.get(identity);
+    if (status === 'admitted') continue;
+    if (!status && session && await seatlessAllowed(identity, session)) continue;
+    try {
+      await kick(svc, roomName(id), identity);
+      removed.push(identity);
+      if (!status) await audit(id, 'system', 'enforceRemoval', identity, { seat: 'none' }).catch(() => undefined);
+    } catch {
+      console.error('[live-classroom] removal failed; will retry on the next sweep');
     }
   }
   return removed;
@@ -131,20 +162,30 @@ export async function sweepClass(id: string, force = false) {
   catch { return []; }
 }
 
-/** LiveKit webhook: a participant joined a class room. Removes them at once unless their seat is admitted. */
+/**
+ * LiveKit webhook: a participant joined a class room. Removes them at once unless their seat is admitted
+ * or they are a verified host. A failed removal THROWS, so the webhook answers 5xx and LiveKit retries.
+ */
 export async function enforceJoin(room: string | undefined, identity: string | undefined) {
-  if (!room?.startsWith('live_') || !identity || !ID.test(identity)) return false;
+  if (!room?.startsWith('live_') || !identity) return false;
   const id = room.slice(5);
   if (!ID.test(id)) return false;
-  const seat = await prisma.liveClassParticipant.findUnique({
-    where: { liveClassId_userId: { liveClassId: id, userId: identity } }, select: { status: true },
-  });
-  // No seat means staff (host, OWNER, ADMIN): tokens for students always create a seat first.
-  if (!seat || seat.status === 'admitted') return false;
   const svc = roomService();
   if (!svc) return false;
-  await svc.removeParticipant(room, identity).catch(() => undefined);
-  await audit(id, 'system', 'enforceRemoval', identity, { seat: seat.status }).catch(() => undefined);
+  const session = await prisma.liveClass.findUnique({ where: { id }, select: SESSION_SELECT });
+  let reason: string;
+  if (!session) reason = 'no-session';
+  else if (!ID.test(identity)) reason = 'bad-identity';
+  else {
+    const seat = await prisma.liveClassParticipant.findUnique({
+      where: { liveClassId_userId: { liveClassId: id, userId: identity } }, select: { status: true },
+    });
+    if (seat?.status === 'admitted') return false;
+    if (!seat && await seatlessAllowed(identity, session)) return false;
+    reason = seat?.status ?? 'none';
+  }
+  await kick(svc, room, identity);
+  if (session) await audit(id, 'system', 'enforceRemoval', ID.test(identity) ? identity : null, { seat: reason }).catch(() => undefined);
   return true;
 }
 
@@ -310,10 +351,15 @@ export async function moderate(actor: Actor, id: string, raw: unknown): Promise<
         where, update: { status: 'removed', role: 'student', handRaisedAt: null, removedReason: reason || null },
         create: { liveClassId: id, userId, status: 'removed', removedReason: reason || null },
       });
+      // The seat is already 'removed', so the token route, the join webhook and the sweep all refuse
+      // this student even if the immediate disconnect below fails; the failure is still reported.
       const svc = roomService();
-      if (svc) await svc.removeParticipant(roomName(id), userId).catch(() => undefined);
-      await audit(id, actor.id, 'remove', userId, reason ? { reason } : undefined);
-      return 'تمت إزالة الطالب من الحصة';
+      let disconnected = !svc;
+      if (svc) { try { await kick(svc, roomName(id), userId); disconnected = true; } catch { disconnected = false; } }
+      const detail = { ...(reason ? { reason } : {}), ...(disconnected ? {} : { disconnected: false }) };
+      await audit(id, actor.id, 'remove', userId, Object.keys(detail).length ? detail : undefined);
+      return disconnected ? 'تمت إزالة الطالب من الحصة'
+        : 'تم منع الطالب من الحصة، وتعذّر فصله فوراً؛ سيُفصل تلقائياً خلال ثوانٍ';
     }
     case 'setAssistant':
     case 'unsetAssistant': {

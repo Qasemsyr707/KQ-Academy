@@ -6,7 +6,7 @@ const { loadTs } = require('./load-ts.cjs');
 
 const TrackSource = { CAMERA: 1, MICROPHONE: 2, SCREEN_SHARE: 3, SCREEN_SHARE_AUDIO: 4 };
 
-function harness({ actor = { id: 'teacher-1', role: 'INSTRUCTOR' }, settings = {}, seats = {}, connected = ['s1', 's2'], livekit = true, deleteError = null } = {}) {
+function harness({ actor = { id: 'teacher-1', role: 'INSTRUCTOR' }, settings = {}, seats = {}, connected = ['s1', 's2'], livekit = true, deleteError = null, removeError = null, users = {} } = {}) {
   const calls = [];
   const db = {
     session: { id: 'c1', status: 'live', instructorId: 'teacher-1', locked: false, waitingRoom: false, chatEnabled: true, reactionsEnabled: true, screenShareAllowed: true,
@@ -22,7 +22,7 @@ function harness({ actor = { id: 'teacher-1', role: 'INSTRUCTOR' }, settings = {
     }
     async updateParticipant(room, identity, metadata, permission) { calls.push(['update', room, identity, permission]); }
     async mutePublishedTrack(room, identity, sid, muted) { calls.push(['mute', room, identity, sid, muted]); }
-    async removeParticipant(room, identity) { calls.push(['remove', room, identity]); }
+    async removeParticipant(room, identity) { calls.push(['remove', room, identity]); const e = typeof removeError === 'function' ? removeError(identity) : removeError; if (e) throw e; }
     async updateRoomMetadata(room, metadata) { calls.push(['metadata', room, JSON.parse(metadata)]); }
     async deleteRoom(room) { calls.push(['delete', room]); if (deleteError) throw deleteError; }
     async sendData(room, data, kind, options) { calls.push(['send', room, JSON.parse(new TextDecoder().decode(data)), kind, options]); }
@@ -40,7 +40,7 @@ function harness({ actor = { id: 'teacher-1', role: 'INSTRUCTOR' }, settings = {
       upsert: async ({ where, update, create }) => { db.seats[key(where)] = db.seats[key(where)] ? Object.assign(db.seats[key(where)], update) : { ...create }; return db.seats[key(where)]; },
       count: async ({ where }) => (db.seats[where.userId] ? 1 : 0),
     },
-    user: { findUnique: async ({ where }) => (where.id.startsWith('s') ? { id: where.id, role: 'STUDENT', isBanned: false, name: `Student ${where.id}` } : { id: where.id, role: 'INSTRUCTOR', isBanned: false, name: 'Teacher' }) },
+    user: { findUnique: async ({ where }) => (where.id in users ? users[where.id] : where.id.startsWith('s') ? { id: where.id, role: 'STUDENT', isBanned: false, name: `Student ${where.id}` } : { id: where.id, role: 'INSTRUCTOR', isBanned: false, name: 'Teacher' }) },
     enrollment: { findUnique: async () => ({ id: 'e' }) },
     liveClassAuditLog: { create: async ({ data }) => { db.audit.push(data); return data; }, findMany: async () => [] },
   };
@@ -183,7 +183,7 @@ test('LiveKit join webhook removes a removed, denied or pending seat at once, ne
   assert.equal(await h.lib.enforceJoin('live_c1', 's3'), true);
   assert.deepEqual(h.calls.filter(c => c[0] === 'remove').map(c => [c[1], c[2]]), [['live_c1', 's2'], ['live_c1', 's3']]);
   assert.deepEqual(h.db.audit.at(-1), { liveClassId: 'c1', actorId: 'system', action: 'enforceRemoval', targetUserId: 's3', detail: { seat: 'pending' } });
-  for (const [room, identity] of [['live_c1', 's1'], ['live_c1', 'teacher-1'], ['study-room', 's2'], ['live_c1', '../x'], [undefined, 's2']]) {
+  for (const [room, identity] of [['live_c1', 's1'], ['live_c1', 'teacher-1'], ['study-room', 's2'], ['live_../x', 's2'], [undefined, 's2']]) {
     assert.equal(await h.lib.enforceJoin(room, identity), false, `${room} ${identity}`);
   }
   assert.equal(h.calls.filter(c => c[0] === 'remove').length, 2);
@@ -196,4 +196,53 @@ test('seat enforcement runs without the host panel: student polling sweeps the r
   assert.deepEqual(h.calls.filter(c => c[0] === 'remove').map(c => c[2]), ['s2']);
   assert.deepEqual(await h.lib.sweepClass('c1'), [], 'throttled');
   assert.deepEqual(await h.lib.sweepClass('c1', true), ['s2'], 'forced sweep');
+});
+
+test('a connected identity without a seat stays only if it is a verified host', async () => {
+  const users = {
+    'other-teacher': { id: 'other-teacher', role: 'INSTRUCTOR', isBanned: false },
+    'banned-owner': { id: 'banned-owner', role: 'OWNER', isBanned: true },
+    owner: { id: 'owner', role: 'OWNER', isBanned: false },
+    ghost: null,
+  };
+  const h = harness({ users, connected: ['s1', 'teacher-1', 'owner', 'other-teacher', 'banned-owner', 'ghost'] });
+  // Webhook: each seatless non-host is removed and audited; hosts and admitted students are untouched.
+  for (const id of ['other-teacher', 'banned-owner', 'ghost']) assert.equal(await h.lib.enforceJoin('live_c1', id), true, id);
+  for (const id of ['s1', 'teacher-1', 'owner']) assert.equal(await h.lib.enforceJoin('live_c1', id), false, id);
+  assert.deepEqual(h.calls.filter(c => c[0] === 'remove').map(c => c[2]), ['other-teacher', 'banned-owner', 'ghost']);
+  assert.deepEqual(h.db.audit.at(-1).detail, { seat: 'none' });
+  // Sweep (no panel needed): the same rule.
+  const s = harness({ users, connected: ['s1', 'teacher-1', 'owner', 'other-teacher', 'ghost'] });
+  assert.deepEqual((await s.lib.sweepClass('c1', true)).sort(), ['ghost', 'other-teacher']);
+});
+
+test('a failed LiveKit removal is never reported as done: the webhook throws so LiveKit retries', async () => {
+  const down = Object.assign(new Error('unavailable'), { status: 503 });
+  const h = harness({ seats: { s2: { status: 'removed', role: 'student' } }, removeError: down });
+  await assert.rejects(h.lib.enforceJoin('live_c1', 's2'), e => e === down);
+  assert.equal(h.db.audit.length, 0, 'no audit claims a removal that did not happen');
+  // Already gone from the room counts as removed.
+  const gone = harness({ seats: { s2: { status: 'removed', role: 'student' } }, removeError: Object.assign(new Error('nf'), { status: 404, code: 'not_found' }) });
+  assert.equal(await gone.lib.enforceJoin('live_c1', 's2'), true);
+});
+
+test('the sweep keeps going past a failed removal and does not count it', async () => {
+  const h = harness({ connected: ['s2', 's3'], seats: { s2: { status: 'removed', role: 'student' }, s3: { status: 'denied', role: 'student' } },
+    removeError: id => (id === 's2' ? Object.assign(new Error('x'), { status: 500 }) : null) });
+  assert.deepEqual(await h.lib.sweepClass('c1', true), ['s3']);
+  assert.deepEqual(h.calls.filter(c => c[0] === 'remove').map(c => c[2]), ['s2', 's3']);
+});
+
+test('remove still bars the student when the instant disconnect fails, and says so', async () => {
+  const h = harness({ removeError: Object.assign(new Error('x'), { status: 500 }) });
+  const message = await h.act({ action: 'remove', userId: 's1', reason: 'إزعاج' });
+  assert.match(message, /تعذّر فصله فوراً/);
+  assert.equal(h.db.seats.s1.status, 'removed');
+  assert.deepEqual(h.db.audit.at(-1).detail, { reason: 'إزعاج', disconnected: false });
+});
+
+test('a join to a class room whose class no longer exists is removed', async () => {
+  const h = harness();
+  assert.equal(await h.lib.enforceJoin('live_deleted1', 's1'), true);
+  assert.deepEqual(h.calls.filter(c => c[0] === 'remove').map(c => [c[1], c[2]]), [['live_deleted1', 's1']]);
 });
