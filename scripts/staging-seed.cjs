@@ -113,8 +113,29 @@ async function main() {
         issuedAt: new Date('2025-06-01T10:00:00Z'), pngUrl: '/api/certificates/KQ2025-0001/png', pdfUrl: '/api/certificates/KQ2025-0001/pdf' },
     });
 
+    // KQ Classroom Pro: one course with a live class for the two-device tests. Students A-D are enrolled
+    // (waiting room, hand raise, assistant, removal); student E is deliberately NOT enrolled.
+    const studentC = await account('student-c', '[STAGING] طالب ثالث', 'STUDENT');
+    const studentD = await account('student-d', '[STAGING] طالب رابع', 'STUDENT');
+    const studentE = await account('student-e', '[STAGING] غير مشترك', 'STUDENT');
+    const classroom = await course('classroom', { title: '[STAGING] اختبار الفصل الافتراضي', category: 'البرمجة', price: 0, priceSYP: 0 });
+    for (const s of [studentA, studentB, studentC, studentD]) {
+      await prisma.enrollment.upsert({
+        where: { userId_courseId: { userId: s.id, courseId: classroom.id } }, update: {},
+        create: { userId: s.id, courseId: classroom.id },
+      });
+    }
+    // An immediate session: the instructor starts it from the studio. If it was already used (ended), create
+    // a new one from /instructor/live — this script never changes existing rows.
+    const liveClass = await prisma.liveClass.upsert({
+      where: { id: 'stg_classroom_live' }, update: {},
+      create: { id: 'stg_classroom_live', title: '[STAGING] حصة اختبار KQ Classroom Pro', instructorId: teacher.id,
+        courseId: classroom.id, isImmediate: true, scheduledAt: new Date(), status: 'upcoming' },
+    });
+
     console.log('Staging seed complete. Accounts (password below):');
-    for (const user of [admin, teacher, studentA, studentB]) console.log(`  ${user.role.padEnd(10)} ${user.email}`);
+    for (const user of [admin, teacher, studentA, studentB, studentC, studentD, studentE]) console.log(`  ${user.role.padEnd(10)} ${user.email}`);
+    console.log(`Classroom: course ${classroom.id}, live class ${liveClass.id} (${liveClass.status}); studio /live/studio/${liveClass.id}, students /live/room/${liveClass.id}`);
     console.log(process.env.KQ_STAGING_SEED_PASSWORD ? '  password: the value of KQ_STAGING_SEED_PASSWORD' : `  password: ${password}`);
     console.log(`Courses: paid ${paid.id}, free ${free.id}, curriculum ${curriculum.id}, pending stg_pending`);
     console.log('Legacy certificate: KQ2025-0001 (student-a)');

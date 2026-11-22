@@ -92,6 +92,62 @@ async function connectedIdentities(svc: RoomServiceClient, id: string) {
   try { return await svc.listParticipants(roomName(id)); } catch { return []; }
 }
 
+/**
+ * Disconnects anyone in the room whose seat is not admitted (removed, denied, or still pending), for
+ * example after joining with a token issued before the decision. Returns the identities removed.
+ */
+async function enforceSeats(svc: RoomServiceClient, id: string,
+  connected: { identity: string }[], seats?: { userId: string; status: string }[]) {
+  if (!connected.length) return [];
+  const list = seats ?? await prisma.liveClassParticipant.findMany({
+    where: { liveClassId: id, userId: { in: connected.map(p => p.identity) } }, select: { userId: true, status: true },
+  });
+  const online = new Set(connected.map(p => p.identity));
+  const removed: string[] = [];
+  for (const s of list) {
+    if (online.has(s.userId) && s.status !== 'admitted') {
+      await svc.removeParticipant(roomName(id), s.userId).catch(() => undefined);
+      removed.push(s.userId);
+    }
+  }
+  return removed;
+}
+
+const SWEEP_INTERVAL_MS = 10_000;
+const lastSweep = new Map<string, number>();
+
+/**
+ * Seat enforcement that does not depend on the host's panel being open: it runs (at most every 10 s per
+ * class) whenever any participant's client talks to the server, and on every LiveKit join webhook.
+ */
+export async function sweepClass(id: string, force = false) {
+  const now = Date.now();
+  if (!force && now - (lastSweep.get(id) ?? 0) < SWEEP_INTERVAL_MS) return [];
+  lastSweep.set(id, now);
+  if (lastSweep.size > 5000) lastSweep.clear();
+  const svc = roomService();
+  if (!svc) return [];
+  try { return await enforceSeats(svc, id, await connectedIdentities(svc, id)); }
+  catch { return []; }
+}
+
+/** LiveKit webhook: a participant joined a class room. Removes them at once unless their seat is admitted. */
+export async function enforceJoin(room: string | undefined, identity: string | undefined) {
+  if (!room?.startsWith('live_') || !identity || !ID.test(identity)) return false;
+  const id = room.slice(5);
+  if (!ID.test(id)) return false;
+  const seat = await prisma.liveClassParticipant.findUnique({
+    where: { liveClassId_userId: { liveClassId: id, userId: identity } }, select: { status: true },
+  });
+  // No seat means staff (host, OWNER, ADMIN): tokens for students always create a seat first.
+  if (!seat || seat.status === 'admitted') return false;
+  const svc = roomService();
+  if (!svc) return false;
+  await svc.removeParticipant(room, identity).catch(() => undefined);
+  await audit(id, 'system', 'enforceRemoval', identity, { seat: seat.status }).catch(() => undefined);
+  return true;
+}
+
 /** Pushes the stored settings into the LiveKit room (called once the host's studio is live). */
 export async function syncRoomSettings(id: string) {
   const row = await prisma.liveClass.findUnique({ where: { id }, select: { locked: true, waitingRoom: true, chatEnabled: true, reactionsEnabled: true, screenShareAllowed: true } });
@@ -111,16 +167,11 @@ export async function classroomState(actor: Actor, id: string) {
       select: { id: true, action: true, actorId: true, targetUserId: true, detail: true, createdAt: true } }) : Promise.resolve([]),
   ]);
   const svc = roomService();
-  const online = new Set((svc ? await connectedIdentities(svc, id) : []).map(p => p.identity));
+  const connected = svc ? await connectedIdentities(svc, id) : [];
+  const online = new Set(connected.map(p => p.identity));
   if (svc) {
-    // Enforcement sweep: a removed, denied or still-pending student who is connected anyway (for example
-    // with a token issued before the decision) is disconnected again while the panel is open.
-    for (const s of seats) {
-      if (online.has(s.userId) && s.status !== 'admitted') {
-        await svc.removeParticipant(roomName(id), s.userId).catch(() => undefined);
-        online.delete(s.userId);
-      }
-    }
+    const removed = await enforceSeats(svc, id, connected, seats);
+    for (const identity of removed) online.delete(identity);
   }
   return {
     power, status: session.status, settings: settingsOf(session), liveKitReady: !!svc,
@@ -298,6 +349,8 @@ export async function ownSeat(actor: Actor, id: string) {
   const seat = await prisma.liveClassParticipant.findUnique({
     where: { liveClassId_userId: { liveClassId: id, userId: actor.id } }, select: { status: true, role: true, handRaisedAt: true },
   });
+  // Every student page polls this, so seat enforcement keeps running even when the host panel is closed.
+  void sweepClass(id);
   return { status: seat?.status ?? null, role: seat?.role ?? null, handRaised: !!seat?.handRaisedAt };
 }
 

@@ -176,3 +176,24 @@ test('the panel disconnects anyone connected whose seat was removed, denied or i
   assert.equal(state.participants.find(p => p.userId === 's2').online, false);
   assert.equal(state.participants.find(p => p.userId === 's1').online, true);
 });
+
+test('LiveKit join webhook removes a removed, denied or pending seat at once, never staff or admitted students', async () => {
+  const h = harness({ seats: { s2: { status: 'removed', role: 'student' }, s3: { status: 'pending', role: 'student' } } });
+  assert.equal(await h.lib.enforceJoin('live_c1', 's2'), true);
+  assert.equal(await h.lib.enforceJoin('live_c1', 's3'), true);
+  assert.deepEqual(h.calls.filter(c => c[0] === 'remove').map(c => [c[1], c[2]]), [['live_c1', 's2'], ['live_c1', 's3']]);
+  assert.deepEqual(h.db.audit.at(-1), { liveClassId: 'c1', actorId: 'system', action: 'enforceRemoval', targetUserId: 's3', detail: { seat: 'pending' } });
+  for (const [room, identity] of [['live_c1', 's1'], ['live_c1', 'teacher-1'], ['study-room', 's2'], ['live_c1', '../x'], [undefined, 's2']]) {
+    assert.equal(await h.lib.enforceJoin(room, identity), false, `${room} ${identity}`);
+  }
+  assert.equal(h.calls.filter(c => c[0] === 'remove').length, 2);
+});
+
+test('seat enforcement runs without the host panel: student polling sweeps the room, throttled per class', async () => {
+  const h = harness({ connected: ['s1', 's2', 'teacher-1'], seats: { s2: { status: 'removed', role: 'student' } } });
+  await h.lib.ownSeat({ id: 's1', role: 'STUDENT' }, 'c1');
+  await new Promise(r => setTimeout(r, 20));
+  assert.deepEqual(h.calls.filter(c => c[0] === 'remove').map(c => c[2]), ['s2']);
+  assert.deepEqual(await h.lib.sweepClass('c1'), [], 'throttled');
+  assert.deepEqual(await h.lib.sweepClass('c1', true), ['s2'], 'forced sweep');
+});
